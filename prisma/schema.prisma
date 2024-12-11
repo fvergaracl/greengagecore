@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int    @id @default(autoincrement())
+  sub       String @unique
+  roles     UserRole[]
+  dataEntries DataEntry[]
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users UserRole[]
+}
+
+model UserRole {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  roleId Int
+  user   User @relation(fields: [userId], references: [id])
+  role   Role @relation(fields: [roleId], references: [id])
+  @@unique([userId, roleId])
+}
+
+model Campaign {
+  id           Int       @id @default(autoincrement())
+  name         String
+  description  String?
+  isOpen       Boolean   @default(true)
+  deadline     DateTime?
+  type         String
+  parentCampaignId Int?
+  parentCampaign Campaign? @relation(fields: [parentCampaignId], references: [id])
+  subCampaigns Campaign[]
+  geoLocations GeoLocation[]
+}
+
+model GeoLocation {
+  id         Int       @id @default(autoincrement())
+  name       String?
+  type       String
+  category   String?
+  coordinates String
+  radius     Float?
+  campaignId Int?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+  dataEntries DataEntry[]
+}
+
+model DataEntryType {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  dataEntries DataEntry[]
+}
+
+model DataEntry {
+  id           Int        @id @default(autoincrement())
+  userId       Int?
+  geolocationId Int?
+  campaignId   Int?
+  entryTypeId  Int?
+  globalContribution Boolean @default(false)
+  data         Json
+  user         User? @relation(fields: [userId], references: [id])
+  geoLocation  GeoLocation? @relation(fields: [geolocationId], references: [id])
+  campaign     Campaign? @relation(fields: [campaignId], references: [id])
+  entryType    DataEntryType? @relation(fields: [entryTypeId], references: [id])
+}
+
+model Log {
+  id          Int       @id @default(autoincrement())
+  timestamp   DateTime  @default(now())
+  userId      Int?
+  campaignId  Int?
+  eventType   String
+  description String?
+  ipAddress   String?
+  metadata    Json
+  user        User? @relation(fields: [userId], references: [id])
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+}
