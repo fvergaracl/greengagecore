@@ -1,12 +1,16 @@
 {
-  "name": "greengagecore",
+  "name": "greencrowd",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "concurrently \"node src/ws/server.js\" \"next dev\"",
     "build": "next build",
     "start": "concurrently \"node src/ws/server.js\" \"next start\"",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:format": "npx prisma format",
+    "migrate:reset:local": "dotenv -e .env.local -- npx prisma migrate reset",
+    "migration:dev": "dotenv -e .env.local -- npx prisma migrate dev",
+    "migration:deploy": "dotenv -e .env.local -- npx prisma migrate deploy"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
@@ -48,6 +52,7 @@
     "@types/utf8": "^3.0.3",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.0",
+    "dotenv-cli": "^7.4.4",
     "eslint": "^8",
     "eslint-config-next": "14.2.2",
     "postcss": "^8.4.49",

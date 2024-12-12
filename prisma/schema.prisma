@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id        Int    @id @default(autoincrement())
-  sub       String @unique
-  roles     UserRole[]
+  id          Int         @id @default(autoincrement())
+  sub         String      @unique
+  roles       UserRole[]
   dataEntries DataEntry[]
+  logs        Log[] // Relación con Log
 }
 
 model Role {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
+  id    Int        @id @default(autoincrement())
+  name  String     @unique
   users UserRole[]
 }
 
@@ -26,53 +27,56 @@ model UserRole {
   roleId Int
   user   User @relation(fields: [userId], references: [id])
   role   Role @relation(fields: [roleId], references: [id])
+
   @@unique([userId, roleId])
 }
 
 model Campaign {
-  id           Int       @id @default(autoincrement())
-  name         String
-  description  String?
-  isOpen       Boolean   @default(true)
-  deadline     DateTime?
-  type         String
+  id               Int           @id @default(autoincrement())
+  name             String
+  description      String?
+  isOpen           Boolean       @default(true)
+  deadline         DateTime?
+  type             String
   parentCampaignId Int?
-  parentCampaign Campaign? @relation(fields: [parentCampaignId], references: [id])
-  subCampaigns Campaign[]
-  geoLocations GeoLocation[]
+  parentCampaign   Campaign?     @relation("CampaignHierarchy", fields: [parentCampaignId], references: [id])
+  subCampaigns     Campaign[]    @relation("CampaignHierarchy")
+  geoLocations     GeoLocation[]
+  dataEntries      DataEntry[]
+  logs             Log[] // Relación con Log
 }
 
 model GeoLocation {
-  id         Int       @id @default(autoincrement())
-  name       String?
-  type       String
-  category   String?
+  id          Int         @id @default(autoincrement())
+  name        String?
+  type        String
+  category    String?
   coordinates String
-  radius     Float?
-  campaignId Int?
-  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+  radius      Float?
+  campaignId  Int?
+  campaign    Campaign?   @relation(fields: [campaignId], references: [id])
   dataEntries DataEntry[]
 }
 
 model DataEntryType {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
   description String?
   dataEntries DataEntry[]
 }
 
 model DataEntry {
-  id           Int        @id @default(autoincrement())
-  userId       Int?
-  geolocationId Int?
-  campaignId   Int?
-  entryTypeId  Int?
-  globalContribution Boolean @default(false)
-  data         Json
-  user         User? @relation(fields: [userId], references: [id])
-  geoLocation  GeoLocation? @relation(fields: [geolocationId], references: [id])
-  campaign     Campaign? @relation(fields: [campaignId], references: [id])
-  entryType    DataEntryType? @relation(fields: [entryTypeId], references: [id])
+  id                 Int            @id @default(autoincrement())
+  userId             Int?
+  geolocationId      Int?
+  campaignId         Int?
+  entryTypeId        Int?
+  globalContribution Boolean        @default(false)
+  data               Json
+  user               User?          @relation(fields: [userId], references: [id])
+  geoLocation        GeoLocation?   @relation(fields: [geolocationId], references: [id])
+  campaign           Campaign?      @relation(fields: [campaignId], references: [id])
+  entryType          DataEntryType? @relation(fields: [entryTypeId], references: [id])
 }
 
 model Log {
@@ -84,6 +88,6 @@ model Log {
   description String?
   ipAddress   String?
   metadata    Json
-  user        User? @relation(fields: [userId], references: [id])
+  user        User?     @relation(fields: [userId], references: [id])
   campaign    Campaign? @relation(fields: [campaignId], references: [id])
 }

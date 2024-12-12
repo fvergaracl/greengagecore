@@ -1,6 +1,6 @@
-# GREENGAGECORE
+# GreenCrowd
 
-**GREENGAGECORE** is a citizen science platform designed to collect georeferenced data through campaigns or global contributions. Built with [Next.js](https://nextjs.org/) and Prisma, it provides robust tools for user authentication, data collection, and campaign management.
+**GreenCrowd** is a citizen science platform designed to collect georeferenced data through campaigns or global contributions. Built with [Next.js](https://nextjs.org/) and Prisma, it provides robust tools for user authentication, data collection, and campaign management.
 
 ## Features
 
