@@ -31,5 +31,5 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            projectgreengage/my-account:latest
-            projectgreengage/my-account:${{ github.ref_name }}.${{ steps.date.outputs.date }}
+            projectgreengage/greencrowd:latest
+            projectgreengage/greencrowd:${{ github.ref_name }}.${{ steps.date.outputs.date }}
