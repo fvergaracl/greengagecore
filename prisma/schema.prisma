@@ -8,86 +8,96 @@ datasource db {
 }
 
 model User {
-  id          Int         @id @default(autoincrement())
-  sub         String      @unique
-  roles       UserRole[]
-  dataEntries DataEntry[]
-  logs        Log[] // Relación con Log
-}
-
-model Role {
-  id    Int        @id @default(autoincrement())
-  name  String     @unique
-  users UserRole[]
-}
-
-model UserRole {
-  id     Int  @id @default(autoincrement())
-  userId Int
-  roleId Int
-  user   User @relation(fields: [userId], references: [id])
-  role   Role @relation(fields: [roleId], references: [id])
-
-  @@unique([userId, roleId])
+  id                   String                @id @default(uuid())
+  sub                  String                @unique
+  dataEntries          DataEntry[]
+  logs                 Log[]
+  accessibleCampaigns  UserCampaignAccess[]  @relation("UserCampaignAccess")
 }
 
 model Campaign {
-  id               Int           @id @default(autoincrement())
+  id               String                @id @default(uuid())
   name             String
   description      String?
-  isOpen           Boolean       @default(true)
+  isOpen           Boolean               @default(true)
   deadline         DateTime?
   type             String
-  parentCampaignId Int?
-  parentCampaign   Campaign?     @relation("CampaignHierarchy", fields: [parentCampaignId], references: [id])
-  subCampaigns     Campaign[]    @relation("CampaignHierarchy")
-  geoLocations     GeoLocation[]
-  dataEntries      DataEntry[]
-  logs             Log[] // Relación con Log
+  gameId           String?
+  subCampaigns     SubCampaign[]
+  allowedUsers     UserCampaignAccess[]  @relation("UserCampaignAccess")
+}
+
+model SubCampaign {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  campaignId  String
+  campaign    Campaign       @relation(fields: [campaignId], references: [id])
+  tasks       Task[]         // Relation with Tasks
+  dataEntries DataEntry[]    // Relation with DataEntry
+}
+
+model Task {
+  id            String        @id @default(uuid())
+  title         String
+  description   String?
+  type          String         // "survey", "photo", "instruction"
+  taskData      Json           // Stores questions, options, etc.
+  subCampaignId String
+  subCampaign   SubCampaign    @relation(fields: [subCampaignId], references: [id])
+  geoLocation   GeoLocation?   // Relation with GeoLocation, defined in GeoLocation
 }
 
 model GeoLocation {
-  id          Int         @id @default(autoincrement())
+  id          String        @id @default(uuid())
   name        String?
-  type        String
-  category    String?
-  coordinates String
-  radius      Float?
-  campaignId  Int?
-  campaign    Campaign?   @relation(fields: [campaignId], references: [id])
-  dataEntries DataEntry[]
+  type        String        // "point" or "polygon"
+  task        Task?         @relation(fields: [taskId], references: [id]) // Relation defined here
+  taskId      String? @unique  // One-to-One relation with Task
+  coordinates Coordinate[]  // One-to-Many relation with Coordinate
 }
 
-model DataEntryType {
-  id          Int         @id @default(autoincrement())
-  name        String      @unique
-  description String?
-  dataEntries DataEntry[]
+model Coordinate {
+  id          String        @id @default(uuid())
+  latitude    Float         // Latitude
+  longitude   Float         // Longitude
+  geoLocation GeoLocation   @relation(fields: [geoLocationId], references: [id]) // One-to-Many relation with GeoLocation
+  geoLocationId String
+  dataEntry   DataEntry?    // One-to-One relation with DataEntry, defined in DataEntry
+}
+
+model UserCampaignAccess {
+  id         String     @id @default(uuid())
+  userId     String
+  campaignId String
+  assignedAt DateTime    @default(now())
+  accessType String?     // "admin", "editor", "viewer", "contributor"
+  user       User        @relation("UserCampaignAccess", fields: [userId], references: [id])
+  campaign   Campaign    @relation("UserCampaignAccess", fields: [campaignId], references: [id])
+
+  @@unique([userId, campaignId])
 }
 
 model DataEntry {
-  id                 Int            @id @default(autoincrement())
-  userId             Int?
-  geolocationId      Int?
-  campaignId         Int?
-  entryTypeId        Int?
+  id                 String         @id @default(uuid())
+  userId             String?
+  subCampaignId      String?
+  entryTypeId        String?
   globalContribution Boolean        @default(false)
   data               Json
   user               User?          @relation(fields: [userId], references: [id])
-  geoLocation        GeoLocation?   @relation(fields: [geolocationId], references: [id])
-  campaign           Campaign?      @relation(fields: [campaignId], references: [id])
-  entryType          DataEntryType? @relation(fields: [entryTypeId], references: [id])
+  subCampaign        SubCampaign?   @relation(fields: [subCampaignId], references: [id])
+  coordinate         Coordinate     @relation(fields: [coordinateId], references: [id]) // One-to-One relation with Coordinate
+  coordinateId       String @unique
 }
 
 model Log {
-  id          Int       @id @default(autoincrement())
-  timestamp   DateTime  @default(now())
-  userId      Int?
-  campaignId  Int?
+  id          String     @id @default(uuid())
+  timestamp   DateTime   @default(now())
+  userId      String?
   eventType   String
   description String?
   ipAddress   String?
   metadata    Json
-  user        User?     @relation(fields: [userId], references: [id])
-  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+  user        User?      @relation(fields: [userId], references: [id])
 }
