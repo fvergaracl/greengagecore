@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import DashboardLayout from "../../components/DashboardLayout"
 import dynamic from "next/dynamic"
 import { useDashboard } from "../../context/DashboardContext"
-
+import DataSubCampaignFetcher from "../../components/DataSubCampaignFetcher"
 const DynamicMap = dynamic(() => import("../../components/Map"), { ssr: false })
 
 export default function Dashboard() {
@@ -54,6 +54,7 @@ export default function Dashboard() {
           />
         )}
       </div>
+      <DataSubCampaignFetcher />
     </DashboardLayout>
   )
 }

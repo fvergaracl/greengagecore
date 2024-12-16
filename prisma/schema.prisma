@@ -36,6 +36,7 @@ model SubCampaign {
   campaign    Campaign       @relation(fields: [campaignId], references: [id])
   tasks       Task[]         // Relation with Tasks
   dataEntries DataEntry[]    // Relation with DataEntry
+  polygon     Json    
 }
 
 model Task {
