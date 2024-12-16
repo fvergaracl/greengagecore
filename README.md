@@ -139,3 +139,11 @@ The project uses **Tailwind CSS** for fast and consistent UI development. You ca
 ## Storage
 
 File uploads are handled using MinIO. Ensure MinIO is running and properly configured via the environment variables.
+
+# First Step: DB migration
+
+Into docker container run the following command:
+
+```bash
+npm run migration:deploy
+```

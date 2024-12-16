@@ -1,19 +1,20 @@
-# Use the official Node.js 18 image.
+# Use the official Node.js 18 image with Alpine
 FROM node:18-alpine AS base
 
-# Set working directory
+# Install necessary dependencies
+RUN apk add --no-cache openssl musl-dev libc6-compat
+
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the container
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-RUN npm install -g concurrently
-
-# Copy the rest of the app's source code to the container
 COPY . .
+
+# Generate Prisma Client with the correct binary target
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # ----------------------------------
 # Development target
