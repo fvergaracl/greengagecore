@@ -25,6 +25,7 @@ interface DashboardContextType {
   toggleTracking: () => void
   mapCenter: Position | null
   setMapCenter: (center: Position) => void
+  campaignSelected: string | null
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -44,6 +45,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [position, setPosition] = useState<Position | null>(null)
   const [mapCenter, setMapCenter] = useState<Position | null>(null)
   const [isTracking, setIsTracking] = useState(true)
+  const [campaignSelected, setCampaignSelected] = useState<string | null>(null)
 
   const toggleTracking = () => {
     setIsTracking(prev => !prev)
@@ -84,7 +86,9 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         isTracking,
         toggleTracking,
         mapCenter,
-        setMapCenter
+        setMapCenter,
+        campaignSelected,
+        setCampaignSelected
       }}
     >
       {children}
