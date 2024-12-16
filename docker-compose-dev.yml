@@ -1,7 +1,7 @@
 version: "3.7"
 
 services:
-  app:
+  appgc:
     build:
       context: .
       dockerfile: Dockerfile
@@ -16,16 +16,16 @@ services:
     environment:
       - NODE_ENV=development
     depends_on:
-      - postgres
+      - postgresgc
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  postgres:
+  postgresgc:
     image: postgres:15.3
-    container_name: postgres
+    container_name: postgresgc
     ports:
       - "5432:5432"
     volumes:
@@ -38,8 +38,8 @@ services:
       timeout: 10s
       retries: 5
 
-  minio:
-    container_name: minio
+  miniogc:
+    container_name: miniogc
     image: minio/minio:RELEASE.2024-04-28T17-53-50Z
     volumes:
       - minio_data:/data
