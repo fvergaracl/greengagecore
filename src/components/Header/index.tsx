@@ -7,7 +7,6 @@ const Header = (props: {
   return (
     <header className='sticky top-0 z-50 flex w-full bg-white drop-shadow-md dark:bg-boxdark'>
       <div className='flex items-center justify-between px-4 py-4 w-full md:px-6 2xl:px-11'>
-        {/* Botón del menú hamburguesa */}
         <div className='flex items-center gap-2 sm:gap-4 lg:hidden'>
           <button
             aria-controls='sidebar'
@@ -39,9 +38,7 @@ const Header = (props: {
           </button>
         </div>
 
-        {/* Contenedor de elementos a la derecha */}
         <div className='ml-auto flex items-center gap-4'>
-          {/* Otros elementos */}
           <DropdownUser />
         </div>
       </div>
