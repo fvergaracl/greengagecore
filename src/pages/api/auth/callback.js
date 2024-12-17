@@ -1,5 +1,6 @@
 import axios from "axios"
 import cookie from "cookie"
+import prisma from "@/prismaClient"
 
 export default async function handler(req, res) {
   const {
@@ -9,6 +10,7 @@ export default async function handler(req, res) {
     KEYCLOAK_CLIENT_ID,
     NEXTAUTH_URL
   } = process.env
+
   console.log("Query parameters received:", req.query)
   const { code } = req.query
 
@@ -16,18 +18,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Authorization code missing" })
   }
 
-  // Recuperar el code_verifier de las cookies
   const cookies = cookie.parse(req.headers.cookie || "")
   const codeVerifier = cookies.code_verifier
-  res.setHeader(
-    "Set-Cookie",
-    `code_verifier=${codeVerifier}; HttpOnly; Path=/; Secure=${
-      process.env.NODE_ENV === "production"
-    }`
-  )
 
   try {
-    // Intercambiar el código por tokens
     const tokenResponse = await axios.post(
       `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`,
       new URLSearchParams({
@@ -43,28 +37,52 @@ export default async function handler(req, res) {
 
     const { access_token, refresh_token } = tokenResponse.data
 
-    // Configurar cookies para los tokens
-    res.setHeader(
-      "Set-Cookie",
-      [
-        cookie.serialize("access_token", access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          maxAge: 3600,
-          path: "/"
-        }),
-        cookie.serialize("refresh_token", refresh_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          maxAge: 3600 * 24 * 7,
-          path: "/"
-        })
-      ].join("; ")
+    const userInfoResponse = await axios.get(
+      `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
+      { headers: { Authorization: `Bearer ${access_token}` } }
     )
+
+    const userInfo = userInfoResponse.data // e.g., { sub, email, name, etc. }
+    const userSub = userInfo.sub
+
+    let user = await prisma.user.findUnique({
+      where: { sub: userSub }
+    })
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          sub: userSub
+        }
+      })
+      console.log("New user created:", user)
+    } else {
+      console.log("User already exists:", user)
+    }
+
+    // Set cookies for the tokens
+    res.setHeader("Set-Cookie", [
+      cookie.serialize("access_token", access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3600, // 1 hour
+        path: "/"
+      }),
+      cookie.serialize("refresh_token", refresh_token || "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 3600, // 7 days
+        path: "/"
+      })
+    ])
 
     res.redirect("/dashboard")
   } catch (error) {
-    console.error("Error exchanging code for token:", error.message)
-    res.status(500).json({ error: "Failed to exchange code for token" })
+    console.error("Error during callback process:", error.message)
+    res
+      .status(500)
+      .json({ error: "Failed to complete the authentication flow" })
   }
 }

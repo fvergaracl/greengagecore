@@ -5,6 +5,7 @@ import {
   ReactNode,
   useEffect
 } from "react"
+import { getPersistedState, persistState } from "../utils/persistentState"
 
 interface Position {
   lat: number
@@ -25,7 +26,9 @@ interface DashboardContextType {
   toggleTracking: () => void
   mapCenter: Position | null
   setMapCenter: (center: Position) => void
-  campaignSelected: string | null
+  selectedCampaign: string | null
+  setSelectedCampaign: (campaign: string | null) => void
+  loading: boolean 
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -44,12 +47,12 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [position, setPosition] = useState<Position | null>(null)
   const [mapCenter, setMapCenter] = useState<Position | null>(null)
-  const [isTracking, setIsTracking] = useState(true)
-  const [campaignSelected, setCampaignSelected] = useState<string | null>(null)
+  const [isTracking, setIsTracking] = useState<boolean>(true)
+  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true) 
 
-  const toggleTracking = () => {
-    setIsTracking(prev => !prev)
-  }
+  const toggleTracking = () => setIsTracking(prev => !prev)
+
 
   const updatePosition = () => {
     if (!isTracking) return
@@ -62,7 +65,6 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         }
         setPosition(newPosition)
         if (!mapCenter) setMapCenter(newPosition)
-        console.log("Ubicación actualizada:", newPosition)
       },
       error => {
         console.error("Error fetching location:", error)
@@ -70,11 +72,86 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
     )
   }
 
+  // Initialize persisted state client-side only
+  useEffect(() => {
+    const initializeState = () => {
+      const persistedUser = getPersistedState<User | null>(
+        "dashboard_user",
+        null
+      )
+      const persistedPosition = getPersistedState<Position | null>(
+        "dashboard_position",
+        null
+      )
+      const persistedMapCenter = getPersistedState<Position | null>(
+        "dashboard_mapCenter",
+        null
+      )
+      const persistedIsTracking = getPersistedState<boolean>(
+        "dashboard_isTracking",
+        true
+      )
+      const persistedCampaign = getPersistedState<string | null>(
+        "dashboard_selectedCampaign",
+        null
+      )
+
+      setUser(persistedUser)
+      setPosition(persistedPosition)
+      setMapCenter(persistedMapCenter)
+      setIsTracking(persistedIsTracking)
+      setSelectedCampaign(persistedCampaign)
+
+      setLoading(false) // Finish loading
+    }
+
+    if (typeof window !== "undefined") {
+      initializeState()
+    }
+  }, [])
+
+  // Persist state changes
+  useEffect(() => {
+    if (!loading) persistState("dashboard_user", user)
+  }, [user, loading])
+
+  useEffect(() => {
+    if (!loading) persistState("dashboard_position", position)
+  }, [position, loading])
+
+  useEffect(() => {
+    if (!loading) persistState("dashboard_mapCenter", mapCenter)
+  }, [mapCenter, loading])
+
+  useEffect(() => {
+    if (!loading) persistState("dashboard_isTracking", isTracking)
+  }, [isTracking, loading])
+
+  useEffect(() => {
+    if (!loading) persistState("dashboard_selectedCampaign", selectedCampaign)
+  }, [selectedCampaign, loading])
+
   useEffect(() => {
     const interval = setInterval(updatePosition, 1000)
-    updatePosition() // Obtener la posición inicial
+    updatePosition()
     return () => clearInterval(interval)
   }, [isTracking])
+
+  const logout = () => {
+    document.cookie = "access_token=; Max-Age=0; path=/"
+
+    localStorage.clear()
+    setUser(null)
+    window.location.href = "/api/auth/logout"
+  }
+
+  if (loading) {
+    return (
+      <div className='h-screen flex items-center justify-center'>
+        <p className='text-gray-500'>Loading...</p>
+      </div>
+    )
+  }
 
   return (
     <DashboardContext.Provider
@@ -87,8 +164,10 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
         toggleTracking,
         mapCenter,
         setMapCenter,
-        campaignSelected,
-        setCampaignSelected
+        selectedCampaign,
+        setSelectedCampaign,
+        loading,
+        logout
       }}
     >
       {children}

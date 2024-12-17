@@ -3,23 +3,16 @@ import DashboardLayout from "../../components/DashboardLayout"
 import dynamic from "next/dynamic"
 import { useDashboard } from "../../context/DashboardContext"
 import DataSubCampaignFetcher from "../../components/DataSubCampaignFetcher"
+import CampaignsScreen from "../../screens/CampaignsScreen"
 const DynamicMap = dynamic(() => import("../../components/Map"), { ssr: false })
 
 export default function Dashboard() {
-  const { position, campaignSelected } = useDashboard()
+  const { position, selectedCampaign } = useDashboard()
   const [puntos, setPuntos] = useState([])
   const [poligonos, setPoligonos] = useState([])
   const [isModalVisible, setIsModalVisible] = useState(false)
 
-  if (!campaignSelected) {
-    return (
-      <DashboardLayout>
-        <div className='h-screen flex items-center justify-center'>
-          <h1 className='text-2xl'>Selecciona una campaña para continuar</h1>
-        </div>
-      </DashboardLayout>
-    )
-  }
+
 
   useEffect(() => {
     const socket = new WebSocket("ws://localhost:8080")
@@ -44,6 +37,16 @@ export default function Dashboard() {
       socket.close()
     }
   }, [])
+
+  
+
+  if (!selectedCampaign) {
+    return (
+      <DashboardLayout>
+        <CampaignsScreen />
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>

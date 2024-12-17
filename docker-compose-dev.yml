@@ -22,6 +22,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - greencrowd
 
   postgresgc:
     image: postgres:15.3
@@ -37,6 +39,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - greencrowd
 
   miniogc:
     container_name: miniogc
@@ -55,7 +59,14 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
-
+    networks:
+      - greencrowd
+  
 volumes:
   minio_data:
   postgres_data:
+
+networks:
+  greencrowd:
+    external:
+      name: greencrowd

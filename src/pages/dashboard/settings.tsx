@@ -1,31 +1,43 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import DashboardLayout from "../../components/DashboardLayout"
 import { useDashboard } from "../../context/DashboardContext"
 import { useRouter } from "next/router"
 import axios from "axios"
 import Swal from "sweetalert2"
 
-interface SettingsProps {
-  user: {
-    name?: string
-    email?: string
-    picture?: string
-    pictureKeycloak?: string
-  }
-}
-
-export default function Settings({ user }: SettingsProps) {
-  const { setUser } = useDashboard()
+export default function Settings() {
+  const { setUser, logout, user } = useDashboard()
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const router = useRouter()
-  const [photoUrl, setPhotoUrl] = useState(
-    user?.pictureKeycloak[0] || user?.picture[0] || null
-  )
 
-  const handleLogout = () => {
-    document.cookie = "access_token=; Max-Age=0; path=/" // Elimina la cookie
-    setUser(null) // Limpia el contexto
-    router.push("/") // Redirige al inicio
-  }
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get("/api/auth/user")
+        const userData = response.data
+
+        setUser({
+          name: userData.name,
+          email: userData.email,
+          picture: userData.picture,
+          pictureKeycloak: userData.pictureKeycloak
+        })
+
+        setPhotoUrl(userData.pictureKeycloak || userData.picture || null)
+      } catch (error) {
+        console.error("Error fetching user data:", error)
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to load user information."
+        })
+        logout()
+        router.push("/login")
+      }
+    }
+
+    fetchUser()
+  }, [])
 
   const handleUpload = async (file: File) => {
     const formData = new FormData()
@@ -50,23 +62,15 @@ export default function Settings({ user }: SettingsProps) {
 
         Swal.fire({
           icon: "success",
-          title: "¡Éxito!",
-          text: "Foto actualizada correctamente",
-          timer: 5000,
-          timerProgressBar: true
-        })
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Oops...",
-          text: response?.data?.error || "Error al actualizar la foto"
+          title: "Success!",
+          text: "Photo updated successfully"
         })
       }
     } catch (error: any) {
       Swal.fire({
         icon: "error",
         title: "Oops...",
-        text: error?.response?.data?.error || "Algo salió mal"
+        text: "Failed to upload the photo"
       })
     }
   }
@@ -78,9 +82,8 @@ export default function Settings({ user }: SettingsProps) {
     }
   }
 
-  const avatar = photoUrl
   const getInitials = (name?: string) => {
-    if (!name) return "NN" // Si el nombre no está definido, devuelve "NN" (No Name)
+    if (!name) return "NN"
     return name
       .split(" ")
       .map(word => word[0])
@@ -90,15 +93,14 @@ export default function Settings({ user }: SettingsProps) {
   return (
     <DashboardLayout>
       <div className='p-6 max-w-4xl mx-auto'>
-        <h1 className='text-3xl font-bold text-gray-800 mb-6'>Ajustes</h1>
+        <h1 className='text-3xl font-bold text-gray-800 mb-6'>Settings</h1>
 
-        {/* Información del usuario */}
         <div className='bg-white shadow-md rounded-lg p-6 mb-6 flex items-center'>
-          <div className='w-20 h-20 flex-shrink-0 rounded-full bg-gray-200 overflow-hidden'>
-            {avatar ? (
+          <div className='w-20 h-20 rounded-full bg-gray-200 overflow-hidden'>
+            {photoUrl ? (
               <img
-                src={avatar}
-                alt='Foto de perfil'
+                src={photoUrl}
+                alt='Profile Picture'
                 className='w-full h-full object-cover'
               />
             ) : (
@@ -108,36 +110,35 @@ export default function Settings({ user }: SettingsProps) {
             )}
           </div>
           <div className='ml-6'>
-            <p className='text-gray-600'>Nombre:</p>
+            <p className='text-gray-600'>Name:</p>
             <p className='font-medium text-gray-800'>
-              {user?.name || "Sin nombre"}
+              {user?.name || "No Name"}
             </p>
             <p className='text-gray-600 mt-2'>Email:</p>
             <p className='font-medium text-gray-800'>
-              {user?.email || "Sin email"}
+              {user?.email || "No Email"}
             </p>
           </div>
         </div>
 
-        {/* Subir foto */}
         <div className='bg-white shadow-md rounded-lg p-6 mb-6'>
           <h2 className='text-xl font-semibold text-gray-700 mb-4'>
-            Editar Foto
+            Edit Profile Photo
           </h2>
           <div className='flex flex-col items-center'>
-            {avatar ? (
+            {photoUrl ? (
               <img
-                src={avatar}
-                alt='Foto de perfil'
+                src={photoUrl}
+                alt='Profile'
                 className='w-24 h-24 rounded-full object-cover mb-4'
               />
             ) : (
               <div className='w-24 h-24 rounded-full bg-gray-200 mb-4 flex items-center justify-center'>
-                <span className='text-gray-500'>Sin Foto</span>
+                <span className='text-gray-500'>No Photo</span>
               </div>
             )}
             <label className='cursor-pointer bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600'>
-              Subir Foto
+              Upload Photo
               <input
                 type='file'
                 accept='image/*'
@@ -148,29 +149,15 @@ export default function Settings({ user }: SettingsProps) {
           </div>
         </div>
 
-        {/* Cambiar idioma */}
-        <div className='bg-white shadow-md rounded-lg p-6 mb-6'>
-          <h2 className='text-xl font-semibold text-gray-700 mb-4'>Idioma</h2>
-          <div>
-            <select
-              className='w-full p-2 border rounded-lg text-gray-700 bg-gray-50'
-              onChange={e =>
-                console.log(`Idioma cambiado a: ${e.target.value}`)
-              }
-            >
-              <option value='es'>Español</option>
-              <option value='en'>Inglés</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Botón para salir */}
         <div className='text-right'>
           <button
-            onClick={handleLogout}
+            onClick={() => {
+              logout()
+              router.push("/login")
+            }}
             className='py-2 px-4 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600'
           >
-            Salir
+            Logout
           </button>
         </div>
       </div>

@@ -9,15 +9,18 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "No autenticado" })
   }
 
-  const { KEYCLOAK_BASE_URL, KEYCLOAK_REALM } = process.env
-
   try {
     const userInfo = await axios.get(
-      `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
+      `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
-    res.json(userInfo.data)
+
+    res.status(200).json(userInfo.data)
   } catch (error) {
+    console.error(
+      "Error validando token:",
+      error.response?.data || error.message
+    )
     res.status(401).json({ error: "Token inválido o expirado" })
   }
 }

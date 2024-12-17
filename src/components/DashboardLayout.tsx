@@ -11,16 +11,10 @@ import { useDashboard } from "../context/DashboardContext"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const { setUser, isTracking, toggleTracking } = useDashboard()
+  const { isTracking, toggleTracking } = useDashboard()
 
   const handleNavigation = (path: string) => {
     router.push(path)
-  }
-
-  const handleLogout = () => {
-    document.cookie = "access_token=; Max-Age=0; path=/" // Elimina la cookie
-    setUser(null) // Limpia el contexto
-    router.push("/") // Redirige al inicio
   }
 
   return (
@@ -34,7 +28,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <MdHome className='h-6 w-6' />
           <span className='text-xs'>Inicio</span>
         </button>
-
+        <button
+          className='flex flex-col items-center'
+          onClick={() => handleNavigation("/dashboard/campaigns")}
+        >
+          <MdEmojiEvents className='h-6 w-6' />
+          <span className='text-xs'>Camapaña</span>
+        </button>
         <button
           className='flex flex-col items-center'
           onClick={() => handleNavigation("/dashboard/leaderboard")}
