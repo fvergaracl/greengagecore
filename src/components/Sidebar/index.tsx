@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import SidebarLinkGroup from "./SidebarLinkGroup"
+import { useRouter } from "next/router"
+
 // import Logo from "../../images/logo/logo.svg"
 
 interface SidebarProps {
@@ -9,6 +11,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
+  const router = useRouter()
   const trigger = useRef<any>(null)
   const sidebar = useRef<any>(null)
 
@@ -106,12 +109,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
 
               {/* Profile */}
               <li>
-                <Link
-                  href='/profile'
+                <p
+                  onClick={() => router.push("/admin/settings")}
                   className='group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4'
                 >
                   Profile
-                </Link>
+                </p>
               </li>
             </ul>
           </div>
