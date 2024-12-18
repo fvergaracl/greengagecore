@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useDashboard } from "../../context/DashboardContext"
 import axios from "axios"
 import Swal from "sweetalert2"
@@ -9,8 +8,6 @@ const DropdownUser = () => {
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-
-  const router = useRouter()
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -34,7 +31,6 @@ const DropdownUser = () => {
           text: "Failed to load user information."
         })
         logout()
-        router.push("/login")
       }
     }
 

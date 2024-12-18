@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     )
 
-    const { access_token, refresh_token } = tokenResponse.data
+    const { access_token, refresh_token, id_token } = tokenResponse.data
 
     const userInfoResponse = await axios.get(
       `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
@@ -74,6 +74,13 @@ export default async function handler(req, res) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 7 * 24 * 3600, // 7 days
+        path: "/"
+      }),
+      cookie.serialize("id_token", id_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3600, // 1 hour
         path: "/"
       })
     ])

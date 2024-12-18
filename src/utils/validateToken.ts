@@ -18,8 +18,13 @@ export async function validateKeycloakToken(req: any) {
         headers: { Authorization: `Bearer ${token}` }
       }
     )
-
+    const decoded_token = token.split(".")[1]
+    const base64 = decoded_token.replace(/-/g, "+").replace(/_/g, "/")
+    const userInfo_decoded = JSON.parse(
+      Buffer.from(base64, "base64").toString("binary")
+    )
     const userInfo = userInfoResponse.data
+
     const userId = userInfo.sub
 
     if (!userId) {

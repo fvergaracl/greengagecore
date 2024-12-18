@@ -193,6 +193,12 @@ export default async function handler(req, res) {
             secure: process.env.NODE_ENV === "production",
             maxAge: 3600 * 24 * 7,
             path: "/"
+          }),
+          cookie.serialize("id_token", tokenData.id_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 3600,
+            path: "/"
           })
         ].join("; ")
       )

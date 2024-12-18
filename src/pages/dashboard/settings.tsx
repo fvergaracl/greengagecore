@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from "react"
 import DashboardLayout from "../../components/DashboardLayout"
 import { useDashboard } from "../../context/DashboardContext"
-import { useRouter } from "next/router"
 import axios from "axios"
 import Swal from "sweetalert2"
 
 export default function Settings() {
   const { setUser, logout, user } = useDashboard()
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
-  const router = useRouter()
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -32,7 +30,6 @@ export default function Settings() {
           text: "Failed to load user information."
         })
         logout()
-        router.push("/login")
       }
     }
 
@@ -153,7 +150,6 @@ export default function Settings() {
           <button
             onClick={() => {
               logout()
-              router.push("/login")
             }}
             className='py-2 px-4 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600'
           >

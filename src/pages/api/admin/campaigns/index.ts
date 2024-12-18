@@ -8,16 +8,15 @@ export default async function handler(
   try {
     switch (req.method) {
       case "GET": {
-        // Llama al método que lista todas las campañas
+
         const campaigns = await CampaignController.getAllCampaigns()
         return res.status(200).json(campaigns)
       }
 
-      case "POST": {
-        // Crea una nueva campaña
-        const newCampaign = await CampaignController.createCampaign(req.body)
-        return res.status(201).json(newCampaign)
-      }
+      // case "POST": {
+      //   const newCampaign = await CampaignController.createCampaign(req.body)
+      //   return res.status(201).json(newCampaign)
+      // }
 
       default: {
         res.setHeader("Allow", ["GET", "POST"])

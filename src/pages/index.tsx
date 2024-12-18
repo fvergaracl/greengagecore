@@ -1,7 +1,17 @@
 import { useRouter } from "next/router"
-
-export default function Home() {
+import { useEffect, useState } from "react"
+import cookie from "cookie"
+import clearAllCookies from "../utils/clearAllCookies"
+export default function Home({ flashMessage }) {
   const router = useRouter()
+  const [message, setMessage] = useState(flashMessage)
+
+  useEffect(() => {
+    if (flashMessage) {
+      const timer = setTimeout(() => setMessage(null), 5000) // 5 segundos
+      return () => clearTimeout(timer)
+    }
+  }, [flashMessage])
 
   const handleLogin = () => {
     router.push("/api/auth/login")
@@ -20,6 +30,9 @@ export default function Home() {
         <h1 className='text-2xl font-bold text-white mb-4 text-center'>
           Bienvenido a GREENGAGE
         </h1>
+        {message && (
+          <p className='mb-4 text-center text-yellow-400'>{message}</p>
+        )}
         <p className='text-center text-gray-300 mb-6'>
           Una experiencia única para gestionar tu participación.
         </p>
@@ -34,17 +47,19 @@ export default function Home() {
   )
 }
 
-// Verificar autenticación en el servidor
 export async function getServerSideProps({ req, res }) {
-  const cookies = req.headers.cookie || ""
-  const isAuthenticated = cookies.includes("access_token")
+  const cookies = cookie.parse(req.headers.cookie || "")
+  const flashMessage = cookies.flash_message || null
 
-  if (isAuthenticated) {
-    // Redirigir al dashboard si está autenticado
-    res.writeHead(302, { Location: "/dashboard" })
-    res.end()
-    return { props: {} }
+  if (!flashMessage) {
+    const isAuthenticated = cookies.access_token
+
+    if (isAuthenticated) {
+      res.writeHead(302, { Location: "/dashboard" })
+      res.end()
+      return { props: {} }
+    }
   }
 
-  return { props: {} }
+  return { props: { flashMessage } }
 }
