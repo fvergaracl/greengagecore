@@ -14,6 +14,8 @@ model User {
   dataEntries          DataEntry[]
   logs                 Log[]
   accessibleCampaigns  UserCampaignAccess[]  @relation("UserCampaignAccess")
+  created_at           DateTime              @default(now())
+  updated_at           DateTime              @updatedAt
 }
 
 model Campaign {
@@ -21,11 +23,14 @@ model Campaign {
   name             String
   description      String?
   isOpen           Boolean               @default(true)
+  disabled         Boolean               @default(false)
   deadline         DateTime?
   type             String
   gameId           String?
   subCampaigns     SubCampaign[]
   allowedUsers     UserCampaignAccess[]  @relation("UserCampaignAccess")
+  created_at       DateTime              @default(now())
+  updated_at       DateTime              @updatedAt
 }
 
 model SubCampaign {
@@ -33,10 +38,13 @@ model SubCampaign {
   name        String
   description String?
   campaignId  String
+  disabled    Boolean        @default(false)
   campaign    Campaign       @relation(fields: [campaignId], references: [id])
   tasks       Task[]         // Relation with Tasks
   dataEntries DataEntry[]    // Relation with DataEntry
   polygon     Json    
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
 }
 
 model Task {
@@ -45,9 +53,12 @@ model Task {
   description   String?
   type          String         // "survey", "photo", "instruction"
   taskData      Json           // Stores questions, options, etc.
+  disabled      Boolean        @default(false)
   subCampaignId String
   subCampaign   SubCampaign    @relation(fields: [subCampaignId], references: [id])
   geoLocation   GeoLocation?   // Relation with GeoLocation, defined in GeoLocation
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
 }
 
 model GeoLocation {
@@ -57,6 +68,8 @@ model GeoLocation {
   task        Task?         @relation(fields: [taskId], references: [id]) // Relation defined here
   taskId      String? @unique  // One-to-One relation with Task
   coordinates Coordinate[]  // One-to-Many relation with Coordinate
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
 }
 
 model Coordinate {
@@ -66,6 +79,8 @@ model Coordinate {
   geoLocation GeoLocation   @relation(fields: [geoLocationId], references: [id]) // One-to-Many relation with GeoLocation
   geoLocationId String
   dataEntry   DataEntry?    // One-to-One relation with DataEntry, defined in DataEntry
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
 }
 
 model UserCampaignAccess {
@@ -76,6 +91,8 @@ model UserCampaignAccess {
   accessType String?     // "admin", "editor", "viewer", "contributor"
   user       User        @relation("UserCampaignAccess", fields: [userId], references: [id])
   campaign   Campaign    @relation("UserCampaignAccess", fields: [campaignId], references: [id])
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
 
   @@unique([userId, campaignId])
 }
@@ -91,6 +108,8 @@ model DataEntry {
   subCampaign        SubCampaign?   @relation(fields: [subCampaignId], references: [id])
   coordinate         Coordinate     @relation(fields: [coordinateId], references: [id]) // One-to-One relation with Coordinate
   coordinateId       String @unique
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
 }
 
 model Log {
@@ -102,4 +121,6 @@ model Log {
   ipAddress   String?
   metadata    Json
   user        User?      @relation(fields: [userId], references: [id])
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
 }

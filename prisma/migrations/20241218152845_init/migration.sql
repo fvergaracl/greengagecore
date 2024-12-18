@@ -2,6 +2,8 @@
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "sub" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -12,9 +14,12 @@ CREATE TABLE "Campaign" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "isOpen" BOOLEAN NOT NULL DEFAULT true,
+    "disabled" BOOLEAN NOT NULL DEFAULT false,
     "deadline" TIMESTAMP(3),
     "type" TEXT NOT NULL,
     "gameId" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Campaign_pkey" PRIMARY KEY ("id")
 );
@@ -25,6 +30,10 @@ CREATE TABLE "SubCampaign" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "campaignId" TEXT NOT NULL,
+    "disabled" BOOLEAN NOT NULL DEFAULT false,
+    "polygon" JSONB NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "SubCampaign_pkey" PRIMARY KEY ("id")
 );
@@ -36,7 +45,10 @@ CREATE TABLE "Task" (
     "description" TEXT,
     "type" TEXT NOT NULL,
     "taskData" JSONB NOT NULL,
+    "disabled" BOOLEAN NOT NULL DEFAULT false,
     "subCampaignId" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
 );
@@ -47,6 +59,8 @@ CREATE TABLE "GeoLocation" (
     "name" TEXT,
     "type" TEXT NOT NULL,
     "taskId" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "GeoLocation_pkey" PRIMARY KEY ("id")
 );
@@ -57,6 +71,8 @@ CREATE TABLE "Coordinate" (
     "latitude" DOUBLE PRECISION NOT NULL,
     "longitude" DOUBLE PRECISION NOT NULL,
     "geoLocationId" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Coordinate_pkey" PRIMARY KEY ("id")
 );
@@ -68,6 +84,8 @@ CREATE TABLE "UserCampaignAccess" (
     "campaignId" TEXT NOT NULL,
     "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "accessType" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "UserCampaignAccess_pkey" PRIMARY KEY ("id")
 );
@@ -81,6 +99,8 @@ CREATE TABLE "DataEntry" (
     "globalContribution" BOOLEAN NOT NULL DEFAULT false,
     "data" JSONB NOT NULL,
     "coordinateId" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "DataEntry_pkey" PRIMARY KEY ("id")
 );
@@ -94,6 +114,8 @@ CREATE TABLE "Log" (
     "description" TEXT,
     "ipAddress" TEXT,
     "metadata" JSONB NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Log_pkey" PRIMARY KEY ("id")
 );

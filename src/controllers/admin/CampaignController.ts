@@ -3,9 +3,9 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 export default class CampaignController {
-  // Obtener todas las campañas
   static async getAllCampaigns() {
     return await prisma.campaign.findMany({
+      where: { disabled: false },
       include: {
         subCampaigns: {
           include: {
@@ -21,20 +21,50 @@ export default class CampaignController {
             }
           }
         }
+      },
+      orderBy: {
+        created_at: "desc"
       }
     })
   }
 
-  // Crear una nueva campaña
+  static async getCampaignById(id: string) {
+    return await prisma.campaign.findUnique({
+      where: { id },
+      include: {
+        subCampaigns: {
+          include: {
+            tasks: true
+          }
+        },
+        allowedUsers: true
+      }
+    })
+  }
+
   static async createCampaign(data: any) {
     return await prisma.campaign.create({
       data: {
-        name: data.name,
-        description: data.description,
-        isOpen: data.isOpen,
-        deadline: new Date(data.deadline),
-        type: data.type,
-        gameId: data.gameId
+        name: data?.name,
+        description: data?.description,
+        isOpen: data?.isOpen,
+        deadline: data?.deadline && new Date(data.deadline),
+        type: data?.type,
+        gameId: data?.gameId
+      }
+    })
+  }
+
+  static async updateCampaign(id: string, data: any) {
+    return await prisma.campaign.update({
+      where: { id },
+      data: {
+        name: data?.name,
+        description: data?.description,
+        isOpen: data?.isOpen,
+        deadline: data?.deadline && new Date(data.deadline),
+        type: data?.type,
+        gameId: data?.gameId
       }
     })
   }

@@ -8,18 +8,19 @@ export default async function handler(
   try {
     switch (req.method) {
       case "GET": {
-
         const campaigns = await CampaignController.getAllCampaigns()
         return res.status(200).json(campaigns)
       }
 
-      // case "POST": {
-      //   const newCampaign = await CampaignController.createCampaign(req.body)
-      //   return res.status(201).json(newCampaign)
-      // }
+      case "POST": {
+        const newCampaign = await CampaignController.createCampaign(req.body)
+        return res.status(201).json(newCampaign)
+      }
+
+     
 
       default: {
-        res.setHeader("Allow", ["GET", "POST"])
+        res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"])
         return res
           .status(405)
           .json({ error: `Method ${req.method} Not Allowed` })
