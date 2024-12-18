@@ -24,12 +24,17 @@ export default function Settings() {
         setPhotoUrl(userData.pictureKeycloak || userData.picture || null)
       } catch (error) {
         console.error("Error fetching user data:", error)
+ 
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "Failed to load user information."
+          text: "Failed to load user information. You will be redirected to the login page.",
+          timer: 10000,
+          showConfirmButton: true,
+          confirmButtonText: "Ok"
+        }).then(() => {
+          logout()
         })
-        logout()
       }
     }
 

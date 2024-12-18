@@ -1,7 +1,6 @@
 import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
 import cookie from "cookie"
-import clearAllCookies from "../utils/clearAllCookies"
 export default function Home({ flashMessage }) {
   const router = useRouter()
   const [message, setMessage] = useState(flashMessage)

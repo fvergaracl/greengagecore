@@ -22,7 +22,7 @@ const validateToken = async token => {
   }
 
   const data = await response.json()
-  return data.active // Returns true if the token is active
+  return data.active 
 }
 
 export default async function handler(req, res) {

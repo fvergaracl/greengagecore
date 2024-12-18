@@ -23,6 +23,8 @@ const refreshAccessToken = async refreshToken => {
   }
 }
 
+
+
 export default async function handler(req, res) {
   const cookies = cookie.parse(req.headers.cookie || "")
   const token = req.headers.authorization?.split(" ")[1] || cookies.access_token
@@ -30,6 +32,7 @@ export default async function handler(req, res) {
   if (!token) {
     return res.status(401).json({ error: "No autenticado" })
   }
+
 
   try {
     const userInfo = await axios.get(
@@ -72,6 +75,7 @@ export default async function handler(req, res) {
       "Error validando token:",
       error.response?.data || error.message
     )
+
     res.status(401).json({ error: "Token inválido o expirado" })
   }
 }

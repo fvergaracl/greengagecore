@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       client_id: KEYCLOAK_CLIENT_ID,
       redirect_uri: `${NEXTAUTH_URL}/api/auth/callback`,
       response_type: "code",
-      scope: "openid profile email offline_access",
+      scope: "openid profile email offline_access greenCrowdScope",
       code_challenge: codeChallenge,
       code_challenge_method: "S256",
       prompt: "login"

@@ -1,21 +1,45 @@
 import { useRouter } from "next/router"
-import { ReactNode } from "react"
+import { ReactNode, useEffect, useState } from "react"
 import {
   MdHome,
   MdSettings,
   MdEmojiEvents,
-  MdLogout,
+  MdAdminPanelSettings,
   MdLocationOn
 } from "react-icons/md"
+
 import { useDashboard } from "../context/DashboardContext"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { isTracking, toggleTracking } = useDashboard()
-
+  const [isAdministrator, setIsAdministrator] = useState(false)
   const handleNavigation = (path: string) => {
     router.push(path)
   }
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const response = await fetch("/api/auth/token", {
+          method: "GET",
+          credentials: "include"
+        })
+        const data = await response.json()
+
+        const decodedToken = JSON.parse(
+          Buffer.from(data?.access_token?.split(".")[1], "base64")?.toString()
+        )
+        if (decodedToken?.roles?.includes("admin")) {
+          setIsAdministrator(true)
+        }
+      } catch (error) {
+        console.error("Error fetching token:", error)
+      }
+    }
+
+    fetchToken()
+  }, [])
 
   return (
     <div className='h-screen flex flex-col bg-gray-100'>
@@ -33,7 +57,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           onClick={() => handleNavigation("/dashboard/campaigns")}
         >
           <MdEmojiEvents className='h-6 w-6' />
-          <span className='text-xs'>Camapaña</span>
+          <span className='text-xs'>Campañaaaa</span>
         </button>
         <button
           className='flex flex-col items-center'
@@ -59,6 +83,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <MdSettings className='h-6 w-6' />
           <span className='text-xs'>Ajustes</span>
         </button>
+        {isAdministrator && (
+          <button
+            className='flex flex-col items-center'
+            onClick={() => handleNavigation("/admin")}
+          >
+            <MdAdminPanelSettings className='h-6 w-6' />
+            <span className='text-xs'>Admin</span>
+          </button>
+        )}
       </nav>
     </div>
   )
