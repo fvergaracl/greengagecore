@@ -94,6 +94,14 @@ export default function AdminCampaigns() {
     )
   }
 
+  const accessTypeColors: Record<string, string> = {
+    admin: "bg-red-200 text-red-800 dark:bg-red-800 dark:text-white",
+    editor: "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-white",
+    viewer: "bg-green-200 text-green-800 dark:bg-green-800 dark:text-white",
+    contributor:
+      "bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-white"
+  }
+
   const startIndex = (currentPage - 1) * pageSize
   const paginatedCampaigns = filteredCampaigns?.slice(
     startIndex,
@@ -102,6 +110,13 @@ export default function AdminCampaigns() {
 
   const isPastDeadline = (deadline: string | null) => {
     return deadline ? new Date(deadline) < new Date() : false
+  }
+
+  const groupParticipants = (allowedUsers: Campaign["allowedUsers"]) => {
+    return allowedUsers.reduce((acc: Record<string, number>, user) => {
+      acc[user.accessType] = (acc[user.accessType] || 0) + 1
+      return acc
+    }, {})
   }
 
   return (
@@ -128,71 +143,102 @@ export default function AdminCampaigns() {
               <th className='border px-4 py-2'>Status</th>
               <th className='border px-4 py-2'>Deadline</th>
               <th className='border px-4 py-2'>Type</th>
+              <th className='border px-4 py-2'>Subcampaigns</th>
+              <th className='border px-4 py-2'>Tasks</th>
+              <th className='border px-4 py-2'>Users</th>
               <th className='border px-4 py-2'>Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {paginatedCampaigns?.map((campaign, index) => (
-              <tr
-                key={campaign.id}
-                className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                  isPastDeadline(campaign.deadline) && "opacity-50"
-                }`}
-              >
-                <td className='border px-4 py-2'>{startIndex + index + 1}</td>
-                <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
-                  {campaign.name}
-                </td>
-                <td className='border px-4 py-2 text-sm text-gray-600 dark:text-gray-400'>
-                  {campaign.description || "-"}
-                </td>
-                <td className='border px-4 py-2'>
-                  {campaign.isOpen ? (
-                    <span className='inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-700 dark:text-white'>
-                      Open
-                    </span>
-                  ) : (
-                    <span
-                      className='inline-block rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-700 dark:text-white cursor-pointer'
-                      onClick={() => handleInviteOnly(campaign.id)}
-                    >
-                      Invite-only
-                    </span>
-                  )}
-                </td>
-                <td className='border px-4 py-2 text-sm'>
-                  {campaign.deadline
-                    ? new Date(campaign.deadline).toLocaleDateString()
-                    : "No Deadline"}
-                </td>
-                <td className='border px-4 py-2'>{campaign.type}</td>
-                <td className='border px-4 py-2'>
-                  <div className='flex gap-2'>
-                    <button
-                      title='View'
-                      onClick={() => handleView(campaign.id)}
-                      className='rounded bg-blue-100 p-2 text-blue-600 hover:bg-blue-200'
-                    >
-                      <FontAwesomeIcon icon={faEye} />
-                    </button>
-                    <button
-                      title='Edit'
-                      onClick={() => handleEdit(campaign.id)}
-                      className='rounded bg-yellow-100 p-2 text-yellow-600 hover:bg-yellow-200'
-                    >
-                      <FontAwesomeIcon icon={faEdit} />
-                    </button>
-                    <button
-                      title='Delete'
-                      className='rounded bg-red-100 p-2 text-red-600 hover:bg-red-200'
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {paginatedCampaigns?.map((campaign, index) => {
+              const groupedUsers = groupParticipants(campaign.allowedUsers)
+              // Subcampaign and Task counts
+              const subCampaignCount = campaign.subCampaigns.length
+              const totalTaskCount = campaign.subCampaigns.reduce(
+                (total, subCampaign) => total + subCampaign.tasks.length,
+                0
+              )
+              return (
+                <tr
+                  key={campaign.id}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                    isPastDeadline(campaign.deadline) && "opacity-50"
+                  }`}
+                >
+                  <td className='border px-4 py-2'>{startIndex + index + 1}</td>
+                  <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
+                    {campaign.name}
+                  </td>
+                  <td className='border px-4 py-2 text-sm text-gray-600 dark:text-gray-400'>
+                    {campaign.description || "-"}
+                  </td>
+                  <td className='border px-4 py-2'>
+                    {campaign.isOpen ? (
+                      <span className='inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-700 dark:text-white'>
+                        Open
+                      </span>
+                    ) : (
+                      <span
+                        className='inline-block rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-700 dark:text-white cursor-pointer'
+                        onClick={() => handleInviteOnly(campaign.id)}
+                      >
+                        Invite-only
+                      </span>
+                    )}
+                  </td>
+                  <td className='border px-4 py-2 text-sm'>
+                    {campaign.deadline
+                      ? new Date(campaign.deadline).toLocaleDateString()
+                      : "No Deadline"}
+                  </td>
+                  <td className='border px-4 py-2'>{campaign.type}</td>
+                  <td className='border px-4 py-2 text-center'>
+                    {subCampaignCount}
+                  </td>
+                  <td className='border px-4 py-2 text-center'>
+                    {totalTaskCount}
+                  </td>
+                  <td className='border px-4 py-2 text-center'>
+                    {Object.entries(groupedUsers).map(([accessType, count]) => (
+                      <span
+                        key={accessType}
+                        className={`rounded px-2 py-1 text-xs font-semibold ${
+                          accessTypeColors[accessType] ||
+                          "bg-gray-200 text-gray-800"
+                        }`}
+                      >
+                        {accessType}: {count}
+                      </span>
+                    ))}
+                  </td>
+                  <td className='border px-4 py-2'>
+                    <div className='flex gap-2'>
+                      <button
+                        title='View'
+                        onClick={() => handleView(campaign.id)}
+                        className='rounded bg-blue-100 p-2 text-blue-600 hover:bg-blue-200'
+                      >
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                      <button
+                        title='Edit'
+                        onClick={() => handleEdit(campaign.id)}
+                        className='rounded bg-yellow-100 p-2 text-yellow-600 hover:bg-yellow-200'
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </button>
+                      <button
+                        title='Delete'
+                        className='rounded bg-red-100 p-2 text-red-600 hover:bg-red-200'
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
 
