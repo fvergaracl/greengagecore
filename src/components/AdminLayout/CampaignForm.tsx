@@ -137,11 +137,8 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className='max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
+      className='max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
     >
-      <h2 className='text-2xl font-bold mb-4 text-gray-800 dark:text-white'>
-        {campaignId ? "Edit Campaign" : "Create Campaign"}
-      </h2>
       {error && <p className='text-red-500 mb-4'>{error}</p>}
       <div className='mb-4'>
         <label
