@@ -146,11 +146,6 @@ export default function SubCampaignDetails() {
                   {task.title}
                 </li>
               ))}
-              {subCampaign.tasks.length === 0 && (
-                <li className='text-gray-600 dark:text-gray-300'>
-                  No tasks available for this subcampaign.
-                </li>
-              )}
             </ul>
           </div>
         </div>

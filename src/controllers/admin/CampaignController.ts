@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { prisma, withPrismaDisconnect } from "@/utils/withPrismaDisconnect"
 
 export default class CampaignController {
+  @withPrismaDisconnect
   static async getAllCampaigns() {
     return await prisma.campaign.findMany({
       where: { disabled: false },
@@ -28,22 +27,17 @@ export default class CampaignController {
     })
   }
 
+  @withPrismaDisconnect
   static async getCampaignNames() {
-    try {
-      const campaigns = await prisma.campaign.findMany({
-        select: {
-          id: true,
-          name: true
-        }
-      })
-
-      return campaigns
-    } catch (error) {
-      console.error("Error in getCampaignNames:", error)
-      throw new Error("Failed to fetch campaign names")
-    }
+    return await prisma.campaign.findMany({
+      select: {
+        id: true,
+        name: true
+      }
+    })
   }
 
+  @withPrismaDisconnect
   static async getCampaignById(id: string) {
     return await prisma.campaign.findUnique({
       where: { id },
@@ -58,6 +52,7 @@ export default class CampaignController {
     })
   }
 
+  @withPrismaDisconnect
   static async createCampaign(data: any) {
     return await prisma.campaign.create({
       data: {
@@ -71,6 +66,7 @@ export default class CampaignController {
     })
   }
 
+  @withPrismaDisconnect
   static async updateCampaign(id: string, data: any) {
     return await prisma.campaign.update({
       where: { id },

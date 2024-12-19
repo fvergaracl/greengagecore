@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useRouter } from "next/router"
 import axios from "axios"
 import Swal from "sweetalert2"
 
@@ -19,7 +20,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
     type: "",
     gameId: ""
   })
-
+  const router = useRouter()
   const [hasDeadline, setHasDeadline] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -139,6 +140,13 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       onSubmit={handleSubmit}
       className='max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
     >
+      <a
+        onClick={() => router.back()}
+        className='text-blue-600 cursor-pointer mb-4 inline-block'
+      >
+        ← Back
+      </a>
+
       {error && <p className='text-red-500 mb-4'>{error}</p>}
       <div className='mb-4'>
         <label

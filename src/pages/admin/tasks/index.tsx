@@ -49,6 +49,8 @@ export default function AdminSubCampaigns() {
     const fetchCampaigns = async () => {
       try {
         const response = await axios.get("/api/admin/campaigns/names")
+        console.log("----------------response.data")
+        console.log(response.data)
         setCampaigns(response.data)
       } catch (err) {
         console.error("Failed to fetch campaigns:", err)

@@ -15,6 +15,8 @@
     "incremental": true,
     "strictPropertyInitialization": false,
     "strictNullChecks": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "plugins": [
       {
         "name": "next"
@@ -25,6 +27,12 @@
       "*": ["node_modules/*"]
     }
   },
-  "include": [".next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "generate-controllers.js"],
+  "include": [
+    ".next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "generate-controllers.js"
+  ],
   "exclude": ["node_modules"]
 }
