@@ -28,6 +28,22 @@ export default class CampaignController {
     })
   }
 
+  static async getCampaignNames() {
+    try {
+      const campaigns = await prisma.campaign.findMany({
+        select: {
+          id: true,
+          name: true
+        }
+      })
+
+      return campaigns
+    } catch (error) {
+      console.error("Error in getCampaignNames:", error)
+      throw new Error("Failed to fetch campaign names")
+    }
+  }
+
   static async getCampaignById(id: string) {
     return await prisma.campaign.findUnique({
       where: { id },

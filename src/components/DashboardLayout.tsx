@@ -50,14 +50,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           onClick={() => handleNavigation("/dashboard")}
         >
           <MdHome className='h-6 w-6' />
-          <span className='text-xs'>Inicio</span>
+          <span className='text-xs'>Home</span>
         </button>
         <button
           className='flex flex-col items-center'
           onClick={() => handleNavigation("/dashboard/campaigns")}
         >
           <MdEmojiEvents className='h-6 w-6' />
-          <span className='text-xs'>Campañaaaa</span>
+          <span className='text-xs'>Campaign</span>
         </button>
         <button
           className='flex flex-col items-center'
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             }`}
           />
           <span className='text-xs'>
-            {isTracking ? "Detener" : "Activar"} ubicación
+            {isTracking ? "Stop" : "Activate"} location
           </span>
         </button>
         <button
@@ -81,7 +81,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           onClick={() => handleNavigation("/dashboard/settings")}
         >
           <MdSettings className='h-6 w-6' />
-          <span className='text-xs'>Ajustes</span>
+          <span className='text-xs'>Settings</span>
         </button>
         {isAdministrator && (
           <button

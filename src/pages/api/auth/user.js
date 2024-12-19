@@ -23,25 +23,29 @@ const refreshAccessToken = async refreshToken => {
   }
 }
 
-
-
 export default async function handler(req, res) {
   const cookies = cookie.parse(req.headers.cookie || "")
   const token = req.headers.authorization?.split(" ")[1] || cookies.access_token
   const refreshToken = req.headers.refresh_token || cookies.refresh_token
   if (!token) {
+    console.log("> No token")
+    console.log({
+      token: token,
+      cookies: cookies
+    })
     return res.status(401).json({ error: "No autenticado" })
   }
-
 
   try {
     const userInfo = await axios.get(
       `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
-
+    console.log("> User info")
     const tokenData = await refreshAccessToken(refreshToken)
     if (!tokenData) {
+      console.log("> Failed to refresh token")
+      console.log({ tokenData })
       return res.status(401).json({ error: "Failed to refresh token" })
     }
 

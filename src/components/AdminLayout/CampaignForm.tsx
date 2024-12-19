@@ -3,8 +3,8 @@ import axios from "axios"
 import Swal from "sweetalert2"
 
 interface CampaignFormProps {
-  campaignId?: string // If provided, the form will be in edit mode
-  onSuccess?: () => void // Callback after successful create/edit
+  campaignId?: string
+  onSuccess?: () => void
 }
 
 const CampaignForm: React.FC<CampaignFormProps> = ({
@@ -20,7 +20,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
     gameId: ""
   })
 
-  const [hasDeadline, setHasDeadline] = useState(false) // Tracks if the user wants a deadline
+  const [hasDeadline, setHasDeadline] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -38,7 +38,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
             type: response.data.type || "",
             gameId: response.data.gameId || ""
           })
-          setHasDeadline(!!response.data.deadline) // Enable deadline if it's already set
+          setHasDeadline(!!response.data.deadline)
           setLoading(false)
         } catch (err) {
           console.error(err)
