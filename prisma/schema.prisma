@@ -9,108 +9,113 @@ datasource db {
 }
 
 model User {
-  id                   String                @id @default(uuid())
-  sub                  String                @unique
-  dataEntries          DataEntry[]
-  logs                 Log[]
-  trajectories         UserTrajectory[]      // Relation with UserTrajectory
-  accessibleCampaigns  UserCampaignAccess[]  @relation("UserCampaignAccess")
-  created_at           DateTime              @default(now())
-  updated_at           DateTime              @updatedAt
+  id                  String               @id @default(uuid())
+  sub                 String               @unique
+  dataEntries         DataEntry[]
+  logs                Log[]
+  trajectories        UserTrajectory[]
+  accessibleCampaigns UserCampaignAccess[] @relation("UserCampaignAccess")
+  created_at          DateTime             @default(now())
+  updated_at          DateTime             @updatedAt
 }
 
 model Campaign {
-  id               String                @id @default(uuid())
-  name             String
-  description      String?
-  isOpen           Boolean               @default(true)
-  disabled         Boolean               @default(false)
-  deadline         DateTime?
-  type             String
-  gameId           String?
-  subCampaigns     SubCampaign[]
-  allowedUsers     UserCampaignAccess[]  @relation("UserCampaignAccess")
-  created_at       DateTime              @default(now())
-  updated_at       DateTime              @updatedAt
+  id           String               @id @default(uuid())
+  name         String
+  description  String?
+  isOpen       Boolean              @default(true)
+  disabled     Boolean              @default(false)
+  deadline     DateTime?
+  category     String
+  gameId       String?
+  areas        Area[]
+  allowedUsers UserCampaignAccess[] @relation("UserCampaignAccess")
+  created_at   DateTime             @default(now())
+  updated_at   DateTime             @updatedAt
 }
 
-model SubCampaign {
-  id          String        @id @default(uuid())
-  name        String
-  description String?
-  campaignId  String
-  disabled    Boolean        @default(false)
-  campaign    Campaign       @relation(fields: [campaignId], references: [id])
-  tasks       Task[]         // Relation with Tasks
-  dataEntries DataEntry[]    // Relation with DataEntry
-  polygon     Json    
-  created_at  DateTime       @default(now())
-  updated_at  DateTime       @updatedAt
+model Area {
+  id               String            @id @default(uuid())
+  name             String
+  description      String?
+  campaignId       String
+  disabled         Boolean           @default(false)
+  campaign         Campaign          @relation(fields: [campaignId], references: [id])
+  pointOfInterests PointOfInterest[] // Relation with PointOfInterests
+  polygon          Json
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+}
+
+model PointOfInterest {
+  id         String   @id @default(uuid())
+  disabled   Boolean  @default(false)
+  areaId     String
+  area       Area     @relation(fields: [areaId], references: [id])
+  latitude   Float
+  longitude  Float
+  tasks      Task[]
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model Task {
-  id            String        @id @default(uuid())
-  title         String
-  description   String?
-  type          String         // "survey", "photo", "instruction"
-  taskData      Json           // Stores questions, options, etc.
-  disabled      Boolean        @default(false)
-  subCampaignId String
-  subCampaign   SubCampaign    @relation(fields: [subCampaignId], references: [id])
-  latitude      Float?         // Latitude for task location
-  longitude     Float?         // Longitude for task location
-  created_at    DateTime       @default(now())
-  updated_at    DateTime       @updatedAt
+  id                String          @id @default(uuid())
+  title             String
+  description       String?
+  type              String // "survey", "photo", "instruction"
+  taskData          Json // Stores questions, options, etc.
+  disabled          Boolean         @default(false)
+  dataEntries       DataEntry[]
+  pointOfInterestId String
+  pointOfInterest   PointOfInterest @relation(fields: [pointOfInterestId], references: [id])
+  created_at        DateTime        @default(now())
+  updated_at        DateTime        @updatedAt
 }
 
 model UserTrajectory {
-  id          String   @id @default(uuid())
-  userId      String    // Relation with User
-  latitude    Float     // Latitude
-  longitude   Float     // Longitude
-  user        User      @relation(fields: [userId], references: [id])
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
+  id         String   @id @default(uuid())
+  userId     String
+  latitude   Float
+  longitude  Float
+  user       User     @relation(fields: [userId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model UserCampaignAccess {
-  id         String     @id @default(uuid())
+  id         String   @id @default(uuid())
   userId     String
   campaignId String
-  assignedAt DateTime    @default(now())
-  accessType String?     // "admin", "editor", "viewer", "contributor"
-  user       User        @relation("UserCampaignAccess", fields: [userId], references: [id])
-  campaign   Campaign    @relation("UserCampaignAccess", fields: [campaignId], references: [id])
-  created_at DateTime    @default(now())
-  updated_at DateTime    @updatedAt
+  accessType String // "admin", "editor", "viewer", "contributor"
+  user       User     @relation("UserCampaignAccess", fields: [userId], references: [id])
+  campaign   Campaign @relation("UserCampaignAccess", fields: [campaignId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@unique([userId, campaignId])
 }
 
 model DataEntry {
-  id                 String         @id @default(uuid())
-  userId             String?
-  subCampaignId      String?
-  entryTypeId        String?
-  globalContribution Boolean        @default(false)
-  data               Json
-  latitude    Float     // Latitude
-  longitude   Float     // Longitude
-  user               User?          @relation(fields: [userId], references: [id])
-  subCampaign        SubCampaign?   @relation(fields: [subCampaignId], references: [id])
-  created_at         DateTime       @default(now())
-  updated_at         DateTime       @updatedAt
+  id         String   @id @default(uuid())
+  userId     String
+  taskId     String?
+  data       Json
+  latitude   Float
+  longitude  Float
+  user       User?    @relation(fields: [userId], references: [id])
+  task       Task?    @relation(fields: [taskId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 model Log {
-  id          String     @id @default(uuid())
-  timestamp   DateTime   @default(now())
+  id          String   @id @default(uuid())
   userId      String?
   eventType   String
   description String?
-  ipAddress   String?
   metadata    Json
-  user        User?      @relation(fields: [userId], references: [id])
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
+  user        User?    @relation(fields: [userId], references: [id])
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 }

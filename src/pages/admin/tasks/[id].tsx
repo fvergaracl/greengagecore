@@ -19,7 +19,7 @@ const Polygon = dynamic(
   { ssr: false }
 )
 
-interface SubCampaign {
+interface Area {
   id: string
   name: string
   description: string
@@ -31,27 +31,27 @@ interface SubCampaign {
   updated_at: string
 }
 
-export default function SubCampaignDetails() {
+export default function AreaDetails() {
   const router = useRouter()
   const { id } = router.query
-  const [subCampaign, setSubCampaign] = useState<SubCampaign | null>(null)
+  const [area, setArea] = useState<Area | null>(null)
 
   useEffect(() => {
     if (id) {
-      const fetchSubCampaignDetails = async () => {
+      const fetchAreaDetails = async () => {
         try {
-          const response = await axios.get(`/api/admin/subcampaigns/${id}`)
-          setSubCampaign(response.data)
+          const response = await axios.get(`/api/admin/areas/${id}`)
+          setArea(response.data)
         } catch (error) {
           console.error("Error fetching sub-campaign details:", error)
         }
       }
 
-      fetchSubCampaignDetails()
+      fetchAreaDetails()
     }
   }, [id])
 
-  if (!subCampaign) {
+  if (!area) {
     return (
       <DefaultLayout>
         <div className='flex items-center justify-center h-screen'>
@@ -61,15 +61,12 @@ export default function SubCampaignDetails() {
     )
   }
 
-  const polygonCoordinates = subCampaign.polygon || []
+  const polygonCoordinates = area.polygon || []
   const bounds = polygonCoordinates.length > 0 ? polygonCoordinates : [[0, 0]]
 
   return (
     <DefaultLayout>
-      <Breadcrumb
-        pageName='SubCampaign Details'
-        breadcrumbPath='SubCampaigns'
-      />
+      <Breadcrumb pageName='Area Details' breadcrumbPath='Areas' />
       <div className='flex'>
         {/* Left Content */}
         <div className='flex-1 p-6 bg-white rounded-lg shadow-md dark:bg-gray-800'>
@@ -78,37 +75,35 @@ export default function SubCampaignDetails() {
               onClick={() => router.back()}
               className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
             >
-              ← Back to SubCampaigns
+              ← Back to Areas
             </button>
             <button
               onClick={() =>
-                router.push(`/admin/campaigns/${subCampaign.campaign.id}`)
+                router.push(`/admin/campaigns/${area.campaign.id}`)
               }
               className='px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600'
             >
               View Parent Campaign
             </button>
             <button
-              onClick={() =>
-                router.push(`/admin/subcampaigns/${subCampaign.id}/edit`)
-              }
+              onClick={() => router.push(`/admin/areas/${area.id}/edit`)}
               className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600'
             >
-              Edit SubCampaign
+              Edit Area
             </button>
           </div>
           <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
-            {subCampaign.name}
+            {area.name}
           </h1>
           <p className='text-gray-600 dark:text-gray-300 mb-6'>
-            {subCampaign.description || "No description available."}
+            {area.description || "No description available."}
           </p>
           <div className='mb-6'>
             <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
               Parent Campaign
             </h2>
             <p>
-              <strong>Name:</strong> {subCampaign.campaign.name}
+              <strong>Name:</strong> {area.campaign.name}
             </p>
           </div>
           <div className='mb-6'>
@@ -119,21 +114,21 @@ export default function SubCampaignDetails() {
               <strong>Status:</strong>{" "}
               <span
                 className={`px-2 py-1 text-sm font-medium rounded ${
-                  subCampaign.disabled
+                  area.disabled
                     ? "bg-red-100 text-red-700 dark:bg-red-700 dark:text-white"
                     : "bg-green-100 text-green-700 dark:bg-green-700 dark:text-white"
                 }`}
               >
-                {subCampaign.disabled ? "Disabled" : "Active"}
+                {area.disabled ? "Disabled" : "Active"}
               </span>
             </p>
             <p>
               <strong>Created At:</strong>{" "}
-              {new Date(subCampaign.created_at).toLocaleDateString()}
+              {new Date(area.created_at).toLocaleDateString()}
             </p>
             <p>
               <strong>Updated At:</strong>{" "}
-              {new Date(subCampaign.updated_at).toLocaleDateString()}
+              {new Date(area.updated_at).toLocaleDateString()}
             </p>
           </div>
           <div className='mb-6'>
@@ -141,7 +136,7 @@ export default function SubCampaignDetails() {
               Tasks
             </h2>
             <ul className='list-disc pl-5 space-y-2'>
-              {subCampaign.tasks.map(task => (
+              {area.tasks.map(task => (
                 <li key={task.id} className='text-gray-600 dark:text-gray-300'>
                   {task.title}
                 </li>
@@ -170,7 +165,7 @@ export default function SubCampaignDetails() {
             </MapContainer>
           ) : (
             <p className='text-gray-600 dark:text-gray-300'>
-              No polygon defined for this subcampaign.
+              No polygon defined for this area.
             </p>
           )}
         </div>

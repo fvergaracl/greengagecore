@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import DashboardLayout from "../../components/DashboardLayout"
 import dynamic from "next/dynamic"
 import { useDashboard } from "../../context/DashboardContext"
-import DataSubCampaignFetcher from "../../components/DataSubCampaignFetcher"
+import DataAreaFetcher from "../../components/DataAreaFetcher"
 import CampaignsScreen from "../../screens/CampaignsScreen"
 const DynamicMap = dynamic(() => import("../../components/Map"), { ssr: false })
 
@@ -11,8 +11,6 @@ export default function Dashboard() {
   const [puntos, setPuntos] = useState([])
   const [poligonos, setPoligonos] = useState([])
   const [isModalVisible, setIsModalVisible] = useState(false)
-
-
 
   useEffect(() => {
     const socket = new WebSocket("ws://localhost:8080")
@@ -37,8 +35,6 @@ export default function Dashboard() {
       socket.close()
     }
   }, [])
-
-  
 
   if (!selectedCampaign) {
     return (
@@ -67,7 +63,7 @@ export default function Dashboard() {
           />
         )}
       </div>
-      <DataSubCampaignFetcher />
+      <DataAreaFetcher />
     </DashboardLayout>
   )
 }

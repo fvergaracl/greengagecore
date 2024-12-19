@@ -12,7 +12,7 @@ interface Campaign {
   deadline: string | null
   type: string
   gameId: string | null
-  subCampaigns: {
+  areas: {
     id: string
     name: string
     tasks: { id: string; name: string }[]
@@ -141,10 +141,10 @@ export default function CampaignDetails() {
         </div>
         <div className='mt-8'>
           <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-4'>
-            SubCampaigns
+            Areas
           </h2>
           <ul className='space-y-4'>
-            {campaign.subCampaigns.map(sub => (
+            {campaign.areas.map(sub => (
               <li
                 key={sub.id}
                 className='flex justify-between items-center p-4 bg-gray-100 rounded-lg shadow-md dark:bg-gray-700'
@@ -158,10 +158,10 @@ export default function CampaignDetails() {
                   </p>
                 </div>
                 <button
-                  onClick={() => router.push(`/admin/subcampaigns/${sub.id}`)}
+                  onClick={() => router.push(`/admin/areas/${sub.id}`)}
                   className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
                 >
-                  View SubCampaign
+                  View Area
                 </button>
               </li>
             ))}

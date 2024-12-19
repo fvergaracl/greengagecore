@@ -79,11 +79,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       ]
     },
     {
-      title: "SubCampaigns",
+      title: "Areas",
       icon: <MdSubtitles size={20} />,
       submenu: [
-        { title: "All SubCampaigns", route: "/admin/subcampaigns" },
-        { title: "Create New", route: "/admin/subcampaigns/create" }
+        { title: "All Areas", route: "/admin/areas" },
+        { title: "Create New", route: "/admin/areas/create" }
       ]
     },
     {

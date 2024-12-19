@@ -6,7 +6,7 @@ export default class CampaignController {
     return await prisma.campaign.findMany({
       where: { disabled: false },
       include: {
-        subCampaigns: {
+        areas: {
           include: {
             tasks: {
               select: { id: true }
@@ -42,7 +42,7 @@ export default class CampaignController {
     return await prisma.campaign.findUnique({
       where: { id },
       include: {
-        subCampaigns: {
+        areas: {
           include: {
             tasks: true
           }

@@ -18,9 +18,9 @@ server.on("connection", ws => {
         ws.send(JSON.stringify({ type: "dataEntries", payload: dataEntries }))
       }
 
-      if (data.type === "getSubCampaigns") {
-        const subCampaigns = await prisma.subCampaign.findMany()
-        ws.send(JSON.stringify({ type: "subCampaigns", payload: subCampaigns }))
+      if (data.type === "getAreas") {
+        const areas = await prisma.area.findMany()
+        ws.send(JSON.stringify({ type: "areas", payload: areas }))
       }
     } catch (err) {
       console.error("Error handling message:", err)

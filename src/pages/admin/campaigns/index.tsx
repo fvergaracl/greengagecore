@@ -15,7 +15,7 @@ interface Campaign {
   deadline: string | null
   type: string
   gameId: string | null
-  subCampaigns: {
+  areas: {
     tasks: { id: string }[]
   }[]
   allowedUsers: {
@@ -143,7 +143,7 @@ export default function AdminCampaigns() {
               <th className='border px-4 py-2'>Status</th>
               <th className='border px-4 py-2'>Deadline</th>
               <th className='border px-4 py-2'>Type</th>
-              <th className='border px-4 py-2'>Subcampaigns</th>
+              <th className='border px-4 py-2'>Areas</th>
               <th className='border px-4 py-2'>Tasks</th>
               <th className='border px-4 py-2'>Users</th>
               <th className='border px-4 py-2'>Actions</th>
@@ -153,10 +153,10 @@ export default function AdminCampaigns() {
           <tbody>
             {paginatedCampaigns?.map((campaign, index) => {
               const groupedUsers = groupParticipants(campaign.allowedUsers)
-              // Subcampaign and Task counts
-              const subCampaignCount = campaign.subCampaigns.length
-              const totalTaskCount = campaign.subCampaigns.reduce(
-                (total, subCampaign) => total + subCampaign.tasks.length,
+              // Areas and Task counts
+              const areaCount = campaign.areas.length
+              const totalTaskCount = campaign.areas.reduce(
+                (total, area) => total + area.tasks.length,
                 0
               )
               return (
@@ -193,9 +193,7 @@ export default function AdminCampaigns() {
                       : "No Deadline"}
                   </td>
                   <td className='border px-4 py-2'>{campaign.type}</td>
-                  <td className='border px-4 py-2 text-center'>
-                    {subCampaignCount}
-                  </td>
+                  <td className='border px-4 py-2 text-center'>{areaCount}</td>
                   <td className='border px-4 py-2 text-center'>
                     {totalTaskCount}
                   </td>

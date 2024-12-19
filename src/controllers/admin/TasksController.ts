@@ -2,9 +2,9 @@ import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-export default class SubCampaignController {
-  static async getAllSubCampaigns() {
-    return await prisma.subCampaign.findMany({
+export default class AreaController {
+  static async getAllAreas() {
+    return await prisma.area.findMany({
       where: { disabled: false },
       include: {
         tasks: {
@@ -20,23 +20,23 @@ export default class SubCampaignController {
     })
   }
 
-  static async getSubCampaignNames() {
+  static async getAreaNames() {
     try {
-      const subCampaigns = await prisma.subCampaign.findMany({
+      const areas = await prisma.area.findMany({
         select: {
           name: true
         }
       })
 
-      return subCampaigns.map(subCampaign => subCampaign.name)
+      return areas.map(area => area.name)
     } catch (error) {
-      console.error("Error in getSubCampaignNames:", error)
+      console.error("Error in getAreaNames:", error)
       throw new Error("Failed to fetch sub-campaign names")
     }
   }
 
-  static async getSubCampaignById(id: string) {
-    return await prisma.subCampaign.findUnique({
+  static async getAreaById(id: string) {
+    return await prisma.area.findUnique({
       where: { id },
       include: {
         tasks: true,
@@ -47,20 +47,20 @@ export default class SubCampaignController {
     })
   }
 
-  static async createSubCampaign(data: any) {
-    return await prisma.subCampaign.create({
+  static async createArea(data: any) {
+    return await prisma.area.create({
       data: {
         name: data?.name,
         description: data?.description,
-        disabled: false, 
+        disabled: false,
         campaignId: data?.campaignId,
         polygon: data?.polygon
       }
     })
   }
 
-  static async updateSubCampaign(id: string, data: any) {
-    return await prisma.subCampaign.update({
+  static async updateArea(id: string, data: any) {
+    return await prisma.area.update({
       where: { id },
       data: {
         name: data?.name,

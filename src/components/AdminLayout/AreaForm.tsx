@@ -7,15 +7,12 @@ import { EditControl } from "react-leaflet-draw"
 import "leaflet/dist/leaflet.css"
 import "leaflet-draw/dist/leaflet.draw.css"
 
-interface SubCampaignFormProps {
-  subCampaignId?: string // If provided, the form will be in edit mode
+interface AreaFormProps {
+  areaId?: string // If provided, the form will be in edit mode
   onSuccess?: () => void // Callback after successful create/edit
 }
 
-const SubCampaignForm: React.FC<SubCampaignFormProps> = ({
-  subCampaignId,
-  onSuccess
-}) => {
+const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
   const router = useRouter()
   const [formValues, setFormValues] = useState({
     name: "",
@@ -28,13 +25,11 @@ const SubCampaignForm: React.FC<SubCampaignFormProps> = ({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (subCampaignId) {
-      const fetchSubCampaign = async () => {
+    if (areaId) {
+      const fetchArea = async () => {
         try {
           setLoading(true)
-          const response = await axios.get(
-            `/api/admin/subcampaigns/${subCampaignId}`
-          )
+          const response = await axios.get(`/api/admin/areas/${areaId}`)
           setFormValues({
             name: response.data.name,
             description: response.data.description || "",
@@ -48,9 +43,9 @@ const SubCampaignForm: React.FC<SubCampaignFormProps> = ({
           setLoading(false)
         }
       }
-      fetchSubCampaign()
+      fetchArea()
     }
-  }, [subCampaignId])
+  }, [areaId])
 
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -106,7 +101,7 @@ const SubCampaignForm: React.FC<SubCampaignFormProps> = ({
     setError(null)
 
     try {
-      const swalMessage = subCampaignId
+      const swalMessage = areaId
         ? "Updating sub-campaign..."
         : "Creating sub-campaign..."
 
@@ -118,18 +113,16 @@ const SubCampaignForm: React.FC<SubCampaignFormProps> = ({
         showConfirmButton: false
       })
 
-      if (subCampaignId) {
-        await axios.put(`/api/admin/subcampaigns/${subCampaignId}`, formValues)
+      if (areaId) {
+        await axios.put(`/api/admin/areas/${areaId}`, formValues)
       } else {
-        await axios.post("/api/admin/subcampaigns", formValues)
+        await axios.post("/api/admin/areas", formValues)
       }
 
       setLoading(false)
       Swal.fire({
         title: "Success!",
-        text: `Sub-campaign ${
-          subCampaignId ? "updated" : "created"
-        } successfully!`,
+        text: `Sub-campaign ${areaId ? "updated" : "created"} successfully!`,
         icon: "success",
         timer: 3000,
         showConfirmButton: false
@@ -233,7 +226,7 @@ const SubCampaignForm: React.FC<SubCampaignFormProps> = ({
           >
             {loading
               ? "Saving..."
-              : subCampaignId
+              : areaId
               ? "Update Sub-Campaign"
               : "Create Sub-Campaign"}
           </button>
@@ -299,4 +292,4 @@ const SubCampaignForm: React.FC<SubCampaignFormProps> = ({
   )
 }
 
-export default SubCampaignForm
+export default AreaForm

@@ -6,7 +6,7 @@ import { faEye, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 import DefaultLayout from "../../../components/AdminLayout"
 
-interface SubCampaign {
+interface Area {
   id: string
   name: string
   description: string
@@ -22,12 +22,10 @@ interface Campaign {
   name: string
 }
 
-export default function AdminSubCampaigns() {
+export default function AdminAreas() {
   const router = useRouter()
-  const [allSubCampaigns, setAllSubCampaigns] = useState<SubCampaign[]>([])
-  const [filteredSubCampaigns, setFilteredSubCampaigns] = useState<
-    SubCampaign[]
-  >([])
+  const [allAreas, setAllAreas] = useState<Area[]>([])
+  const [filteredAreas, setFilteredAreas] = useState<Area[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([]) // List of parent campaigns
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
@@ -36,11 +34,11 @@ export default function AdminSubCampaigns() {
   const pageSize = 10
 
   useEffect(() => {
-    const fetchSubCampaigns = async () => {
+    const fetchAreas = async () => {
       try {
-        const response = await axios.get("/api/admin/subcampaigns")
-        setAllSubCampaigns(response.data)
-        setFilteredSubCampaigns(response.data)
+        const response = await axios.get("/api/admin/areas")
+        setAllAreas(response.data)
+        setFilteredAreas(response.data)
       } catch (err) {
         console.error("Failed to fetch sub-campaigns:", err)
       }
@@ -57,36 +55,34 @@ export default function AdminSubCampaigns() {
       }
     }
 
-    fetchSubCampaigns()
+    fetchAreas()
     fetchCampaigns()
   }, [])
 
   useEffect(() => {
-    const filtered = allSubCampaigns.filter(subCampaign => {
+    const filtered = allAreas.filter(area => {
       const matchesSearch =
-        subCampaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (subCampaign.description &&
-          subCampaign.description
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()))
+        area.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (area.description &&
+          area.description.toLowerCase().includes(searchQuery.toLowerCase()))
 
       const matchesCampaign = selectedCampaign
-        ? subCampaign.campaign.id === selectedCampaign
+        ? area.campaign.id === selectedCampaign
         : true
 
       return matchesSearch && matchesCampaign
     })
 
-    setFilteredSubCampaigns(filtered)
+    setFilteredAreas(filtered)
     setCurrentPage(1)
-  }, [searchQuery, selectedCampaign, allSubCampaigns])
+  }, [searchQuery, selectedCampaign, allAreas])
 
   const handleView = (id: string) => {
-    router.push(`/admin/subcampaigns/${id}`)
+    router.push(`/admin/areas/${id}`)
   }
 
   const handleEdit = (id: string) => {
-    router.push(`/admin/subcampaigns/${id}/edit`)
+    router.push(`/admin/areas/${id}/edit`)
   }
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,19 +99,16 @@ export default function AdminSubCampaigns() {
     setCurrentPage(prev =>
       direction === "prev"
         ? Math.max(prev - 1, 1)
-        : Math.min(prev + 1, Math.ceil(filteredSubCampaigns.length / pageSize))
+        : Math.min(prev + 1, Math.ceil(filteredAreas.length / pageSize))
     )
   }
 
   const startIndex = (currentPage - 1) * pageSize
-  const paginatedSubCampaigns = filteredSubCampaigns.slice(
-    startIndex,
-    startIndex + pageSize
-  )
+  const paginatedAreas = filteredAreas.slice(startIndex, startIndex + pageSize)
 
   return (
     <DefaultLayout>
-      <Breadcrumb pageName='SubCampaigns' breadcrumbPath='SubCampaigns' />
+      <Breadcrumb pageName='Areas' breadcrumbPath='Areas' />
 
       <div className='overflow-x-auto rounded-lg bg-white p-6 shadow-lg dark:bg-boxdark'>
         <div className='flex items-center gap-4 mb-4'>
@@ -156,36 +149,34 @@ export default function AdminSubCampaigns() {
           </thead>
 
           <tbody>
-            {paginatedSubCampaigns.map((subCampaign, index) => (
+            {paginatedAreas.map((area, index) => (
               <tr
-                key={subCampaign.id}
+                key={area.id}
                 className='hover:bg-gray-50 dark:hover:bg-gray-700'
               >
                 <td className='border px-4 py-2'>{startIndex + index + 1}</td>
                 <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
-                  {subCampaign.name}
+                  {area.name}
                 </td>
                 <td className='border px-4 py-2 text-sm text-gray-600 dark:text-gray-400'>
-                  {subCampaign.description || "-"}
+                  {area.description || "-"}
                 </td>
-                <td className='border px-4 py-2'>
-                  {subCampaign.campaign.name}
-                </td>
+                <td className='border px-4 py-2'>{area.campaign.name}</td>
                 <td className='border px-4 py-2 text-center'>
-                  {subCampaign.tasks.length}
+                  {area.tasks.length}
                 </td>
                 <td className='border px-4 py-2'>
                   <div className='flex gap-2'>
                     <button
                       title='View'
-                      onClick={() => handleView(subCampaign.id)}
+                      onClick={() => handleView(area.id)}
                       className='rounded bg-blue-100 p-2 text-blue-600 hover:bg-blue-200'
                     >
                       <FontAwesomeIcon icon={faEye} />
                     </button>
                     <button
                       title='Edit'
-                      onClick={() => handleEdit(subCampaign.id)}
+                      onClick={() => handleEdit(area.id)}
                       className='rounded bg-yellow-100 p-2 text-yellow-600 hover:bg-yellow-200'
                     >
                       <FontAwesomeIcon icon={faEdit} />
@@ -213,14 +204,14 @@ export default function AdminSubCampaigns() {
           </button>
           <span>
             Page {currentPage} of{" "}
-            {filteredSubCampaigns.length > 0
-              ? Math.ceil(filteredSubCampaigns.length / pageSize)
+            {filteredAreas.length > 0
+              ? Math.ceil(filteredAreas.length / pageSize)
               : "1"}
           </span>
           <button
             onClick={() => handlePageChange("next")}
             disabled={
-              currentPage === Math.ceil(filteredSubCampaigns.length / pageSize)
+              currentPage === Math.ceil(filteredAreas.length / pageSize)
             }
             className='px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50'
           >

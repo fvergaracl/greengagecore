@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react"
 import ws from "../utils/websocket"
 
-const DataSubCampaignFetcher = () => {
+const DataAreaFetcher = () => {
   const [dataEntries, setDataEntries] = useState([])
-  const [subCampaigns, setSubCampaigns] = useState([])
+  const [areas, setAreas] = useState([])
 
   useEffect(() => {
     // Request data on mount
     ws.send(JSON.stringify({ type: "getDataEntries" }))
-    ws.send(JSON.stringify({ type: "getSubCampaigns" }))
+    ws.send(JSON.stringify({ type: "getAreas" }))
 
     // Handle WebSocket messages
     ws.onmessage = event => {
@@ -18,8 +18,8 @@ const DataSubCampaignFetcher = () => {
         setDataEntries(data.payload)
       }
 
-      if (data.type === "subCampaigns") {
-        setSubCampaigns(data.payload)
+      if (data.type === "areas") {
+        setAreas(data.payload)
       }
     }
 
@@ -37,9 +37,9 @@ const DataSubCampaignFetcher = () => {
         ))}
       </ul>
 
-      <h1>SubCampaigns</h1>
+      <h1>Areas</h1>
       <ul>
-        {subCampaigns.map(campaign => (
+        {areas.map(campaign => (
           <li key={campaign.id}>{JSON.stringify(campaign)}</li>
         ))}
       </ul>
@@ -47,4 +47,4 @@ const DataSubCampaignFetcher = () => {
   )
 }
 
-export default DataSubCampaignFetcher
+export default DataAreaFetcher

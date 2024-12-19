@@ -68,7 +68,7 @@ MINIO_BUCKET_NAME=[BUCKET_NAME]
 2. **Initialize Prisma**:
 
    ```bash
-   npx prisma generate
+   npx prisma generate --schema=./prisma/schema.prisma
    npx prisma migrate dev --name init
    ```
 

@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import SubCampaignController from "@/controllers/admin/SubCampaignController"
+import AreaController from "@/controllers/admin/AreaController"
 
 export default async function handler(
   req: NextApiRequest,
@@ -8,8 +8,8 @@ export default async function handler(
   switch (req.method) {
     case "GET": {
       try {
-        const subCampaigns = await SubCampaignController.getAllSubCampaigns()
-        return res.status(200).json(subCampaigns)
+        const areas = await AreaController.getAllAreas()
+        return res.status(200).json(areas)
       } catch (error) {
         console.error("Error fetching sub-campaigns:", error)
         return res.status(500).json({ error: "Internal Server Error" })
@@ -18,10 +18,8 @@ export default async function handler(
 
     case "POST": {
       try {
-        const newSubCampaign = await SubCampaignController.createSubCampaign(
-          req.body
-        )
-        return res.status(201).json(newSubCampaign)
+        const newArea = await AreaController.createArea(req.body)
+        return res.status(201).json(newArea)
       } catch (error) {
         console.error("Error creating sub-campaign:", error)
         return res.status(500).json({ error: "Internal Server Error" })

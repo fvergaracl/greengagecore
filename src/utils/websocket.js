@@ -14,8 +14,8 @@ ws.onmessage = event => {
     console.log("Data Entries:", data.payload)
   }
 
-  if (data.type === "subCampaigns") {
-    console.log("SubCampaigns:", data.payload)
+  if (data.type === "areas") {
+    console.log("Areas:", data.payload)
   }
 }
 
