@@ -13,6 +13,7 @@ model User {
   sub                  String                @unique
   dataEntries          DataEntry[]
   logs                 Log[]
+  trajectories         UserTrajectory[]      // Relation with UserTrajectory
   accessibleCampaigns  UserCampaignAccess[]  @relation("UserCampaignAccess")
   created_at           DateTime              @default(now())
   updated_at           DateTime              @updatedAt
@@ -56,31 +57,20 @@ model Task {
   disabled      Boolean        @default(false)
   subCampaignId String
   subCampaign   SubCampaign    @relation(fields: [subCampaignId], references: [id])
-  geoLocation   GeoLocation?   // Relation with GeoLocation, defined in GeoLocation
+  latitude      Float?         // Latitude for task location
+  longitude     Float?         // Longitude for task location
   created_at    DateTime       @default(now())
   updated_at    DateTime       @updatedAt
 }
 
-model GeoLocation {
-  id          String        @id @default(uuid())
-  name        String?
-  type        String        // "point" or "polygon"
-  task        Task?         @relation(fields: [taskId], references: [id]) // Relation defined here
-  taskId      String? @unique  // One-to-One relation with Task
-  coordinates Coordinate[]  // One-to-Many relation with Coordinate
-  created_at  DateTime       @default(now())
-  updated_at  DateTime       @updatedAt
-}
-
-model Coordinate {
-  id          String        @id @default(uuid())
-  latitude    Float         // Latitude
-  longitude   Float         // Longitude
-  geoLocation GeoLocation   @relation(fields: [geoLocationId], references: [id]) // One-to-Many relation with GeoLocation
-  geoLocationId String
-  dataEntry   DataEntry?    // One-to-One relation with DataEntry, defined in DataEntry
-  created_at  DateTime       @default(now())
-  updated_at  DateTime       @updatedAt
+model UserTrajectory {
+  id          String   @id @default(uuid())
+  userId      String    // Relation with User
+  latitude    Float     // Latitude
+  longitude   Float     // Longitude
+  user        User      @relation(fields: [userId], references: [id])
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
 }
 
 model UserCampaignAccess {
@@ -104,10 +94,10 @@ model DataEntry {
   entryTypeId        String?
   globalContribution Boolean        @default(false)
   data               Json
+  latitude    Float     // Latitude
+  longitude   Float     // Longitude
   user               User?          @relation(fields: [userId], references: [id])
   subCampaign        SubCampaign?   @relation(fields: [subCampaignId], references: [id])
-  coordinate         Coordinate     @relation(fields: [coordinateId], references: [id]) // One-to-One relation with Coordinate
-  coordinateId       String @unique
   created_at         DateTime       @default(now())
   updated_at         DateTime       @updatedAt
 }
