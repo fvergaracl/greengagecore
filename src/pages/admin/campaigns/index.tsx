@@ -13,7 +13,7 @@ interface Campaign {
   description: string
   isOpen: boolean
   deadline: string | null
-  type: string
+  category: string
   gameId: string | null
   areas: {
     tasks: { id: string }[]
@@ -54,7 +54,7 @@ export default function AdminCampaigns() {
           campaign.description
             .toLowerCase()
             .includes(searchQuery.toLowerCase())) ||
-        campaign.type.toLowerCase().includes(searchQuery.toLowerCase())
+        campaign.category.toLowerCase().includes(searchQuery.toLowerCase())
     )
     setFilteredCampaigns(filtered)
     setCurrentPage(1)
@@ -156,7 +156,7 @@ export default function AdminCampaigns() {
               // Areas and Task counts
               const areaCount = campaign.areas.length
               const totalTaskCount = campaign.areas.reduce(
-                (total, area) => total + area.tasks.length,
+                (total, area) => total + area?.tasks?.length,
                 0
               )
               return (
@@ -192,7 +192,7 @@ export default function AdminCampaigns() {
                       ? new Date(campaign.deadline).toLocaleDateString()
                       : "No Deadline"}
                   </td>
-                  <td className='border px-4 py-2'>{campaign.type}</td>
+                  <td className='border px-4 py-2'>{campaign.category}</td>
                   <td className='border px-4 py-2 text-center'>{areaCount}</td>
                   <td className='border px-4 py-2 text-center'>
                     {totalTaskCount}

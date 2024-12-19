@@ -7,9 +7,14 @@ export default class AreaController {
     return await prisma.area.findMany({
       where: { disabled: false },
       include: {
-        tasks: {
-          select: { id: true }
+        pointOfInterests: {
+          include: {
+            tasks: {
+              select: { id: true }
+            }
+          }
         },
+
         campaign: {
           select: { id: true, name: true }
         }
@@ -31,7 +36,7 @@ export default class AreaController {
       return areas.map(area => area.name)
     } catch (error) {
       console.error("Error in getAreaNames:", error)
-      throw new Error("Failed to fetch sub-campaign names")
+      throw new Error("Failed to fetch areas names")
     }
   }
 
@@ -39,7 +44,11 @@ export default class AreaController {
     return await prisma.area.findUnique({
       where: { id },
       include: {
-        tasks: true,
+        pointOfInterests: {
+          include: {
+            tasks: true
+          }
+        },
         campaign: {
           select: { id: true, name: true }
         }

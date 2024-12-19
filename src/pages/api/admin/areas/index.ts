@@ -11,7 +11,7 @@ export default async function handler(
         const areas = await AreaController.getAllAreas()
         return res.status(200).json(areas)
       } catch (error) {
-        console.error("Error fetching sub-campaigns:", error)
+        console.error("Error fetching areas:", error)
         return res.status(500).json({ error: "Internal Server Error" })
       }
     }
@@ -21,7 +21,7 @@ export default async function handler(
         const newArea = await AreaController.createArea(req.body)
         return res.status(201).json(newArea)
       } catch (error) {
-        console.error("Error creating sub-campaign:", error)
+        console.error("Error creating area:", error)
         return res.status(500).json({ error: "Internal Server Error" })
       }
     }

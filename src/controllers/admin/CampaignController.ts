@@ -8,8 +8,14 @@ export default class CampaignController {
       include: {
         areas: {
           include: {
-            tasks: {
-              select: { id: true }
+            pointOfInterests: {
+              include: {
+                tasks: {
+                  select: {
+                    id: true
+                  }
+                }
+              }
             }
           }
         },
@@ -44,7 +50,13 @@ export default class CampaignController {
       include: {
         areas: {
           include: {
-            tasks: true
+            pointOfInterests: {
+              include: {
+                tasks: {
+                  select: { id: true }
+                }
+              }
+            }
           }
         },
         allowedUsers: true
@@ -60,7 +72,7 @@ export default class CampaignController {
         description: data?.description,
         isOpen: data?.isOpen,
         deadline: data?.deadline && new Date(data.deadline),
-        type: data?.type,
+        category: data?.category,
         gameId: data?.gameId
       }
     })
@@ -75,7 +87,7 @@ export default class CampaignController {
         description: data?.description,
         isOpen: data?.isOpen,
         deadline: data?.deadline && new Date(data.deadline),
-        type: data?.type,
+        category: data?.category,
         gameId: data?.gameId
       }
     })

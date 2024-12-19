@@ -17,7 +17,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
     description: "",
     isOpen: true,
     deadline: null as string | null,
-    type: "",
+    category: "",
     gameId: ""
   })
   const router = useRouter()
@@ -36,7 +36,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
             description: response.data.description || "",
             isOpen: response.data.isOpen,
             deadline: response.data.deadline || null,
-            type: response.data.type || "",
+            category: response.data.category || "",
             gameId: response.data.gameId || ""
           })
           setHasDeadline(!!response.data.deadline)
@@ -56,7 +56,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
     const missingFields: string[] = []
 
     if (!formValues.name.trim()) missingFields.push("Name")
-    if (!formValues.type.trim()) missingFields.push("Type")
+    if (!formValues.category.trim()) missingFields.push("Category")
 
     if (missingFields.length > 0) {
       Swal.fire({
@@ -186,13 +186,13 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
           htmlFor='description'
           className='block text-sm font-medium text-gray-700 dark:text-gray-300'
         >
-          Type <span className='text-red-500'>*</span>
+          Category <span className='text-red-500'>*</span>
         </label>
         <input
           type='text'
-          id='type'
-          name='type'
-          value={formValues.type}
+          id='category'
+          name='category'
+          value={formValues.category}
           onChange={handleChange}
           required
           className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'

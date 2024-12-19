@@ -40,7 +40,7 @@ export default function AdminAreas() {
         setAllAreas(response.data)
         setFilteredAreas(response.data)
       } catch (err) {
-        console.error("Failed to fetch sub-campaigns:", err)
+        console.error("Failed to fetch areas:", err)
       }
     }
 
@@ -161,7 +161,7 @@ export default function AdminAreas() {
                 </td>
                 <td className='border px-4 py-2'>{area.campaign.name}</td>
                 <td className='border px-4 py-2 text-center'>
-                  {area.tasks.length}
+                  {area?.tasks?.length}
                 </td>
                 <td className='border px-4 py-2'>
                   <div className='flex gap-2'>

@@ -43,7 +43,7 @@ export default function AreaDetails() {
           const response = await axios.get(`/api/admin/areas/${id}`)
           setArea(response.data)
         } catch (error) {
-          console.error("Error fetching sub-campaign details:", error)
+          console.error("Error fetching area details:", error)
         }
       }
 
@@ -141,7 +141,7 @@ export default function AreaDetails() {
                   {task.title}
                 </li>
               ))}
-              {area.tasks.length === 0 && (
+              {area?.tasks?.length === 0 && (
                 <li className='text-gray-600 dark:text-gray-300'>
                   No tasks available for this area.
                 </li>

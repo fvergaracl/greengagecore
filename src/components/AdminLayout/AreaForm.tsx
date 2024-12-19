@@ -1,15 +1,34 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 const { useRouter } = require("next/router")
 import axios from "axios"
 import Swal from "sweetalert2"
-import { MapContainer, TileLayer, Polygon, FeatureGroup } from "react-leaflet"
+import {
+  MapContainer,
+  TileLayer,
+  Polygon,
+  FeatureGroup,
+  Marker,
+  useMap
+} from "react-leaflet"
 import { EditControl } from "react-leaflet-draw"
 import "leaflet/dist/leaflet.css"
 import "leaflet-draw/dist/leaflet.draw.css"
-
+import L, { DivIcon } from "leaflet"
+import "./../styles.css"
 interface AreaFormProps {
   areaId?: string // If provided, the form will be in edit mode
   onSuccess?: () => void // Callback after successful create/edit
+}
+
+const RecenterMap = ({ center }: { center: [number, number] }) => {
+  const map = useMap()
+  useEffect(() => {
+    if (center) {
+      map.setView(center, 13)
+    }
+  }, [center, map])
+
+  return null
 }
 
 const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
@@ -23,6 +42,21 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
   const [loading, setLoading] = useState(false)
   const [allCampaigns, setAllCampaigns] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [mapCenter, setMapCenter] = useState<[number, number]>([51.505, -0.09])
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(
+    null
+  )
+
+  const markerIcon = new DivIcon({
+    className: "static-marker-icon",
+    html: `
+      <div class="static-marker">
+        <div class="inner-circle"></div>
+      </div>
+    `,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+  })
 
   useEffect(() => {
     if (areaId) {
@@ -39,7 +73,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
           setLoading(false)
         } catch (err) {
           console.error(err)
-          setError("Failed to fetch sub-campaign details.")
+          setError("Failed to fetch area details.")
           setLoading(false)
         }
       }
@@ -59,6 +93,33 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
 
     fetchCampaigns()
   }, [])
+
+  const handleGeolocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const { latitude, longitude } = position.coords
+          const newLocation: [number, number] = [latitude, longitude]
+          setUserLocation(newLocation)
+          setMapCenter(newLocation)
+        },
+        error => {
+          console.warn("Geolocation not enabled or denied.", error)
+          Swal.fire({
+            title: "Geolocation Error",
+            text: "Unable to access your location. Please enable geolocation in your browser.",
+            icon: "error"
+          })
+        }
+      )
+    } else {
+      Swal.fire({
+        title: "Geolocation Unsupported",
+        text: "Your browser does not support geolocation.",
+        icon: "warning"
+      })
+    }
+  }
 
   const validateForm = () => {
     const missingFields: string[] = []
@@ -101,9 +162,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
     setError(null)
 
     try {
-      const swalMessage = areaId
-        ? "Updating sub-campaign..."
-        : "Creating sub-campaign..."
+      const swalMessage = areaId ? "Updating area..." : "Creating area..."
 
       Swal.fire({
         title: swalMessage,
@@ -122,7 +181,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
       setLoading(false)
       Swal.fire({
         title: "Success!",
-        text: `Sub-campaign ${areaId ? "updated" : "created"} successfully!`,
+        text: `Area ${areaId ? "updated" : "created"} successfully!`,
         icon: "success",
         timer: 3000,
         showConfirmButton: false
@@ -133,7 +192,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
       console.error(err)
       Swal.fire({
         title: "Error",
-        text: "Failed to save the sub-campaign. Please try again.",
+        text: "Failed to save the area. Please try again.",
         icon: "error"
       })
       setLoading(false)
@@ -194,22 +253,13 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
             >
               Parent Campaign <span className='text-red-500'>*</span>
             </label>
-            {/* <input
-            type='text'
-            id='campaignId'
-            name='campaignId'
-            value={formValues.campaignId}
-            onChange={handleChange}
-            required
-            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
-          /> */}
             <select
               id='campaignId'
               name='campaignId'
               value={formValues.campaignId}
               onChange={handleChange}
               required
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+              className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-green-200 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
             >
               <option value=''>Select Campaign</option>
               {allCampaigns?.map(campaign => (
@@ -221,20 +271,16 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
           </div>
           <button
             type='submit'
-            className='mt-4 w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring focus:ring-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600'
+            className='mt-4 w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring focus:ring-green-200 dark:bg-green-700 dark:hover:bg-green-600'
             disabled={loading}
           >
-            {loading
-              ? "Saving..."
-              : areaId
-              ? "Update Sub-Campaign"
-              : "Create Sub-Campaign"}
+            {loading ? "Saving..." : areaId ? "Update Area" : "Create Area"}
           </button>
         </form>
 
         <div className='w-1/2 h-96'>
           <MapContainer
-            center={[51.505, -0.09]}
+            center={mapCenter}
             zoom={13}
             scrollWheelZoom={false}
             className='h-full rounded-lg shadow-md'
@@ -243,6 +289,10 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
               attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
             />
+            <RecenterMap center={mapCenter} />
+            {userLocation && (
+              <Marker icon={markerIcon} position={userLocation}></Marker>
+            )}
             {formValues.polygon && (
               <Polygon
                 positions={formValues.polygon}
@@ -286,6 +336,14 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               />
             </FeatureGroup>
           </MapContainer>
+          <div className='flex justify-center mt-2'>
+            <button
+              onClick={handleGeolocation}
+              className='py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring focus:ring-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600'
+            >
+              Use my location
+            </button>
+          </div>
         </div>
       </div>
     </>
