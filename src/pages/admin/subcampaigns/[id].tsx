@@ -35,6 +35,56 @@ export default function SubCampaignDetails() {
   const router = useRouter()
   const { id } = router.query
   const [subCampaign, setSubCampaign] = useState<SubCampaign | null>(null)
+  const [polygonCenter, setPolygonCenter] = useState<[number, number]>([0, 0])
+  const [zoomMap, setZoomMap] = useState(14)
+
+  const zoomMapToBounds = (bounds: [[number, number], [number, number]]) => {
+    const map = document.querySelector(".leaflet-container")
+    if (!map) return
+
+    const mapWidth = map.clientWidth
+    const mapHeight = map.clientHeight
+
+    const [southWest, northEast] = bounds
+    const [minX, minY] = southWest
+    const [maxX, maxY] = northEast
+
+    const dx = maxX - minX
+    const dy = maxY - minY
+
+    const zoomX = dx
+      ? Math.min(Math.floor(Math.log(mapWidth / dx) / Math.LN2), 18)
+      : 18
+    const zoomY = dy
+      ? Math.min(Math.floor(Math.log(mapHeight / dy) / Math.LN2), 18)
+      : 18
+
+    const zoom = Math.min(zoomX, zoomY, 18)
+    setZoomMap(zoom)
+  }
+
+  const getZoomAndCenter = (polygon: [number, number][]) => {
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+
+    polygon?.forEach(([x, y]) => {
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+    })
+
+    const bounds = [
+      [minX, minY] as [number, number],
+      [maxX, maxY] as [number, number]
+    ]
+
+    const center = [(minX + maxX) / 2, (minY + maxY) / 2]
+    zoomMapToBounds(bounds)
+    setPolygonCenter(center)
+  }
 
   useEffect(() => {
     if (id) {
@@ -50,6 +100,12 @@ export default function SubCampaignDetails() {
       fetchSubCampaignDetails()
     }
   }, [id])
+
+  useEffect(() => {
+    if (subCampaign?.polygon) {
+      getZoomAndCenter(subCampaign?.polygon)
+    }
+  }, [subCampaign])
 
   if (!subCampaign) {
     return (
@@ -145,13 +201,13 @@ export default function SubCampaignDetails() {
           </ul>
         </div>
         <div className='mb-6'>
-          <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
+          <h2 className='mx-auto text-xl font-semibold text-gray-800 dark:text-white'>
             Polygon
           </h2>
           {subCampaign.polygon && subCampaign.polygon.length > 2 ? (
             <MapContainer
-              center={[0, 0]} // Adjust to your map's initial position
-              zoom={2}
+              center={polygonCenter}
+              zoom={zoomMap}
               style={{ height: "400px", width: "100%" }}
             >
               <TileLayer
