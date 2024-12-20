@@ -15,7 +15,18 @@ interface Campaign {
   areas: {
     id: string
     name: string
-    tasks: { id: string; name: string }[]
+    description: string
+    polygon: [number, number][] | null
+    pointOfInterests: {
+      id: string
+      name: string
+      latitude: number
+      longitude: number
+      disabled: boolean
+      tasks: {
+        id: string
+      }[]
+    }[]
   }[]
   allowedUsers: {
     accessType: string
@@ -65,12 +76,6 @@ export default function CampaignDetails() {
     <DefaultLayout>
       <Breadcrumb pageName='Campaign Details' breadcrumbPath='Campaigns' />
       <div className='mx-auto p-6 bg-white rounded-lg shadow-md dark:bg-gray-800'>
-        {/* <button
-          onClick={() => router.back()}
-          className='mb-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
-        >
-          ← Back to Campaigns
-        </button> */}
         <div className='mb-4 flex justify-between'>
           <button
             onClick={() => router.back()}
@@ -105,7 +110,9 @@ export default function CampaignDetails() {
                   : "bg-red-100 text-red-700 dark:bg-red-700 dark:text-white"
               }`}
             >
-              {campaign.isOpen ? "Open" : "Closed"}
+              {campaign.isOpen
+                ? "Open (Anyone can join)"
+                : "Closed (Invite only)"}
             </span>
           </p>
           <p>
@@ -154,7 +161,21 @@ export default function CampaignDetails() {
                     {sub.name}
                   </h3>
                   <p className='text-sm text-gray-600 dark:text-gray-300'>
-                    {sub.tasks.length} Tasks
+                    {sub.description || "No description available."}
+                  </p>
+                  <p className='text-sm text-gray-600 dark:text-gray-300'>
+                    {sub.polygon ? "Polygon" : "No Polygon"}
+                  </p>
+                  <p className='text-sm text-gray-600 dark:text-gray-300'>
+                    {sub.pointOfInterests.length} Points of Interest
+                  </p>
+
+                  <p className='text-sm text-gray-600 dark:text-gray-300'>
+                    {sub.pointOfInterests.reduce(
+                      (acc, poi) => acc + poi.tasks.length,
+                      0
+                    )}{" "}
+                    Tasks
                   </p>
                 </div>
                 <button
