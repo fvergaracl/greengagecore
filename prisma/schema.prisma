@@ -49,6 +49,7 @@ model Area {
 
 model PointOfInterest {
   id         String   @id @default(uuid())
+  radius     Float    @default(15) // In meters
   disabled   Boolean  @default(false)
   areaId     String
   area       Area     @relation(fields: [areaId], references: [id])

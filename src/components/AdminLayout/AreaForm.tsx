@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-const { useRouter } = require("next/router")
+import { useRouter } from "next/router"
 import axios from "axios"
 import Swal from "sweetalert2"
 import {
@@ -15,6 +15,7 @@ import "leaflet/dist/leaflet.css"
 import "leaflet-draw/dist/leaflet.draw.css"
 import L, { DivIcon } from "leaflet"
 import "./../styles.css"
+
 interface AreaFormProps {
   areaId?: string // If provided, the form will be in edit mode
   onSuccess?: () => void // Callback after successful create/edit
@@ -171,11 +172,11 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
         timerProgressBar: true,
         showConfirmButton: false
       })
-
+      let responseCreated = null
       if (areaId) {
         await axios.put(`/api/admin/areas/${areaId}`, formValues)
       } else {
-        await axios.post("/api/admin/areas", formValues)
+        responseCreated = await axios.post("/api/admin/areas", formValues)
       }
 
       setLoading(false)
@@ -188,6 +189,9 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
       })
 
       if (onSuccess) onSuccess()
+      if (!areaId) {
+        router.push(`/admin/areas/${responseCreated.data.id}/pointsofinterest`)
+      }
     } catch (err) {
       console.error(err)
       Swal.fire({

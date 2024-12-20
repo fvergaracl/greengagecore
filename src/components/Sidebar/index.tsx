@@ -9,6 +9,8 @@ import {
   MdArrowRight
 } from "react-icons/md"
 import { LuLogs } from "react-icons/lu"
+import { FaPlus, FaListAlt, FaUser } from "react-icons/fa"
+
 interface SidebarProps {
   sidebarOpen: boolean
   setSidebarOpen: (arg: boolean) => void
@@ -63,7 +65,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     }
   }, [sidebarExpanded])
 
-  // Menu configuration
+  // Menu configuration with submenu icons dynamically assigned
   const menu = [
     {
       title: "Home",
@@ -74,32 +76,70 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       title: "Campaigns",
       icon: <MdCampaign size={20} />,
       submenu: [
-        { title: "All Campaigns", route: "/admin/campaigns" },
-        { title: "Create New", route: "/admin/campaigns/create" }
+        {
+          title: "All Campaigns",
+          route: "/admin/campaigns",
+          icon: <FaListAlt size={16} />
+        },
+        {
+          title: "Create New",
+          route: "/admin/campaigns/create",
+          icon: <FaPlus size={16} />
+        }
       ]
     },
     {
       title: "Areas",
       icon: <MdSubtitles size={20} />,
       submenu: [
-        { title: "All Areas", route: "/admin/areas" },
-        { title: "Create New", route: "/admin/areas/create" }
+        {
+          title: "All Areas",
+          route: "/admin/areas",
+          icon: <FaListAlt size={16} />
+        },
+        {
+          title: "Create New",
+          route: "/admin/areas/create",
+          icon: <FaPlus size={16} />
+        }
+      ]
+    },
+    {
+      title: "Points of Interests",
+      icon: <MdTask size={20} />,
+      submenu: [
+        {
+          title: "All Points of Interest",
+          route: "/admin/pois",
+          icon: <FaListAlt size={16} />
+        },
+
+        {
+          title: "Create New",
+          route: "/admin/pois/create",
+          icon: <FaPlus size={16} />
+        }
       ]
     },
     {
       title: "Tasks",
-      icon: <MdTask size={20} />,
-      submenu: [
-        { title: "All Tasks", route: "/admin/tasks" },
-        { title: "Create New", route: "/admin/tasks/create" }
-      ]
+      route: "/admin/tasks",
+      icon: <MdTask size={16} />
     },
     {
       title: "Activity Log",
       icon: <LuLogs size={20} />,
       submenu: [
-        { title: "Users", route: "/admin/activity-logs/users" },
-        { title: "Systems", route: "/admin/activity-logs/systems" }
+        {
+          title: "Users",
+          route: "/admin/activity-logs/users",
+          icon: <FaUser size={16} />
+        },
+        {
+          title: "Systems",
+          route: "/admin/activity-logs/systems",
+          icon: <MdSubtitles size={16} />
+        }
       ]
     }
   ]
@@ -156,9 +196,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                       <li key={subIndex}>
                         <button
                           onClick={() => router.push(subItem.route)}
-                          className='block w-full rounded-sm px-4 py-1 text-left text-sm text-gray-300 hover:bg-gray-600'
+                          className='group flex w-full items-center gap-2 rounded-sm px-4 py-1 text-left text-sm text-gray-300 hover:bg-gray-600'
                         >
-                          {subItem.title}
+                          {subItem.icon}
+                          <span>{subItem.title}</span>
                         </button>
                       </li>
                     ))}

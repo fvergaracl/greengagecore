@@ -136,7 +136,7 @@ export default function AreaDetails() {
               Tasks
             </h2>
             <ul className='list-disc pl-5 space-y-2'>
-              {area.tasks.map(task => (
+              {area?.pointOfInterests?.tasks?.map(task => (
                 <li key={task.id} className='text-gray-600 dark:text-gray-300'>
                   {task.title}
                 </li>
