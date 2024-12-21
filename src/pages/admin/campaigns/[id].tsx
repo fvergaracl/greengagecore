@@ -1,9 +1,10 @@
 import { useRouter } from "next/router"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import axios from "axios"
 import DefaultLayout from "../../../components/AdminLayout"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
-
+import { MdArrowBack, MdEdit } from "react-icons/md"
+import dynamic from "next/dynamic"
 interface Campaign {
   id: string
   name: string
@@ -38,7 +39,14 @@ export default function CampaignDetails() {
   const router = useRouter()
   const { id } = router.query
   const [campaign, setCampaign] = useState<Campaign | null>(null)
-
+  const Map = useMemo(
+    () =>
+      dynamic(() => import("../../../components/AdminLayout/ViewMap"), {
+        loading: () => <p>A map is loading</p>,
+        ssr: false
+      }),
+    []
+  )
   useEffect(() => {
     if (id) {
       const fetchCampaignDetails = async () => {
@@ -79,16 +87,18 @@ export default function CampaignDetails() {
         <div className='mb-4 flex justify-between'>
           <button
             onClick={() => router.back()}
-            className='mb-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
+            className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 flex items-center space-x-2'
           >
-            ← Back to Campaigns
+            <MdArrowBack />
+            <span>Back to Campaigns</span>
           </button>
 
           <button
             onClick={() => router.push(`/admin/campaigns/${campaign.id}/edit`)}
-            className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600'
+            className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 flex items-center space-x-2'
           >
-            Edit Campaing
+            <MdEdit />
+            <span>Edit Campaign</span>
           </button>
         </div>
         <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
@@ -146,6 +156,9 @@ export default function CampaignDetails() {
             ))}
           </ul>
         </div>
+        <Map polygon={campaign.areas} />
+      </div>
+      <div className='mx-auto p-6 mt-4 bg-white rounded-lg shadow-md dark:bg-gray-800'>
         <div className='mt-8'>
           <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-4'>
             Areas

@@ -1,11 +1,10 @@
 import { useRouter } from "next/router"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import axios from "axios"
 import dynamic from "next/dynamic"
 import DefaultLayout from "../../../../components/AdminLayout"
 import Breadcrumb from "../../../../components/Breadcrumbs/Breadcrumb"
 import Swal from "sweetalert2"
-
 // Dynamically import Leaflet components
 const MapContainer = dynamic(
   () => import("react-leaflet").then(mod => mod.MapContainer),
@@ -47,7 +46,14 @@ export default function AreaDetails() {
   const { id } = router.query
   const [area, setArea] = useState<Area | null>(null)
   const [selectedPOI, setSelectedPOI] = useState<PointOfInterest | null>(null)
-
+  const Map = useMemo(
+    () =>
+      dynamic(() => import("../../../../components/Map"), {
+        loading: () => <p>A map is loading</p>,
+        ssr: false
+      }),
+    []
+  )
   useEffect(() => {
     if (id) {
       const fetchAreaDetails = async () => {

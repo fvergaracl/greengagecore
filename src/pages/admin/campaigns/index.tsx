@@ -144,7 +144,7 @@ export default function AdminCampaigns() {
               <th className='border px-4 py-2'>Deadline</th>
               <th className='border px-4 py-2'>Type</th>
               <th className='border px-4 py-2'>Areas</th>
-              <th className='border px-4 py-2'>Tasks</th>
+              <th className='border px-4 py-2'>POIs</th>
               <th className='border px-4 py-2'>Users</th>
               <th className='border px-4 py-2'>Actions</th>
             </tr>
@@ -155,10 +155,8 @@ export default function AdminCampaigns() {
               const groupedUsers = groupParticipants(campaign.allowedUsers)
               // Areas and Task counts
               const areaCount = campaign.areas.length
-              const totalTaskCount = campaign.areas.reduce(
-                (total, area) => total + area?.tasks?.length,
-                0
-              )
+              const pointOfInterestsCount =
+                campaign?.areas?.pointOfInterests?.length || 0
               return (
                 <tr
                   key={campaign.id}
@@ -195,7 +193,7 @@ export default function AdminCampaigns() {
                   <td className='border px-4 py-2'>{campaign.category}</td>
                   <td className='border px-4 py-2 text-center'>{areaCount}</td>
                   <td className='border px-4 py-2 text-center'>
-                    {totalTaskCount}
+                    {pointOfInterestsCount}
                   </td>
                   <td className='border px-4 py-2 text-center'>
                     {Object.entries(groupedUsers).map(([accessType, count]) => (
@@ -208,7 +206,7 @@ export default function AdminCampaigns() {
                       >
                         {accessType}: {count}
                       </span>
-                    ))}
+                    )) || "-"}
                   </td>
                   <td className='border px-4 py-2'>
                     <div className='flex gap-2'>
