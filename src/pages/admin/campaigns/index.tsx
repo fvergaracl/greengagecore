@@ -6,7 +6,7 @@ import { faEye, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons"
 import Swal from "sweetalert2"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 import DefaultLayout from "../../../components/AdminLayout"
-
+import { MdCampaign } from "react-icons/md"
 interface Campaign {
   id: string
   name: string
@@ -118,10 +118,14 @@ export default function AdminCampaigns() {
       return acc
     }, {})
   }
-
+  // ='Campaigns'
   return (
     <DefaultLayout>
-      <Breadcrumb pageName='Campaigns' breadcrumbPath='Campaigns' />
+      <Breadcrumb
+        icon={<MdCampaign />}
+        pageName='Campaigns'
+        breadcrumbPath='Campaigns'
+      />
 
       <div className='overflow-x-auto rounded-lg bg-white p-6 shadow-lg dark:bg-boxdark'>
         <div className='mb-4'>

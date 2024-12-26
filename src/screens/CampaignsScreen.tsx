@@ -4,7 +4,7 @@ import { useDashboard } from "../context/DashboardContext"
 import Swal from "sweetalert2"
 import { API_BASE_URL } from "../config/api" // Import API config
 import { useRouter } from "next/router"
-
+import { SlEnvolopeLetter } from "react-icons/sl"
 export default function CampaignsScreen() {
   const router = useRouter()
 
@@ -33,17 +33,15 @@ export default function CampaignsScreen() {
           )
         }))
 
-        const filteredCampaigns = campaignsWithJoinStatus
-          .filter(campaign => campaign.isOpen)
-          .sort((a, b) => {
-            const aExpired = a.deadline
-              ? new Date(a.deadline) < new Date()
-              : false
-            const bExpired = b.deadline
-              ? new Date(b.deadline) < new Date()
-              : false
-            return aExpired - bExpired
-          })
+        const filteredCampaigns = campaignsWithJoinStatus.sort((a, b) => {
+          const aExpired = a.deadline
+            ? new Date(a.deadline) < new Date()
+            : false
+          const bExpired = b.deadline
+            ? new Date(b.deadline) < new Date()
+            : false
+          return aExpired - bExpired
+        })
 
         setCampaigns(filteredCampaigns)
       } catch (error) {
@@ -100,7 +98,10 @@ export default function CampaignsScreen() {
 
   return (
     <div className='h-screen flex flex-col items-center bg-gray-50 p-4'>
-      <h1 className='text-2xl font-bold mb-6 text-center text-gray-800'>
+      <h1
+        className='text-2xl font-bold mb-6 text-center text-gray-800'
+        data-cy='campaigns-screen-title'
+      >
         Select a Campaign to Continue
       </h1>
 
@@ -128,12 +129,48 @@ export default function CampaignsScreen() {
                   <FaGamepad className='text-green-500 mr-2 text-xl' />
                 )}
                 <div>
-                  <h2 className='text-lg font-semibold text-gray-800'>
-                    {campaign.name}
+                  <h2
+                    className='text-lg font-semibold text-gray-800 flex items-center'
+                    data-cy='campaign-name'
+                  >
+                    {!campaign?.isOpen && (
+                      <span
+                        className='relative group text-xs text-red-500'
+                        data-cy='campaign-status'
+                      >
+                        <SlEnvolopeLetter className='text-red-500 mr-1' />
+                        <div className='absolute hidden group-hover:flex flex-col items-center left-1/2 transform -translate-x-1 bottom-full mb-2 bg-gray-700 text-white text-xs rounded-md py-1 px-2 shadow-lg w-max'>
+                          <span data-cy='campaign-status-message'>
+                            Access by invitation only.
+                          </span>
+                          <span
+                            className='text-gray-300'
+                            data-cy='campaign-status-message'
+                          >
+                            You can see this because you were invited.
+                          </span>
+                        </div>
+                      </span>
+                    )}
+
+                    <span>{campaign.name}</span>
                   </h2>
-                  <p className='text-gray-600 text-sm'>
+                  <p
+                    className='text-gray-600 text-sm'
+                    data-cy='campaign-description'
+                  >
                     {campaign.description}
                   </p>
+
+                  {campaign.deadline && (
+                    <span
+                      className='text-xs text-red-500'
+                      data-cy='campaign-deadline'
+                    >
+                      Open until:{" "}
+                      {new Date(campaign.deadline).toLocaleDateString()}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -147,6 +184,7 @@ export default function CampaignsScreen() {
                     ? "bg-green-500 text-white hover:bg-green-600"
                     : "bg-blue-500 text-white hover:bg-blue-600"
                 } ${isSelected ? "ring-2 ring-blue-500" : ""}`}
+                data-cy='join-campaign-button'
               >
                 {loadingCampaignId === campaign.id
                   ? "Joining..."

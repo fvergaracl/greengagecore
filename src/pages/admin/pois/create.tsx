@@ -9,7 +9,7 @@ import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 export default function CreateAreaPage() {
   return (
     <DefaultLayout>
-      <Breadcrumb pageName='Create Area' breadcrumbPath='Area / Create' />
+      <Breadcrumb pageName='Create Point of Interest' breadcrumbPath='Points of Interest / Create' />
       <AreaForm />
     </DefaultLayout>
   )

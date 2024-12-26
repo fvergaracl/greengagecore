@@ -62,6 +62,7 @@ export default function AreaDetails() {
   }
 
   const polygonCoordinates = area.polygon || []
+  console.log({ area })
   const bounds = polygonCoordinates.length > 0 ? polygonCoordinates : [[0, 0]]
   console.log({ area })
   return (

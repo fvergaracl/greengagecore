@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react"
 import { useDashboard } from "../../context/DashboardContext"
 import axios from "axios"
 import Swal from "sweetalert2"
-
+import { useRouter } from "next/router"
 const DropdownUser = () => {
+  const router = useRouter()
   const { setUser, logout, user } = useDashboard()
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -66,8 +67,22 @@ const DropdownUser = () => {
           <ul className='text-sm text-gray-700'>
             <li>
               <button
+                onClick={() => router.push("/dashboard")}
+                className='w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700'
+                data-cy='profile-button-dropdown'
+              >
+                Go to App
+              </button>
+            </li>
+            {/* divider*/}
+            <li>
+              <hr />
+            </li>
+            <li>
+              <button
                 onClick={() => logout()}
                 className='w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700'
+                data-cy='logout-button-dropdown'
               >
                 Log Out
               </button>

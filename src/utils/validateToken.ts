@@ -26,12 +26,12 @@ export async function validateKeycloakToken(req: any) {
     const userInfo = userInfoResponse.data
 
     const userId = userInfo.sub
-
+    const userRoles = userInfo_decoded?.roles
     if (!userId) {
       throw new Error("User ID not found in token")
     }
 
-    return { userId, userInfo }
+    return { userId, userInfo, userRoles }
   } catch (error: any) {
     console.error("Token validation failed:", error.message)
     throw new Error("Unauthorized: Invalid or expired token")

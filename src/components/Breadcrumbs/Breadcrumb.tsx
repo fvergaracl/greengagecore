@@ -1,14 +1,16 @@
 import Link from "next/link"
 
 interface BreadcrumbProps {
+  icon?: React.ReactNode
   pageName: string
   breadcrumbPath: string
 }
-const Breadcrumb = ({ pageName, breadcrumbPath }: BreadcrumbProps) => {
+const Breadcrumb = ({ icon, pageName, breadcrumbPath }: BreadcrumbProps) => {
   return (
     <div className='mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-      <h2 className='text-title-md2 font-semibold text-black dark:text-white'>
-        {pageName}
+      <h2 className='text-title-md2 font-semibold text-black dark:text-white flex items-center space-x-2'>
+        {icon && <span>{icon}</span>}
+        <span>{pageName}</span>
       </h2>
 
       <nav>

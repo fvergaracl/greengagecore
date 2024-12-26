@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react"
 import axios from "axios"
 import DefaultLayout from "../../../components/AdminLayout"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
-import { MdArrowBack, MdEdit } from "react-icons/md"
+import { MdArrowBack, MdEdit, MdCampaign } from "react-icons/md"
 import dynamic from "next/dynamic"
 interface Campaign {
   id: string
@@ -39,7 +39,7 @@ export default function CampaignDetails() {
   const router = useRouter()
   const { id } = router.query
   const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const Map = useMemo(
+  const ViewMap = useMemo(
     () =>
       dynamic(() => import("../../../components/AdminLayout/ViewMap"), {
         loading: () => <p>A map is loading</p>,
@@ -82,82 +82,103 @@ export default function CampaignDetails() {
 
   return (
     <DefaultLayout>
-      <Breadcrumb pageName='Campaign Details' breadcrumbPath='Campaigns' />
-      <div className='mx-auto p-6 bg-white rounded-lg shadow-md dark:bg-gray-800'>
-        <div className='mb-4 flex justify-between'>
-          <button
-            onClick={() => router.back()}
-            className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 flex items-center space-x-2'
-          >
-            <MdArrowBack />
-            <span>Back to Campaigns</span>
-          </button>
-
-          <button
-            onClick={() => router.push(`/admin/campaigns/${campaign.id}/edit`)}
-            className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 flex items-center space-x-2'
-          >
-            <MdEdit />
-            <span>Edit Campaign</span>
-          </button>
-        </div>
-        <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
-          {campaign.name}
-        </h1>
-        <p className='text-gray-600 dark:text-gray-300 mb-6'>
-          {campaign.description || "No description available."}
-        </p>
-        <div className='mb-6'>
-          <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
-            Details
-          </h2>
-          <p>
-            <strong>Status:</strong>{" "}
-            <span
-              className={`px-2 py-1 text-sm font-medium rounded ${
-                campaign.isOpen
-                  ? "bg-green-100 text-green-700 dark:bg-green-700 dark:text-white"
-                  : "bg-red-100 text-red-700 dark:bg-red-700 dark:text-white"
-              }`}
-            >
-              {campaign.isOpen
-                ? "Open (Anyone can join)"
-                : "Closed (Invite only)"}
-            </span>
-          </p>
-          <p>
-            <strong>Deadline:</strong>{" "}
-            {campaign.deadline
-              ? new Date(campaign.deadline).toLocaleDateString()
-              : "No Deadline"}
-          </p>
-        </div>
-        <div className='mb-6'>
-          <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
-            Users
-          </h2>
-          <ul className='list-disc pl-5 space-y-2'>
-            {campaign.allowedUsers.map(user => (
-              <li
-                key={user.userId}
-                className='text-gray-600 dark:text-gray-300'
+      <Breadcrumb
+        icon={<MdCampaign />}
+        pageName='Campaign Details'
+        breadcrumbPath='Campaigns'
+      />
+      <div className='mx-auto p-6 bg-white rounded-lg shadow-md dark:bg-gray-800 max-full'>
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+          {/* Columna izquierda */}
+          <div>
+            <div className='mb-4 flex justify-between'>
+              <button
+                onClick={() => router.back()}
+                className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 flex items-center space-x-2'
               >
-                {user.userId} -{" "}
-                {
-                  <span
-                    className={`px-2 py-1 text-sm font-medium rounded ${
-                      accessTypeColors[user.accessType]
-                    }`}
-                  >
-                    {user.accessType}
-                  </span>
+                <MdArrowBack />
+                <span>Back to Campaigns</span>
+              </button>
+
+              <button
+                onClick={() =>
+                  router.push(`/admin/campaigns/${campaign.id}/edit`)
                 }
-              </li>
-            ))}
-          </ul>
+                className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 flex items-center space-x-2'
+              >
+                <MdEdit />
+                <span>Edit Campaign</span>
+              </button>
+            </div>
+            <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
+              {campaign.name}
+            </h1>
+            <p className='text-gray-600 dark:text-gray-300 mb-6'>
+              {campaign.description || "No description available."}
+            </p>
+            <div className='mb-6'>
+              <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-2'>
+                Details
+              </h2>
+              <p>
+                <strong>Status:</strong>{" "}
+                <span
+                  className={`px-2 py-1 text-sm font-medium rounded ${
+                    campaign.isOpen
+                      ? "bg-green-100 text-green-700 dark:bg-green-700 dark:text-white"
+                      : "bg-red-100 text-red-700 dark:bg-red-700 dark:text-white"
+                  }`}
+                  data-cy='campaign-invitiation-status'
+                >
+                  {campaign.isOpen
+                    ? "Open (Anyone can join)"
+                    : "Closed (Invite only)"}
+                </span>
+              </p>
+              <p>
+                <strong>Deadline:</strong>{" "}
+                {campaign.deadline
+                  ? new Date(campaign.deadline).toLocaleDateString()
+                  : "No Deadline"}
+              </p>
+            </div>
+            <div className='mb-6'>
+              <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-2'>
+                Users
+              </h2>
+              <ul>
+                {campaign.allowedUsers.map(user => (
+                  <li
+                    key={user.userId}
+                    className='text-gray-600 dark:text-gray-300 flex justify-between items-center'
+                  >
+                    <span>{user.userId}</span>
+                    <span
+                      className={`px-2 py-1 text-sm font-medium rounded ${
+                        accessTypeColors[user.accessType] ||
+                        "bg-gray-200 text-gray-800"
+                      }`}
+                    >
+                      {user.accessType}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Columna derecha */}
+          <div className='h-full'>
+            <h2 className='text-center text-xl font-semibold text-gray-800 dark:text-white mb-4'>
+              Areas
+            </h2>
+            <div className='h-96 rounded-lg overflow-hidden shadow-lg'>
+              <ViewMap polygons={campaign?.areas} />
+            </div>
+          </div>
         </div>
-        <Map polygon={campaign.areas} />
       </div>
+
       <div className='mx-auto p-6 mt-4 bg-white rounded-lg shadow-md dark:bg-gray-800'>
         <div className='mt-8'>
           <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-4'>

@@ -19,3 +19,29 @@ export const updateCampaign = async (id: string, data: any) => {
 export const deleteCampaign = async (id: string) => {
   return await prisma.campaign.delete({ where: { id } })
 }
+
+// get all campaings , but that im in
+export const getAllCampaignsByUserId = async (userId: string) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        sub: userId
+      },
+      select: { id: true }
+    })
+
+    const campaigns = await prisma.campaign.findMany({
+      where: {
+        allowedUsers: {
+          some: {
+            userId: user.id
+          }
+        }
+      }
+    })
+    return campaigns
+  } catch (error) {
+    console.error("Error fetching campaigns:", error)
+    throw error
+  }
+}

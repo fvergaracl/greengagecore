@@ -34,15 +34,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Failed to refresh token" })
     }
 
-    console.log(" ")
-    console.log(" ")
-    console.log(" ")
-    console.log(" ")
-    console.log(" ")
-    console.log(" ")
-    console.log(" ")
-    console.log(" ")
-    console.log(" ")
     res.setHeader("Set-Cookie", [
       cookie.serialize("access_token", tokenData.access_token, {
         httpOnly: true,
