@@ -181,11 +181,14 @@ export default function CampaignDetails() {
 
       <div className='mx-auto p-6 mt-4 bg-white rounded-lg shadow-md dark:bg-gray-800'>
         <div className='mt-8'>
-          <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-4'>
+          <h2
+            className='text-xl font-semibold text-gray-800 dark:text-white mb-4'
+            data-cy='areas-title'
+          >
             Areas
           </h2>
           <ul className='space-y-4'>
-            {campaign.areas.map(sub => (
+            {campaign?.areas?.map(sub => (
               <li
                 key={sub.id}
                 className='flex justify-between items-center p-4 bg-gray-100 rounded-lg shadow-md dark:bg-gray-700'

@@ -21,13 +21,15 @@ interface AreaFormProps {
   onSuccess?: () => void // Callback after successful create/edit
 }
 
-const RecenterMap = ({ center }: { center: [number, number] }) => {
+const RecenterAndFitBounds = ({ polygon }: { polygon: number[][] | null }) => {
   const map = useMap()
+
   useEffect(() => {
-    if (center) {
-      map.setView(center, 13)
+    if (polygon && polygon.length > 0) {
+      const bounds = L.latLngBounds(polygon.map(([lat, lng]) => [lat, lng]))
+      map.fitBounds(bounds, { padding: [20, 20] }) // Margen opcional de 20px
     }
-  }, [center, map])
+  }, [polygon, map])
 
   return null
 }
@@ -191,6 +193,8 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
       if (onSuccess) onSuccess()
       if (!areaId) {
         router.push(`/admin/areas/${responseCreated.data.id}/pointsofinterest`)
+      } else {
+        router.back()
       }
     } catch (err) {
       console.error(err)
@@ -293,7 +297,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
               attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
             />
-            <RecenterMap center={mapCenter} />
+            <RecenterAndFitBounds polygon={formValues.polygon} />
             {userLocation && (
               <Marker icon={markerIcon} position={userLocation}></Marker>
             )}
@@ -344,8 +348,9 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
             <button
               onClick={handleGeolocation}
               className='py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring focus:ring-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600'
+              data-cy='geolocation-button'
             >
-              Use my location
+              Go to My Location
             </button>
           </div>
         </div>

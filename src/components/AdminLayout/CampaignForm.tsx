@@ -124,6 +124,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       })
 
       if (onSuccess) onSuccess()
+      else router.back()
     } catch (err) {
       console.error(err)
       Swal.fire({
@@ -143,6 +144,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       <a
         onClick={() => router.back()}
         className='text-blue-600 cursor-pointer mb-4 inline-block'
+        data-cy='campaign-form-back-link'
       >
         ← Back
       </a>

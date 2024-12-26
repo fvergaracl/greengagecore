@@ -7,24 +7,13 @@ export default function EditCampaignPage() {
   const router = useRouter()
   const { id } = router.query
 
-
-
   return (
     <DefaultLayout>
       <Breadcrumb
         pageName={id ? `Edit Campaign ${id}` : "Edit Campaign"}
         breadcrumbPath='Campaigns / Edit'
       />
-      {id ? (
-        <CampaignForm
-          campaignId={id as string}
-          onSuccess={() => {
-            router.push("/admin/campaigns")
-          }}
-        />
-      ) : (
-        <p>Loading...</p>
-      )}
+      {id ? <CampaignForm campaignId={id as string} /> : <p>Loading...</p>}
     </DefaultLayout>
   )
 }

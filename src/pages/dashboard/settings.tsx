@@ -4,7 +4,9 @@ import { useDashboard } from "../../context/DashboardContext"
 import axios from "axios"
 import Swal from "sweetalert2"
 
-const locales = {
+type LocaleKey = "en" | "es" | "nl" | "it"
+
+const locales: Record<LocaleKey, { label: string; flag: string }> = {
   en: { label: "English", flag: "🇺🇸" },
   es: { label: "Español", flag: "🇪🇸" },
   nl: { label: "Nederlands", flag: "🇳🇱" },
@@ -153,12 +155,18 @@ export default function Settings() {
             </p>
             {user?.roles && user.roles.length > 0 ? (
               <>
-                <p className='text-gray-600 mt-4 mb-2'>Roles:</p>
+                <p
+                  className='text-gray-600 mt-4 mb-2'
+                  data-cy='settings-user-roles-label'
+                >
+                  Roles:
+                </p>
                 <div className='flex flex-wrap gap-2'>
                   {user.roles.map((role: string) => (
                     <span
                       key={role}
                       className='inline-block bg-blue-100 text-blue-800 text-sm font-medium py-1 px-3 rounded-lg shadow-sm'
+                      data-cy='settings-user-role'
                     >
                       {role}
                     </span>
@@ -166,12 +174,23 @@ export default function Settings() {
                 </div>
               </>
             ) : (
-              <p className='text-gray-500 mt-4'>No roles assigned.</p>
+              <p className='text-gray-500 mt-4' data-cy='settings-no-roles'>
+                No roles assigned.
+              </p>
             )}
-            <p className='text-gray-600 mt-4'>Language:</p>
+            <p
+              className='text-gray-600 mt-4'
+              data-cy='settings-user-locale-label'
+            >
+              Language:
+            </p>
             <div className='font-medium text-gray-800 flex items-center gap-2'>
-              <span>{locales[user?.locale]?.flag || "🌍"}</span>
-              <span>{locales[user?.locale]?.label || "Unknown Locale"}</span>
+              <span data-cy='settings-user-locale-flag'>
+                {locales[user?.locale]?.flag || "🌍"}
+              </span>
+              <span data-cy='settings-user-locale'>
+                {locales[user?.locale]?.label || "Unknown Locale"}
+              </span>
             </div>
           </div>
         </div>
@@ -189,19 +208,26 @@ export default function Settings() {
                 src={photoUrl}
                 alt='Profile'
                 className='w-24 h-24 rounded-full object-cover mb-4'
+                data-cy='settings-profile-photo'
               />
             ) : (
               <div className='w-24 h-24 rounded-full bg-gray-200 mb-4 flex items-center justify-center'>
-                <span className='text-gray-500'>No Photo</span>
+                <span className='text-gray-500' data-cy='settings-no-photo'>
+                  No Photo
+                </span>
               </div>
             )}
-            <label className='cursor-pointer bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600'>
+            <label
+              className='cursor-pointer bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600'
+              data-cy='settings-upload-photo-button'
+            >
               Upload Photo
               <input
                 type='file'
                 accept='image/*'
                 onChange={handleFileChange}
                 className='hidden'
+                data-cy='settings-upload-photo-input'
               />
             </label>
           </div>
@@ -213,6 +239,7 @@ export default function Settings() {
               logout()
             }}
             className='py-2 px-4 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600'
+            data-cy='settings-logout-button'
           >
             Logout
           </button>

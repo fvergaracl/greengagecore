@@ -1,134 +1,134 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
 import axios from "axios"
 import Swal from "sweetalert2"
 import {
   MapContainer,
   TileLayer,
-  Polygon,
-  FeatureGroup,
   Marker,
-  useMap
+  Circle,
+  useMap,
+  useMapEvents,
+  Polygon
 } from "react-leaflet"
-import { EditControl } from "react-leaflet-draw"
 import "leaflet/dist/leaflet.css"
-import "leaflet-draw/dist/leaflet.draw.css"
-import L, { DivIcon } from "leaflet"
-import "./../styles.css"
+import CustomMarker from "../marker"
+import ReactDOMServer from "react-dom/server"
 
-interface AreaFormProps {
-  areaId?: string // If provided, the form will be in edit mode
-  onSuccess?: () => void // Callback after successful create/edit
+interface CenterMapProps {
+  center: [number, number]
 }
 
-const RecenterMap = ({ center }: { center: [number, number] }) => {
+const CenterMap: React.FC<CenterMapProps> = ({ center }) => {
   const map = useMap()
+
   useEffect(() => {
     if (center) {
-      map.setView(center, 13)
+      map.setView(center, map.getZoom())
     }
   }, [center, map])
 
   return null
 }
 
-const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
-  const router = useRouter()
+interface POIFormProps {
+  poiId?: string // If provided, the form will be in edit mode
+  onSuccess?: () => void // Callback after successful create/edit
+}
+
+const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
   const [formValues, setFormValues] = useState({
     name: "",
     description: "",
-    polygon: null as number[][] | null,
-    campaignId: ""
+    radius: 20, // Default radius in meters
+    location: [51.505, -0.09] as [number, number], // Default location
+    areaId: ""
   })
-  const [loading, setLoading] = useState(false)
-  const [allCampaigns, setAllCampaigns] = useState<any[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [mapCenter, setMapCenter] = useState<[number, number]>([51.505, -0.09])
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   )
+  const [areas, setAreas] = useState<{ id: string; name: string }[]>([])
+  const [selectedArea, setSelectedArea] = useState<any | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  const markerIcon = new DivIcon({
-    className: "static-marker-icon",
-    html: `
-      <div class="static-marker">
-        <div class="inner-circle"></div>
-      </div>
-    `,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
-  })
+  const createCustomIcon = (color: string, size: number) => {
+    const markerHtml = ReactDOMServer.renderToString(
+      <CustomMarker markerColor={color} size={size} />
+    )
+
+    return L.divIcon({
+      html: markerHtml,
+      className: "custom-marker", // Puedes agregar estilos personalizados
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size] // Ajusta el anclaje según sea necesario
+    })
+  }
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          setUserLocation([position.coords.latitude, position.coords.longitude])
+          if (!poiId) {
+            setFormValues(prev => ({
+              ...prev,
+              location: [position.coords.latitude, position.coords.longitude]
+            }))
+          }
+        },
+        error => {
+          console.error("Error fetching user location:", error)
+        }
+      )
+    } else {
+      console.error("Geolocation is not supported by this browser.")
+    }
+  }
 
   useEffect(() => {
-    if (areaId) {
-      const fetchArea = async () => {
+    const fetchAreas = async () => {
+      try {
+        const response = await axios.get("/api/admin/areas")
+        console.log({ response })
+        setAreas(response.data)
+      } catch (err) {
+        console.error("Failed to fetch areas:", err)
+        setError("Failed to load areas. Please try again.")
+      }
+    }
+
+    const fetchPOI = async () => {
+      if (poiId) {
         try {
           setLoading(true)
-          const response = await axios.get(`/api/admin/areas/${areaId}`)
+          const response = await axios.get(`/api/admin/pois/${poiId}`)
           setFormValues({
             name: response.data.name,
             description: response.data.description || "",
-            polygon: response.data.polygon || null,
-            campaignId: response.data.campaignId || ""
+            radius: response.data.radius || 15,
+            location: response.data.location || [51.505, -0.09],
+            areaId: response.data.area.id || ""
           })
           setLoading(false)
         } catch (err) {
           console.error(err)
-          setError("Failed to fetch area details.")
+          setError("Failed to fetch POI details.")
           setLoading(false)
         }
       }
-      fetchArea()
-    }
-  }, [areaId])
-
-  useEffect(() => {
-    const fetchCampaigns = async () => {
-      try {
-        const response = await axios.get("/api/admin/campaigns/names")
-        setAllCampaigns(response.data)
-      } catch (err) {
-        console.error("Failed to fetch campaigns:", err)
-      }
     }
 
-    fetchCampaigns()
-  }, [])
-
-  const handleGeolocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          const { latitude, longitude } = position.coords
-          const newLocation: [number, number] = [latitude, longitude]
-          setUserLocation(newLocation)
-          setMapCenter(newLocation)
-        },
-        error => {
-          console.warn("Geolocation not enabled or denied.", error)
-          Swal.fire({
-            title: "Geolocation Error",
-            text: "Unable to access your location. Please enable geolocation in your browser.",
-            icon: "error"
-          })
-        }
-      )
-    } else {
-      Swal.fire({
-        title: "Geolocation Unsupported",
-        text: "Your browser does not support geolocation.",
-        icon: "warning"
-      })
-    }
-  }
+    fetchAreas()
+    fetchPOI()
+    getUserLocation()
+  }, [poiId])
 
   const validateForm = () => {
     const missingFields: string[] = []
-
     if (!formValues.name.trim()) missingFields.push("Name")
-    if (!formValues.campaignId.trim()) missingFields.push("Parent Campaign")
-    if (!formValues.polygon || formValues.polygon.length < 3)
-      missingFields.push("Polygon (at least 3 points)")
+    if (!formValues.areaId.trim()) missingFields.push("Associated Area")
 
     if (missingFields.length > 0) {
       Swal.fire({
@@ -136,7 +136,9 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
         title: "Missing Fields",
         html: `Please fill the following fields:<br><b>${missingFields.join(
           ", "
-        )}</b>`
+        )}</b>`,
+        timer: 5000,
+        timerProgressBar: true
       })
       return false
     }
@@ -150,208 +152,285 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
     setFormValues(prev => ({ ...prev, [name]: value }))
   }
 
-  const handlePolygonChange = (polygonCoords: number[][]) => {
-    setFormValues(prev => ({ ...prev, polygon: polygonCoords }))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) return
+    if (!formValues.name.trim() || !formValues.areaId.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Missing Fields",
+        text: "Please fill in all required fields."
+      })
+      return
+    }
 
     setLoading(true)
     setError(null)
+    const isInsidePolygon = require("point-in-polygon")
 
+    if (!selectedArea) {
+      Swal.fire({
+        title: "Invalid Area",
+        text: "Please select a valid area.",
+        icon: "error"
+      })
+      setLoading(false)
+      return
+    }
+
+    if (
+      selectedArea &&
+      !isInsidePolygon(formValues.location, selectedArea.polygon)
+    ) {
+      Swal.fire({
+        title: "Invalid Location",
+        text: "The POI must be inside the selected area polygon.",
+        icon: "error"
+      })
+      setLoading(false)
+      return
+    }
     try {
-      const swalMessage = areaId ? "Updating area..." : "Creating area..."
+      const message = poiId
+        ? "Updating point of interest..."
+        : "Creating point of interest..."
 
       Swal.fire({
-        title: swalMessage,
+        title: message,
         icon: "info",
         timer: 5000,
         timerProgressBar: true,
         showConfirmButton: false
       })
-      let responseCreated = null
-      if (areaId) {
-        await axios.put(`/api/admin/areas/${areaId}`, formValues)
+
+      if (poiId) {
+        await axios.put(`/api/admin/pois/${poiId}`, formValues)
       } else {
-        responseCreated = await axios.post("/api/admin/areas", formValues)
+        await axios.post("/api/admin/pois", formValues)
       }
 
       setLoading(false)
       Swal.fire({
         title: "Success!",
-        text: `Area ${areaId ? "updated" : "created"} successfully!`,
+        text: `Point of interest ${
+          poiId ? "updated" : "created"
+        } successfully!`,
         icon: "success",
         timer: 3000,
         showConfirmButton: false
       })
 
       if (onSuccess) onSuccess()
-      if (!areaId) {
-        router.push(`/admin/areas/${responseCreated.data.id}/pointsofinterest`)
-      }
+      else router.back()
     } catch (err) {
       console.error(err)
       Swal.fire({
         title: "Error",
-        text: "Failed to save the area. Please try again.",
+        text: "Failed to save the point of interest. Please try again.",
         icon: "error"
       })
       setLoading(false)
     }
   }
 
+  const MapClickHandler = () => {
+    useMapEvents({
+      click: e => {
+        const { lat, lng } = e.latlng
+        setFormValues(prev => ({
+          ...prev,
+          location: [lat, lng]
+        }))
+      }
+    })
+    return null
+  }
+
+  const handleAreaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const areaId = e.target.value
+    setFormValues(prev => ({ ...prev, areaId }))
+
+    const area = areas.find(a => a.id === areaId)
+    if (area) {
+      setSelectedArea(area)
+    }
+  }
+
+  const MapZoomHandler = () => {
+    const map = useMap()
+
+    useEffect(() => {
+      if (selectedArea) {
+        const bounds = L.latLngBounds(
+          selectedArea.polygon.map(([lat, lng]) => [lat, lng])
+        )
+        map.fitBounds(bounds)
+      }
+    }, [selectedArea, map])
+
+    return null
+  }
+
   return (
-    <>
+    <form
+      onSubmit={handleSubmit}
+      className='max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
+    >
       <a
         onClick={() => router.back()}
         className='text-blue-600 cursor-pointer mb-4 inline-block'
+        data-cy='poi-form-back-link'
       >
         ← Back
       </a>
-      <div className='flex space-x-6'>
-        <form
-          onSubmit={handleSubmit}
-          className='w-1/2 bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
-        >
-          {error && <p className='text-red-500 mb-4'>{error}</p>}
-          <div className='mb-4'>
-            <label
-              htmlFor='name'
-              className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-            >
-              Name <span className='text-red-500'>*</span>
-            </label>
-            <input
-              type='text'
-              id='name'
-              name='name'
-              value={formValues.name}
-              onChange={handleChange}
-              required
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
-            />
-          </div>
-          <div className='mb-4'>
-            <label
-              htmlFor='description'
-              className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-            >
-              Description
-            </label>
-            <input
-              type='text'
-              id='description'
-              name='description'
-              value={formValues.description}
-              onChange={handleChange}
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
-            />
-          </div>
-          <div className='mb-4'>
-            <label
-              htmlFor='campaignId'
-              className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-            >
-              Parent Campaign <span className='text-red-500'>*</span>
-            </label>
-            <select
-              id='campaignId'
-              name='campaignId'
-              value={formValues.campaignId}
-              onChange={handleChange}
-              required
-              className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-green-200 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
-            >
-              <option value=''>Select Campaign</option>
-              {allCampaigns?.map(campaign => (
-                <option key={campaign.id} value={campaign.id}>
-                  {campaign.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            type='submit'
-            className='mt-4 w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring focus:ring-green-200 dark:bg-green-700 dark:hover:bg-green-600'
-            disabled={loading}
-          >
-            {loading ? "Saving..." : areaId ? "Update Area" : "Create Area"}
-          </button>
-        </form>
 
-        <div className='w-1/2 h-96'>
-          <MapContainer
-            center={mapCenter}
-            zoom={13}
-            scrollWheelZoom={false}
-            className='h-full rounded-lg shadow-md'
-          >
-            <TileLayer
-              url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-              attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
-            />
-            <RecenterMap center={mapCenter} />
-            {userLocation && (
-              <Marker icon={markerIcon} position={userLocation}></Marker>
-            )}
-            {formValues.polygon && (
-              <Polygon
-                positions={formValues.polygon}
-                pathOptions={{ color: "blue", fillOpacity: 0.4 }}
-              />
-            )}
-            <FeatureGroup>
-              <EditControl
-                position='topright'
-                onEdited={e => {
-                  const layers = e.layers
-                  layers.eachLayer(layer => {
-                    if (layer instanceof L.Polygon) {
-                      handlePolygonChange(
-                        layer
-                          .getLatLngs()[0]
-                          .map((latlng: L.LatLng) => [latlng.lat, latlng.lng])
-                      )
-                    }
-                  })
-                }}
-                onCreated={e => {
-                  const layer = e.layer
-                  if (layer instanceof L.Polygon) {
-                    handlePolygonChange(
-                      layer
-                        .getLatLngs()[0]
-                        .map((latlng: L.LatLng) => [latlng.lat, latlng.lng])
-                    )
-                  }
-                }}
-                onDeleted={() => handlePolygonChange([])}
-                draw={{
-                  polygon: { allowIntersection: false },
-                  rectangle: false,
-                  circle: false,
-                  circlemarker: false,
-                  marker: false,
-                  polyline: false
-                }}
-              />
-            </FeatureGroup>
-          </MapContainer>
-          <div className='flex justify-center mt-2'>
-            <button
-              onClick={handleGeolocation}
-              className='py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring focus:ring-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600'
-            >
-              Use my location
-            </button>
-          </div>
+      {error && <p className='text-red-500 mb-4'>{error}</p>}
+
+      <div className='mb-4'>
+        <label
+          htmlFor='name'
+          className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Name <span className='text-red-500'>*</span>
+        </label>
+        <input
+          type='text'
+          id='name'
+          name='name'
+          value={formValues.name}
+          onChange={handleChange}
+          required
+          className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+        />
+      </div>
+      <div className='mb-4 grid grid-cols-2 gap-4'>
+        <div>
+          <label htmlFor='latitude' className='block text-sm font-medium'>
+            Latitude
+          </label>
+          <input
+            type='text'
+            id='latitude'
+            value={formValues.location[0]}
+            disabled
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700'
+          />
+        </div>
+        <div>
+          <label htmlFor='longitude' className='block text-sm font-medium'>
+            Longitude
+          </label>
+          <input
+            type='text'
+            id='longitude'
+            value={formValues.location[1]}
+            disabled
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700'
+          />
         </div>
       </div>
-    </>
+      <div className='mb-4'>
+        <label
+          htmlFor='description'
+          className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Description
+        </label>
+        <input
+          type='text'
+          id='description'
+          name='description'
+          value={formValues.description}
+          onChange={handleChange}
+          className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+        />
+      </div>
+
+      <div className='mb-4'>
+        <label
+          htmlFor='radius'
+          className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Radius (meters)
+        </label>
+        <input
+          type='number'
+          id='radius'
+          name='radius'
+          value={formValues.radius}
+          onChange={handleChange}
+          min={1}
+          className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+        />
+      </div>
+
+      <div className='mb-4'>
+        <label
+          htmlFor='areaId'
+          className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Associated Area <span className='text-red-500'>*</span>
+        </label>
+        <select
+          id='areaId'
+          name='areaId'
+          value={formValues.areaId}
+          onChange={handleAreaChange}
+          required
+          className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-green-200 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+        >
+          <option value=''>Select an Area</option>
+          {areas.map(area => (
+            <option key={area.id} value={area.id}>
+              {area.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className='mb-4 h-96'>
+        <MapContainer
+          center={userLocation || formValues.location}
+          zoom={18}
+          scrollWheelZoom={true}
+          className='h-full rounded-md'
+          data-cy='poi-form-map'
+        >
+          <CenterMap center={userLocation || formValues.location} />
+          <TileLayer
+            url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+          />
+          <MapClickHandler />
+          <MapZoomHandler />
+          {selectedArea && (
+            <Polygon
+              positions={selectedArea.polygon.map(([lat, lng]) => [lat, lng])}
+              pathOptions={{ color: "green", fillOpacity: 0.2 }}
+            />
+          )}
+          <Marker
+            position={formValues.location}
+            icon={createCustomIcon("blue", 36)}
+          />
+
+          <Circle
+            center={formValues.location}
+            radius={formValues.radius}
+            pathOptions={{ color: "blue", fillOpacity: 0.2 }}
+          />
+        </MapContainer>
+      </div>
+
+      <button
+        type='submit'
+        className='mt-4 w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring focus:ring-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600'
+        disabled={loading}
+      >
+        {loading ? "Saving..." : poiId ? "Update POI" : "Create POI"}
+      </button>
+    </form>
   )
 }
 
-export default AreaForm
+export default POIForm

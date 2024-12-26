@@ -17,16 +17,7 @@ export default function EditAreaPage() {
         pageName={id ? `Edit Area ${id}` : "Edit Area"}
         breadcrumbPath='Area / Edit'
       />
-      {id ? (
-        <AreaForm
-          areaId={id as string}
-          onSuccess={() => {
-            router.push("/admin/areas")
-          }}
-        />
-      ) : (
-        <p>Loading...</p>
-      )}
+      {id ? <AreaForm areaId={id as string} /> : <p>Loading...</p>}
     </DefaultLayout>
   )
 }
