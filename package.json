@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "concurrently \"node src/ws/server.js\" \"next start\"",
     "lint": "next lint",
-    "prisma:format": "npx prisma format",
     "migrate:reset:local": "dotenv -e .env.local -- npx prisma migrate reset",
+    "migration:format": "dotenv -e .env.local -- npx prisma format",
     "migration:dev": "dotenv -e .env.local -- npx prisma migrate dev",
     "migration:generate": "dotenv -e .env.local -- npx prisma generate --schema=./prisma/schema.prisma",
     "migration:deploy": "dotenv -e .env.local -- npx prisma migrate deploy"

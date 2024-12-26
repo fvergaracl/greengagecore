@@ -15,8 +15,23 @@ model User {
   logs                Log[]
   trajectories        UserTrajectory[]
   accessibleCampaigns UserCampaignAccess[] @relation("UserCampaignAccess")
+  settings            UserSetting?
   created_at          DateTime             @default(now())
   updated_at          DateTime             @updatedAt
+}
+
+model UserSetting {
+  id                   String    @id @default(uuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id]) // Relation with User
+  language             String    @default("en") // Default language
+  theme                String    @default("light") // Theme: "light" or "dark"
+  timezone             String?   @default("UTC") // Timezone preference
+  notificationsEnabled Boolean   @default(true) // User notifications preference
+  metadata             Json? // Additional settings in JSON format
+  lastLogin            DateTime? // Last login date and time
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
 }
 
 model Campaign {
@@ -48,16 +63,18 @@ model Area {
 }
 
 model PointOfInterest {
-  id         String   @id @default(uuid())
-  radius     Float    @default(15) // In meters
-  disabled   Boolean  @default(false)
-  areaId     String
-  area       Area     @relation(fields: [areaId], references: [id])
-  latitude   Float
-  longitude  Float
-  tasks      Task[]
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  radius      Float    @default(15) // In meters
+  disabled    Boolean  @default(false)
+  areaId      String
+  area        Area     @relation(fields: [areaId], references: [id])
+  latitude    Float
+  longitude   Float
+  tasks       Task[]
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 }
 
 model Task {
