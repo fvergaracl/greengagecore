@@ -1,8 +1,8 @@
 import DefaultLayout from "../../../../components/AdminLayout"
 import dynamic from "next/dynamic"
 
-const AreaForm = dynamic(
-  () => import("../../../../components/AdminLayout/AreaForm")
+const PoisForm = dynamic(
+  () => import("../../../../components/AdminLayout/PoisForm")
 )
 import { useRouter } from "next/router"
 import Breadcrumb from "../../../../components/Breadcrumbs/Breadcrumb"
@@ -14,19 +14,10 @@ export default function EditAreaPage() {
   return (
     <DefaultLayout>
       <Breadcrumb
-        pageName={id ? `Edit Area ${id}` : "Edit Area"}
-        breadcrumbPath='Area / Edit'
+        pageName={id ? `Edit POI ${id}` : "Edit POI"}
+        breadcrumbPath='POI / Edit'
       />
-      {id ? (
-        <AreaForm
-          areaId={id as string}
-          onSuccess={() => {
-            router.push("/admin/areas")
-          }}
-        />
-      ) : (
-        <p>Loading...</p>
-      )}
+      {id ? <PoisForm poiId={id as string} /> : <p>Loading...</p>}
     </DefaultLayout>
   )
 }

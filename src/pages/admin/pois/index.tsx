@@ -37,6 +37,7 @@ export default function AdminPOIs() {
     const fetchPOIs = async () => {
       try {
         const response = await axios.get("/api/admin/pois")
+        console.log("-response", response)
         setPois(response.data)
         setFilteredPOIs(response.data)
       } catch (err) {
@@ -142,7 +143,9 @@ export default function AdminPOIs() {
               <th className='border px-4 py-2'>#</th>
               <th className='border px-4 py-2'>Name</th>
               <th className='border px-4 py-2'>Description</th>
+              <th className='border px-4 py-2'>Campaign</th>
               <th className='border px-4 py-2'>Parent Area</th>
+              <th className='border px-4 py-2'>Tasks</th>
               <th className='border px-4 py-2'>Actions</th>
             </tr>
           </thead>
@@ -160,7 +163,25 @@ export default function AdminPOIs() {
                 <td className='border px-4 py-2 text-sm text-gray-600 dark:text-gray-400'>
                   {poi.description || "-"}
                 </td>
+                <td className='border px-4 py-2'>{poi.area.campaign.name}</td>
                 <td className='border px-4 py-2'>{poi.area.name}</td>
+                <td className='border px-4 py-2'>
+                  {poi.tasks.length > 0 ? (
+                    <span
+                      className='text-green-600'
+                      data-cy={`poi-${poi.id}-tasks`}
+                    >
+                      {poi.tasks.length}
+                    </span>
+                  ) : (
+                    <span
+                      className='text-red-600'
+                      data-cy={`poi-${poi.id}-tasks`}
+                    >
+                      No
+                    </span>
+                  )}
+                </td>
                 <td className='border px-4 py-2'>
                   <div className='flex gap-2'>
                     <button

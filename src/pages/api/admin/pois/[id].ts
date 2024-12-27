@@ -1,5 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import AreaController from "@/controllers/admin/AreaController"
+import PoiController from "@/controllers/admin/PoiController"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 export default async function handler(
   req: NextApiRequest,
@@ -11,29 +14,26 @@ export default async function handler(
     switch (req.method) {
       case "GET": {
         if (!id) {
-          return res.status(400).json({ error: "Area ID is required" })
+          return res.status(400).json({ error: "POI ID is required" })
         }
 
-        const area = await AreaController.getAreaById(id as string)
+        const poi = await PoiController.getPOIById(id as string)
 
-        if (!area) {
-          return res.status(404).json({ error: "Area not found" })
+        if (!poi) {
+          return res.status(404).json({ error: "POI not found" })
         }
 
-        return res.status(200).json(area)
+        return res.status(200).json(poi)
       }
 
       case "PUT": {
         if (!id) {
-          return res.status(400).json({ error: "Area ID is required" })
+          return res.status(400).json({ error: "POI ID is required" })
         }
 
-        const updatedArea = await AreaController.updateArea(
-          id as string,
-          req.body
-        )
+        const updatedPOI = await PoiController.updatePOI(id as string, req.body)
 
-        return res.status(200).json(updatedArea)
+        return res.status(200).json(updatedPOI)
       }
 
       default: {
@@ -44,5 +44,7 @@ export default async function handler(
   } catch (error) {
     console.error("API Error:", error)
     return res.status(500).json({ error: "Internal Server Error" })
+  } finally {
+    await prisma.$disconnect()
   }
 }

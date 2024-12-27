@@ -14,16 +14,19 @@ import {
 import "leaflet/dist/leaflet.css"
 import CustomMarker from "../marker"
 import ReactDOMServer from "react-dom/server"
+import dynamic from "next/dynamic"
 
 interface CenterMapProps {
   center: [number, number]
 }
 
 const CenterMap: React.FC<CenterMapProps> = ({ center }) => {
+  console.log("CenterMap:", center)
   const map = useMap()
 
   useEffect(() => {
     if (center) {
+      console.log("Centering map to:", center)
       map.setView(center, map.getZoom())
     }
   }, [center, map])
@@ -41,7 +44,8 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
     name: "",
     description: "",
     radius: 20, // Default radius in meters
-    location: [51.505, -0.09] as [number, number], // Default location
+    latitude: 51.505,
+    longitude: -0.09,
     areaId: ""
   })
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
@@ -74,7 +78,8 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
           if (!poiId) {
             setFormValues(prev => ({
               ...prev,
-              location: [position.coords.latitude, position.coords.longitude]
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
             }))
           }
         },
@@ -108,9 +113,12 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
             name: response.data.name,
             description: response.data.description || "",
             radius: response.data.radius || 15,
-            location: response.data.location || [51.505, -0.09],
+            latitude: response.data.latitude || 51.505,
+            longitude: response.data.longitude || -0.09,
             areaId: response.data.area.id || ""
           })
+          console.log("Selected area:", response.data.area)
+          setSelectedArea(response.data.area)
           setLoading(false)
         } catch (err) {
           console.error(err)
@@ -180,7 +188,10 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
 
     if (
       selectedArea &&
-      !isInsidePolygon(formValues.location, selectedArea.polygon)
+      !isInsidePolygon(
+        [formValues.latitude, formValues.longitude],
+        selectedArea.polygon
+      )
     ) {
       Swal.fire({
         title: "Invalid Location",
@@ -202,13 +213,29 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
         timerProgressBar: true,
         showConfirmButton: false
       })
+      let response = null
 
       if (poiId) {
-        await axios.put(`/api/admin/pois/${poiId}`, formValues)
+        response = await axios.put(`/api/admin/pois/${poiId}`, {
+          ...formValues,
+          radius: parseInt(formValues.radius)
+        })
       } else {
-        await axios.post("/api/admin/pois", formValues)
+        response = await axios.post("/api/admin/pois", formValues)
       }
+      if (response.status !== 200 && response.status !== 201) {
+        const errorMsg = `Failed to ${
+          poiId ? "update" : "create"
+        } the point of interest. Please try again.`
 
+        Swal.fire({
+          title: "Error",
+          text: errorMsg,
+          icon: "error"
+        })
+        setLoading(false)
+        return
+      }
       setLoading(false)
       Swal.fire({
         title: "Success!",
@@ -239,7 +266,8 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
         const { lat, lng } = e.latlng
         setFormValues(prev => ({
           ...prev,
-          location: [lat, lng]
+          latitude: lat,
+          longitude: lng
         }))
       }
     })
@@ -311,7 +339,7 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
           <input
             type='text'
             id='latitude'
-            value={formValues.location[0]}
+            value={formValues.latitude}
             disabled
             className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700'
           />
@@ -323,7 +351,7 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
           <input
             type='text'
             id='longitude'
-            value={formValues.location[1]}
+            value={formValues.longitude}
             disabled
             className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700'
           />
@@ -390,13 +418,13 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
 
       <div className='mb-4 h-96'>
         <MapContainer
-          center={userLocation || formValues.location}
+          center={[formValues.latitude, formValues.longitude]}
           zoom={18}
           scrollWheelZoom={true}
           className='h-full rounded-md'
           data-cy='poi-form-map'
         >
-          <CenterMap center={userLocation || formValues.location} />
+          <CenterMap center={[formValues.latitude, formValues.longitude]} />
           <TileLayer
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
@@ -405,17 +433,17 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
           <MapZoomHandler />
           {selectedArea && (
             <Polygon
-              positions={selectedArea.polygon.map(([lat, lng]) => [lat, lng])}
+              positions={selectedArea?.polygon?.map(([lat, lng]) => [lat, lng])}
               pathOptions={{ color: "green", fillOpacity: 0.2 }}
             />
           )}
           <Marker
-            position={formValues.location}
+            position={[formValues.latitude, formValues.longitude]}
             icon={createCustomIcon("blue", 36)}
           />
 
           <Circle
-            center={formValues.location}
+            center={[formValues.latitude, formValues.longitude]}
             radius={formValues.radius}
             pathOptions={{ color: "blue", fillOpacity: 0.2 }}
           />

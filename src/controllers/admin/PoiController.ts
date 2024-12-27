@@ -7,10 +7,24 @@ export default class POIController {
     return await prisma.pointOfInterest.findMany({
       include: {
         area: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            name: true,
+            polygon: true,
+            campaign: {
+              select: {
+                id: true,
+                name: true,
+                description: true
+              }
+            }
+          }
         },
         tasks: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            title: true
+          }
         }
       },
       orderBy: {
@@ -24,7 +38,7 @@ export default class POIController {
       where: { id },
       include: {
         area: {
-          select: { id: true, name: true }
+          select: { id: true, name: true, polygon: true }
         },
         tasks: true
       }
@@ -35,11 +49,10 @@ export default class POIController {
     try {
       return await prisma.pointOfInterest.create({
         data: {
-          name: data?.name,
+          name: data.name,
           description: data?.description,
-          location: {
-            set: data?.location // Assumes a GeoJSON or array format for the location
-          },
+          latitude: data?.latitude,
+          longitude: data?.longitude,
           radius: data?.radius,
           areaId: data?.areaId
         }
@@ -57,9 +70,9 @@ export default class POIController {
         data: {
           name: data?.name,
           description: data?.description,
-          location: {
-            set: data?.location // Update location
-          },
+          latitude: data?.latitude,
+          longitude: data?.longitude,
+          disabled: data?.disabled,
           radius: data?.radius,
           areaId: data?.areaId
         }
