@@ -14,7 +14,6 @@ import {
 import "leaflet/dist/leaflet.css"
 import CustomMarker from "../marker"
 import ReactDOMServer from "react-dom/server"
-import dynamic from "next/dynamic"
 
 interface CenterMapProps {
   center: [number, number]
@@ -35,15 +34,15 @@ const CenterMap: React.FC<CenterMapProps> = ({ center }) => {
 }
 
 interface POIFormProps {
-  poiId?: string // If provided, the form will be in edit mode
-  onSuccess?: () => void // Callback after successful create/edit
+  poiId?: string 
+  onSuccess?: () => void 
 }
 
 const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
   const [formValues, setFormValues] = useState({
     name: "",
     description: "",
-    radius: 20, // Default radius in meters
+    radius: 20, 
     latitude: 51.505,
     longitude: -0.09,
     areaId: ""
@@ -64,9 +63,9 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
 
     return L.divIcon({
       html: markerHtml,
-      className: "custom-marker", // Puedes agregar estilos personalizados
+      className: "custom-marker", 
       iconSize: [size, size],
-      iconAnchor: [size / 2, size] // Ajusta el anclaje según sea necesario
+      iconAnchor: [size / 2, size] 
     })
   }
 

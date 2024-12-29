@@ -1,57 +1,66 @@
-import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
 import axios from "axios"
+import { useRouter } from "next/router"
 import DefaultLayout from "../../../components/AdminLayout"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
-import dynamic from "next/dynamic"
+import CustomMarker from "../../../components/marker"
+import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet"
+import ReactDOMServer from "react-dom/server"
+import "leaflet/dist/leaflet.css"
 
-// Dynamically import Leaflet components
-const MapContainer = dynamic(
-  () => import("react-leaflet").then(mod => mod.MapContainer),
-  { ssr: false }
-)
-const TileLayer = dynamic(
-  () => import("react-leaflet").then(mod => mod.TileLayer),
-  { ssr: false }
-)
-const Polygon = dynamic(
-  () => import("react-leaflet").then(mod => mod.Polygon),
-  { ssr: false }
-)
-
-interface Area {
+interface POI {
   id: string
   name: string
   description: string
-  campaign: { id: string; name: string }
-  disabled: boolean
-  polygon: [number, number][] | null
-  tasks: { id: string; title: string }[]
+  latitude: number
+  longitude: number
+  radius: number
+  area: { id: string; name: string }
   created_at: string
   updated_at: string
 }
 
-export default function AreaDetails() {
+export default function POIList() {
+  const [pois, setPois] = useState<POI[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const { id } = router.query
-  const [area, setArea] = useState<Area | null>(null)
 
   useEffect(() => {
-    if (id) {
-      const fetchAreaDetails = async () => {
-        try {
-          const response = await axios.get(`/api/admin/areas/${id}`)
-          setArea(response.data)
-        } catch (error) {
-          console.error("Error fetching area details:", error)
-        }
+    const fetchPOIs = async () => {
+      setLoading(true)
+      try {
+        const response = await axios.get("/api/admin/pois")
+        setPois(response.data)
+        setLoading(false)
+      } catch (err) {
+        console.error("Error fetching POIs:", err)
+        setError("Failed to load POIs. Please try again later.")
+        setLoading(false)
       }
-
-      fetchAreaDetails()
     }
-  }, [id])
 
-  if (!area) {
+    fetchPOIs()
+  }, [])
+
+  const createCustomIcon = (color: string, size: number) => {
+    const markerHtml = ReactDOMServer.renderToString(
+      <CustomMarker markerColor={color} size={size} />
+    )
+
+    return L.divIcon({
+      html: markerHtml,
+      className: "custom-marker", 
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size] 
+    })
+  }
+
+  const handleCreateNewTask = (id: string) => {
+    router.push(`/admin/tasks/new?poiId=${id}`)
+  }
+
+  if (loading) {
     return (
       <DefaultLayout>
         <div className='flex items-center justify-center h-screen'>
@@ -61,113 +70,67 @@ export default function AreaDetails() {
     )
   }
 
-  const polygonCoordinates = area.polygon || []
-  const bounds = polygonCoordinates.length > 0 ? polygonCoordinates : [[0, 0]]
+  if (error) {
+    return (
+      <DefaultLayout>
+        <div className='flex items-center justify-center h-screen'>
+          <p className='text-red-500 text-lg'>{error}</p>
+        </div>
+      </DefaultLayout>
+    )
+  }
 
   return (
     <DefaultLayout>
-      <Breadcrumb pageName='Area Details' breadcrumbPath='Areas' />
-      <div className='flex'>
-        {/* Left Content */}
-        <div className='flex-1 p-6 bg-white rounded-lg shadow-md dark:bg-gray-800'>
-          <div className='mb-4 flex justify-between'>
-            <button
-              onClick={() => router.back()}
-              className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
+      <Breadcrumb pageName='Points of Interest' breadcrumbPath='POIs' />
+      <div className='p-6'>
+        <div className=' gap-6'>
+          {pois.map(poi => (
+            <div
+              key={poi.id}
+              className='bg-white rounded-lg shadow-md dark:bg-gray-800 p-4'
             >
-              ← Back to Areas
-            </button>
-            <button
-              onClick={() =>
-                router.push(`/admin/campaigns/${area.campaign.id}`)
-              }
-              className='px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600'
-            >
-              View Parent Campaign
-            </button>
-            <button
-              onClick={() => router.push(`/admin/areas/${area.id}/edit`)}
-              className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600'
-            >
-              Edit Area
-            </button>
-          </div>
-          <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
-            {area.name}
-          </h1>
-          <p className='text-gray-600 dark:text-gray-300 mb-6'>
-            {area.description || "No description available."}
-          </p>
-          <div className='mb-6'>
-            <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
-              Parent Campaign
-            </h2>
-            <p>
-              <strong>Name:</strong> {area.campaign.name}
-            </p>
-          </div>
-          <div className='mb-6'>
-            <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
-              Details
-            </h2>
-            <p>
-              <strong>Status:</strong>{" "}
-              <span
-                className={`px-2 py-1 text-sm font-medium rounded ${
-                  area.disabled
-                    ? "bg-red-100 text-red-700 dark:bg-red-700 dark:text-white"
-                    : "bg-green-100 text-green-700 dark:bg-green-700 dark:text-white"
-                }`}
+              <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-2'>
+                {poi.name}
+              </h2>
+              <p className='text-gray-600 dark:text-gray-300 mb-2'>
+                {poi.description || "No description available."}
+              </p>
+              <p className='text-sm text-gray-500 dark:text-gray-400 mb-2'>
+                Area: {poi.area.name}
+              </p>
+              <p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
+                Created At: {new Date(poi.created_at).toLocaleDateString()}
+              </p>
+              <div className='h-96 w-full mb-4'>
+                <MapContainer
+                  center={[poi.latitude, poi.longitude]}
+                  zoom={16}
+                  className='h-full rounded-md'
+                >
+                  <TileLayer
+                    url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  <Marker
+                    position={[poi.latitude, poi.longitude]}
+                    icon={createCustomIcon("blue", 36)}
+                  />
+                  <Circle
+                    center={[poi.latitude, poi.longitude]}
+                    radius={poi.radius}
+                    pathOptions={{ color: "blue", fillOpacity: 0.2 }}
+                  />
+                </MapContainer>
+              </div>
+              <button
+                onClick={() => handleCreateNewTask(poi.id)}
+                className='w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700'
               >
-                {area.disabled ? "Disabled" : "Active"}
-              </span>
-            </p>
-            <p>
-              <strong>Created At:</strong>{" "}
-              {new Date(area.created_at).toLocaleDateString()}
-            </p>
-            <p>
-              <strong>Updated At:</strong>{" "}
-              {new Date(area.updated_at).toLocaleDateString()}
-            </p>
-          </div>
-          <div className='mb-6'>
-            <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
-              Tasks
-            </h2>
-            <ul className='list-disc pl-5 space-y-2'>
-              {area?.pointOfInterests?.tasks?.map(task => (
-                <li key={task.id} className='text-gray-600 dark:text-gray-300'>
-                  {task.title}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-        {/* Right Map */}
-        <div className='w-1/2 p-6'>
-          <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-4'>
-            Polygon Map
-          </h2>
-          {polygonCoordinates.length > 2 ? (
-            <MapContainer
-              bounds={bounds}
-              style={{ height: "400px", width: "100%" }}
-            >
-              <TileLayer
-                url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
-              <Polygon
-                positions={polygonCoordinates}
-                pathOptions={{ color: "blue", fillOpacity: 0.3 }}
-              />
-            </MapContainer>
-          ) : (
-            <p className='text-gray-600 dark:text-gray-300'>
-              No polygon defined for this area.
-            </p>
-          )}
+                Create Task
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </DefaultLayout>
