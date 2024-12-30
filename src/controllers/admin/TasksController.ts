@@ -7,21 +7,51 @@ export default class TaskController {
     return await prisma.task.findMany({
       include: {
         pointOfInterest: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            name: true,
+            area: {
+              select: {
+                id: true,
+                name: true,
+                campaign: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            }
+          }
         }
       }
-    })
+    });
   }
 
   static async getTaskById(id: string) {
-    return await prisma.task.findUnique({
+    return await  prisma.task.findUnique({
       where: { id },
       include: {
         pointOfInterest: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            name: true,
+            area: {
+              select: {
+                id: true,
+                name: true,
+                campaign: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            }
+          }
         }
       }
-    })
+    });
   }
 
   static async getAllTasksByPOI(pointOfInterestId: string) {
@@ -54,5 +84,5 @@ export default class TaskController {
     })
   }
 
- 
+
 }

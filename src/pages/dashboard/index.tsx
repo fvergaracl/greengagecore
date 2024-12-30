@@ -60,6 +60,7 @@ export default function Dashboard() {
             puntos={puntos}
             poligonos={poligonos}
             position={position}
+            selectedCampaign={selectedCampaign}
           />
         )}
       </div>

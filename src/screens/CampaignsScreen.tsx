@@ -19,8 +19,8 @@ export default function CampaignsScreen() {
     const fetchCampaigns = async () => {
       try {
         const [allCampaignsRes, mineCampaignsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/campaign`),
-          fetch(`${API_BASE_URL}/campaign/mine`)
+          fetch(`${API_BASE_URL}/campaigns`),
+          fetch(`${API_BASE_URL}/campaigns/mine`)
         ])
 
         const allCampaigns = await allCampaignsRes.json()
@@ -60,7 +60,7 @@ export default function CampaignsScreen() {
     } else {
       setLoadingCampaignId(campaign.id)
       try {
-        const response = await fetch(`${API_BASE_URL}/campaign/access`, {
+        const response = await fetch(`${API_BASE_URL}/campaigns/access`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

@@ -5,7 +5,20 @@ export const getAllCampaign = async () => {
 }
 
 export const getCampaignById = async (id: string) => {
-  return await prisma.campaign.findUnique({ where: { id } })
+  return await prisma.campaign.findUnique({
+    where: { id },
+    include: {
+      areas: {
+        include: {
+          pointOfInterests: {
+            include: {
+              tasks: true
+            }
+          }
+        }
+      }
+    }
+  })
 }
 
 export const createCampaign = async (data: any) => {

@@ -4,11 +4,13 @@ import ws from "../utils/websocket"
 const DataAreaFetcher = () => {
   const [dataEntries, setDataEntries] = useState([])
   const [areas, setAreas] = useState([])
+  const [isWebSocketReady, setIsWebSocketReady] = useState(false)
 
   useEffect(() => {
-    // Request data on mount
-    ws.send(JSON.stringify({ type: "getDataEntries" }))
-    ws.send(JSON.stringify({ type: "getAreas" }))
+    // Open WebSocket connection and mark as ready
+    ws.onopen = () => {
+      setIsWebSocketReady(true)
+    }
 
     // Handle WebSocket messages
     ws.onmessage = event => {
@@ -23,10 +25,22 @@ const DataAreaFetcher = () => {
       }
     }
 
+    ws.onerror = error => {
+      console.error("WebSocket Error:", error)
+    }
+
     return () => {
       ws.close()
     }
   }, [])
+
+  useEffect(() => {
+    if (isWebSocketReady) {
+      // Send requests only when the WebSocket is ready
+      ws.send(JSON.stringify({ type: "getDataEntries" }))
+      ws.send(JSON.stringify({ type: "getAreas" }))
+    }
+  }, [isWebSocketReady])
 
   return (
     <div>
