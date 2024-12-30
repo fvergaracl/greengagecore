@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic"
-import { useEffect, useMemo, useState } from "react"
-import L, { DivIcon } from "leaflet"
+import { useEffect, useMemo } from "react"
+import L, { LatLngExpression, DivIcon } from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { useDashboard } from "../context/DashboardContext"
 import "./styles.css"
@@ -22,7 +22,6 @@ interface PolygonData {
 interface MapProps {
   puntos: Point[]
   poligonos: PolygonData[]
-  selectedCampaign: { id: string; name: string } | null
 }
 
 const MapContainer = dynamic(
@@ -44,21 +43,8 @@ const Popup = dynamic(() => import("react-leaflet").then(mod => mod.Popup), {
   ssr: false
 })
 
-export default function Map({ puntos, poligonos, selectedCampaign }: MapProps) {
+export default function Map({ puntos, poligonos }: MapProps) {
   const { mapCenter, setMapCenter, position, isTracking } = useDashboard()
-  const [campaignData, setCampaignData] = useState<any>(null)
-
-  useEffect(() => {
-    const fetchCampaignData = async () => {
-      if (!selectedCampaign) return
-      const res = await fetch(`/api/campaigns/${selectedCampaign?.id}`)
-      const resJson = await res.json()
-
-      setCampaignData(resJson)
-    }
-
-    fetchCampaignData()
-  }, [selectedCampaign])
 
   useEffect(() => {
     if (position && !mapCenter) {
@@ -97,7 +83,6 @@ export default function Map({ puntos, poligonos, selectedCampaign }: MapProps) {
       center={mapCenter || [0, 0]}
       zoom={mapCenter ? 16 : 13}
       style={{ height: "100vh", width: "100%" }}
-      data-cy='map-container-for-dashboard'
     >
       <TileLayer
         url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'

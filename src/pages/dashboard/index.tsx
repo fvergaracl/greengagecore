@@ -4,7 +4,9 @@ import dynamic from "next/dynamic"
 import { useDashboard } from "../../context/DashboardContext"
 import DataAreaFetcher from "../../components/DataAreaFetcher"
 import CampaignsScreen from "../../screens/CampaignsScreen"
-const DynamicMap = dynamic(() => import("../../components/Map"), { ssr: false })
+const DynamicMap = dynamic(() => import("../../components/MapDashboard"), {
+  ssr: false
+})
 
 export default function Dashboard() {
   const { position, selectedCampaign } = useDashboard()
