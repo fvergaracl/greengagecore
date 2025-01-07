@@ -1,20 +1,32 @@
-// This file configures the initialization of Sentry on the server.
-// The config you add here will be used whenever the server handles a request.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+// sentry.server.config.ts
 
-import * as Sentry from "@sentry/nextjs";
+/**
+ * Configures the initialization of Sentry on the server.
+ * This configuration is applied whenever the server handles a request.
+ * Documentation: https://docs.sentry.io/platforms/javascript/guides/nextjs/
+ */
 
-if (!!process?.env?.NEXT_PUBLIC_SENTRY_DSN) {
+import * as Sentry from "@sentry/nextjs"
+
+// Ensure the Sentry DSN is provided before initializing
+const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN
+const ENVIRONMENT = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT
+
+if (SENTRY_DSN) {
   Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-    environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
-    // Adjust this value in production, or use tracesSampler for greater control
-    tracesSampleRate: 1,
+    dsn: SENTRY_DSN,
+    environment: ENVIRONMENT || "development",
 
-    // Setting this option to true will print useful information to the console while you're setting up Sentry.
-    debug: false,
+    // Adjust the tracesSampleRate for performance monitoring.
+    // Use `tracesSampler` for finer control if required.
+    tracesSampleRate: process?.env?.NODE_ENV === "production" ? 0.1 : 1.0,
 
-    // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-    // spotlight: process.env.NODE_ENV === 'development',
-  });
+    // Enable debugging in non-production environments to ease setup and troubleshooting.
+    debug: process?.env?.NODE_ENV !== "production"
+
+    // Uncomment to enable Spotlight for enhanced developer experience during development.
+    // spotlight: process.env.NODE_ENV === "development",
+  })
+} else {
+  console.warn("Sentry DSN is not provided. Sentry will not be initialized.")
 }

@@ -1,38 +1,80 @@
 {
   "compilerOptions": {
+    // Base directory for resolving non-relative module names
     "baseUrl": ".",
+
+    // Specifies the target ECMAScript version
+    "target": "esnext",
+
+    // Library definitions to include in the project
     "lib": ["dom", "dom.iterable", "esnext"],
+
+    // Allow JavaScript files to be imported
     "allowJs": true,
+
+    // Skip type checking of declaration files
     "skipLibCheck": true,
+
+    // Enable all strict type-checking options
     "strict": true,
+
+    // Prevent emitting output files
     "noEmit": true,
+
+    // Enable interoperability between ES modules and CommonJS
     "esModuleInterop": true,
+
+    // Specify the module system to use
     "module": "esnext",
+
+    // Use bundler resolution for module imports
     "moduleResolution": "bundler",
+
+    // Allow importing JSON files
     "resolveJsonModule": true,
+
+    // Ensure each file is treated as an isolated module
     "isolatedModules": true,
+
+    // Specify JSX code generation target
     "jsx": "preserve",
+
+    // Enable incremental compilation for faster builds
     "incremental": true,
+
+    // Disable strict property initialization (may be necessary for flexibility)
     "strictPropertyInitialization": false,
+
+    // Disable strict null checks for flexibility, though this is not recommended
     "strictNullChecks": false,
+
+    // Enable experimental support for decorators
     "experimentalDecorators": true,
+
+    // Emit metadata for decorators (e.g., for dependency injection)
     "emitDecoratorMetadata": true,
+
+    // Specify plugins (e.g., Next.js plugin)
     "plugins": [
       {
         "name": "next"
       }
     ],
+
+    // Path aliases for cleaner imports
     "paths": {
       "@/*": ["./src/*"],
       "*": ["node_modules/*"]
     }
   },
   "include": [
-    ".next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "generate-controllers.js"
+    ".next-env.d.ts", // Include environment definitions for Next.js
+    "**/*.ts", // Include all TypeScript files
+    "**/*.tsx", // Include all TypeScript files with JSX
+    ".next/types/**/*.ts", // Include Next.js type definitions
+    "generate-controllers.js" // Include custom script if applicable
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules" // Exclude dependencies from the type-checking process
+  ]
 }

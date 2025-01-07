@@ -1,33 +1,42 @@
-// This file configures the initialization of Sentry on the client.
-// The config you add here will be used whenever a users loads a page in their browser.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+// sentry.client.config.ts
 
-import * as Sentry from "@sentry/nextjs";
+/**
+ * Configures the initialization of Sentry on the client-side.
+ * This configuration is applied whenever a user loads a page in their browser.
+ * Documentation: https://docs.sentry.io/platforms/javascript/guides/nextjs/
+ */
 
-if (!!process?.env?.NEXT_PUBLIC_SENTRY_DSN) {
+import * as Sentry from "@sentry/nextjs"
+
+// Ensure the Sentry DSN is provided before initializing
+const SENTRY_DSN = process?.env?.NEXT_PUBLIC_SENTRY_DSN
+const ENVIRONMENT = process?.env?.NEXT_PUBLIC_SENTRY_ENVIRONMENT
+
+if (SENTRY_DSN) {
   Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    dsn: SENTRY_DSN,
+    environment: ENVIRONMENT || "development",
 
-    // Adjust this value in production, or use tracesSampler for greater control
-    tracesSampleRate: 1,
+    // Adjust the tracesSampleRate in production for performance monitoring.
+    // Use `tracesSampler` for more granular control if needed.
+    tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
-    // Setting this option to true will print useful information to the console while you're setting up Sentry.
-    debug: false,
-    environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
+    // Enable debugging in non-production environments for better troubleshooting.
+    debug: process.env.NODE_ENV !== "production",
 
-    replaysOnErrorSampleRate: 1.0,
+    // Configure session replay sampling rates.
+    // Adjust these values based on your requirements in production.
+    replaysOnErrorSampleRate: 1.0, // Record all sessions with errors
+    replaysSessionSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0, // Sample a fraction of sessions
 
-    // This sets the sample rate to be 10%. You may want this to be 100% while
-    // in development and sample at a lower rate in production
-    replaysSessionSampleRate: 0.1,
-
-    // You can remove this option if you're not planning to use the Sentry Session Replay feature:
+    // Sentry integrations: Include the Replay feature for session recordings.
     integrations: [
       Sentry.replayIntegration({
-        // Additional Replay configuration goes in here, for example:
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
-  });
+        maskAllText: true, // Mask all text inputs to avoid sensitive data leaks
+        blockAllMedia: true // Block all media elements from being captured
+      })
+    ]
+  })
+} else {
+  console.warn("Sentry DSN is not provided. Sentry will not be initialized.")
 }
