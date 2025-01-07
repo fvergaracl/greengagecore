@@ -7,6 +7,9 @@ import Swal from "sweetalert2"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 import DefaultLayout from "../../../components/AdminLayout"
 import { MdCampaign } from "react-icons/md"
+import { useDashboard } from "@/context/DashboardContext"
+import { FiCopy } from "react-icons/fi"
+
 interface Campaign {
   id: string
   name: string
@@ -24,6 +27,7 @@ interface Campaign {
 }
 
 export default function AdminCampaigns() {
+  const { user } = useDashboard()
   const router = useRouter()
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([])
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([])
@@ -69,16 +73,45 @@ export default function AdminCampaigns() {
   }
 
   const handleInviteOnly = (id: string) => {
+    const campaignLink = `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/campaigns?invite=${id}&fromuser=${user?.sub}`
+
     Swal.fire({
       title: "Invite-Only Campaign",
-      text: "This campaign is invite-only. Share the link below:",
-      input: "text",
-      inputValue: `${process.env.NEXT_PUBLIC_BASE_URL}/campaigns/${id}/join`,
-      inputAttributes: {
-        disabled: "true"
-      },
+      html: `
+        <p>This campaign is invite-only. Share the link below:</p>
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+          <input 
+            type="text" 
+            value="${campaignLink}" 
+            style="width: 100%; padding: 8px; font-size: 14px;" 
+            readonly
+          />
+          <button 
+            id="copy-to-clipboard" 
+            style="display: flex; align-items: center; padding: 8px; background-color: #f1f1f1; border: none; cursor: pointer;"
+            title="Copy to clipboard"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16v4a2 2 0 002 2h8a2 2 0 002-2v-4M16 12v4m-4-4v4m4-4v4m-8 0h.01M4 4h8a2 2 0 012 2v2M4 6v2m16-2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2h4m4-2v2m-4-2v2" /></svg>
+          </button>
+        </div>
+      `,
       showConfirmButton: true,
-      confirmButtonText: "Close"
+      confirmButtonText: "Close",
+      didOpen: () => {
+        const copyButton = document.getElementById("copy-to-clipboard")
+        if (copyButton) {
+          copyButton.addEventListener("click", () => {
+            navigator.clipboard.writeText(campaignLink)
+            Swal.fire({
+              icon: "success",
+              title: "Copied!",
+              text: "The link has been copied to your clipboard.",
+              timer: 1500,
+              showConfirmButton: false
+            })
+          })
+        }
+      }
     })
   }
 

@@ -27,19 +27,19 @@ export default function Home({ flashMessage }) {
           />
         </div>
         <h1 className='text-2xl font-bold text-white mb-4 text-center'>
-          Bienvenido a GREENGAGE
+          Welcome to GREENGAGE
         </h1>
         {message && (
           <p className='mb-4 text-center text-yellow-400'>{message}</p>
         )}
         <p className='text-center text-gray-300 mb-6'>
-          Una experiencia única para gestionar tu participación.
+          A simple app to manage your campaigns
         </p>
         <button
           onClick={handleLogin}
           className='w-full py-3 text-white font-bold bg-blue-600 rounded-lg hover:bg-blue-700 transition-all'
         >
-          Login con Keycloak
+          Login
         </button>
       </div>
     </div>

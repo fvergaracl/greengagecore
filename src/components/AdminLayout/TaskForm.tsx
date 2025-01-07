@@ -72,14 +72,7 @@ export default function TaskForm({ mode, poiId, initialData }: TaskFormProps) {
       console.log("***************************2")
       console.log("***************************3")
       console.log(creator)
-      if (!creator?.isJSONCorrect) {
-        Swal.fire({
-          icon: "error",
-          title: "Invalid Survey",
-          text: "The survey is invalid. Please correct it before saving."
-        })
-        return
-      }
+
       if (creator?.JSON === {}) {
         Swal.fire({
           icon: "error",

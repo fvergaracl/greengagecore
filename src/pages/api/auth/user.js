@@ -29,80 +29,75 @@ export default async function handler(req, res) {
   const token =
     req.headers.authorization?.split(" ")[1] || cookies?.access_token
   const refreshToken = req.headers?.refresh_token || cookies?.refresh_token
-  if (!token) {
-    console.log("> No token")
-    console.log({
-      token: token,
-      cookies: cookies
-    })
+
+  if (!token || !refreshToken) {
+    console.log("> No token or refresh token provided")
     return res.status(401).json({ error: "No autenticado" })
   }
-  // refresh token only if will expire in less than 5 minutes
+
+  // Decode the current token
   const tokenData = jwt.decode(token)
   const now = Math.floor(Date.now() / 1000)
 
-  if (tokenData.exp - now > 300) {
-    try {
-      const userInfo = await axios.get(
-        `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      console.log("> User info")
-      const tokenData = await refreshAccessToken(refreshToken)
-      if (!tokenData) {
-        console.log("> Failed to refresh token")
-        console.log({ tokenData })
-        return res.status(401).json({ error: "Failed to refresh token" })
-      }
-      console.log(" ")
-      console.log(" ")
-      console.log(" ")
-      console.log(" ")
-      console.log(" ")
-      console.log(" ")
-      console.log(" ")
-      console.log(" ")
-      console.log(" ")
-      res.setHeader("Set-Cookie", [
-        cookie.serialize("access_token", tokenData.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 3600, // 1 hour
-          path: "/"
-        }),
-        cookie.serialize("refresh_token", tokenData.refresh_token || "", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 7 * 24 * 3600, // 7 days
-          path: "/"
-        }),
-        cookie.serialize("id_token", tokenData.id_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 3600, // 1 hour
-          path: "/"
-        })
-      ])
-      // console.log of macAge of ecach cookie dd/mm/yyyy hh:mm:ss
-      console.log({
-        access_token: new Date(Date.now() + 3600 * 1000).toLocaleString(),
-        refresh_token: new Date(
-          Date.now() + 7 * 24 * 3600 * 1000
-        ).toLocaleString(),
-        id_token: new Date(Date.now() + 3600 * 1000).toLocaleString()
-      })
-      res.status(200).json(userInfo.data)
-    } catch (error) {
-      console.error(
-        "Error validando token:",
-        error.response?.data || error.message
-      )
+  if (!tokenData || tokenData.exp - now <= 900) {
+    console.log("> Token is close to expiration or expired. Refreshing...")
+    const newTokenData = await refreshAccessToken(refreshToken)
 
-      res.status(401).json({ error: "Token inválido o expirado" })
+    if (!newTokenData) {
+      console.error("> Failed to refresh token")
+      return res.status(401).json({ error: "Failed to refresh token" })
     }
+
+    // Update the cookies with the new tokens
+    res.setHeader("Set-Cookie", [
+      cookie.serialize("access_token", newTokenData.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3600, // 1 hour
+        path: "/"
+      }),
+      cookie.serialize("refresh_token", newTokenData.refresh_token || "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 3600, // 7 days
+        path: "/"
+      }),
+      cookie.serialize("id_token", newTokenData.id_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3600, // 1 hour
+        path: "/"
+      })
+    ])
+
+    console.log("> Refreshed token. New expiration times:")
+    console.log({
+      access_token: new Date(Date.now() + 3600 * 1000).toLocaleString(),
+      refresh_token: new Date(
+        Date.now() + 7 * 24 * 3600 * 1000
+      ).toLocaleString(),
+      id_token: new Date(Date.now() + 3600 * 1000).toLocaleString()
+    })
   }
-  res.status(200).json({ tokenData })
+
+  try {
+    // Validate the current or refreshed token
+    const validToken = jwt.decode(token)
+    const userInfo = await axios.get(
+      `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+
+    console.log("> User info retrieved successfully")
+    res.status(200).json(userInfo.data)
+  } catch (error) {
+    console.error(
+      "Error validating token:",
+      error.response?.data || error.message
+    )
+    res.status(401).json({ error: "Token inválido o expirado" })
+  }
 }

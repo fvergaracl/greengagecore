@@ -2,9 +2,10 @@ import { useEffect, useState } from "react"
 import DashboardLayout from "../../components/DashboardLayout"
 import dynamic from "next/dynamic"
 import { useDashboard } from "../../context/DashboardContext"
-import DataAreaFetcher from "../../components/DataAreaFetcher"
 import CampaignsScreen from "../../screens/CampaignsScreen"
-const DynamicMap = dynamic(() => import("../../components/MapDashboard"), {
+import { useRouter } from "next/router"
+
+const MapDashboard = dynamic(() => import("../../components/MapDashboard"), {
   ssr: false
 })
 
@@ -13,6 +14,15 @@ export default function Dashboard() {
   const [puntos, setPuntos] = useState([])
   const [poligonos, setPoligonos] = useState([])
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const router = useRouter()
+
+  const { invite: campaignId } = router.query
+
+  useEffect(() => {
+    if (campaignId) {
+      console.log("Invite campaign ID:", campaignId)
+    }
+  }, [campaignId])
 
   useEffect(() => {
     const socket = new WebSocket("ws://localhost:8080")
@@ -48,25 +58,22 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className='h-screen'>
-        {!position ? (
-          <Modal isVisible={isModalVisible}>
-            <h2>Ubicación requerida</h2>
-            <p>
-              Necesitamos tu ubicación para continuar. Por favor, activa la
-              ubicación.
-            </p>
-          </Modal>
-        ) : (
-          <DynamicMap
-            puntos={puntos}
-            poligonos={poligonos}
-            position={position}
-            selectedCampaign={selectedCampaign}
-          />
-        )}
-      </div>
-      <DataAreaFetcher />
+      {!position ? (
+        <Modal isVisible={isModalVisible}>
+          <h2>Ubicación requerida</h2>
+          <p>
+            Necesitamos tu ubicación para continuar. Por favor, activa la
+            ubicación.
+          </p>
+        </Modal>
+      ) : (
+        <MapDashboard
+          puntos={puntos}
+          poligonos={poligonos}
+          position={position}
+          selectedCampaign={selectedCampaign}
+        />
+      )}
     </DashboardLayout>
   )
 }

@@ -5,8 +5,11 @@ import Swal from "sweetalert2"
 import { API_BASE_URL } from "../config/api" // Import API config
 import { useRouter } from "next/router"
 import { SlEnvolopeLetter } from "react-icons/sl"
+
 export default function CampaignsScreen() {
   const router = useRouter()
+  const { invite: campaignId, fromuser } = router.query
+  console.log({ campaignId, fromuser })
 
   const { setSelectedCampaign, selectedCampaign } = useDashboard()
   const [campaigns, setCampaigns] = useState([])
@@ -15,43 +18,75 @@ export default function CampaignsScreen() {
   )
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  const fetchCampaigns = async () => {
+    try {
+      const [allCampaignsRes, mineCampaignsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/campaigns`),
+        fetch(`${API_BASE_URL}/campaigns/mine`)
+      ])
+
+      const allCampaigns = await allCampaignsRes.json()
+      const mineCampaigns = await mineCampaignsRes.json()
+
+      const campaignsWithJoinStatus = allCampaigns.map(campaign => ({
+        ...campaign,
+        isJoined: mineCampaigns.some(
+          (mine: { campaignId: string }) => mine.campaignId === campaign.id
+        )
+      }))
+
+      const filteredCampaigns = campaignsWithJoinStatus.sort((a, b) => {
+        const aExpired = a.deadline ? new Date(a.deadline) < new Date() : false
+        const bExpired = b.deadline ? new Date(b.deadline) < new Date() : false
+        return aExpired - bExpired
+      })
+
+      setCampaigns(filteredCampaigns)
+    } catch (error) {
+      console.error("Error fetching campaigns:", error)
+      Swal.fire("Error", "Failed to load campaigns", "error")
+    }
+  }
+
   useEffect(() => {
-    const fetchCampaigns = async () => {
+    fetchCampaigns()
+  }, [])
+
+  useEffect(() => {
+    const joinToCampaign = async (campaignId: string, fromuser: string) => {
       try {
-        const [allCampaignsRes, mineCampaignsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/campaigns`),
-          fetch(`${API_BASE_URL}/campaigns/mine`)
-        ])
-
-        const allCampaigns = await allCampaignsRes.json()
-        const mineCampaigns = await mineCampaignsRes.json()
-
-        const campaignsWithJoinStatus = allCampaigns.map(campaign => ({
-          ...campaign,
-          isJoined: mineCampaigns.some(
-            (mine: { campaignId: string }) => mine.campaignId === campaign.id
-          )
-        }))
-
-        const filteredCampaigns = campaignsWithJoinStatus.sort((a, b) => {
-          const aExpired = a.deadline
-            ? new Date(a.deadline) < new Date()
-            : false
-          const bExpired = b.deadline
-            ? new Date(b.deadline) < new Date()
-            : false
-          return aExpired - bExpired
+        const response = await fetch(`${API_BASE_URL}/campaigns/access`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            campaignId,
+            fromuser
+          })
         })
 
-        setCampaigns(filteredCampaigns)
+        if (response.ok) {
+          fetchCampaigns()
+          Swal.fire(
+            "Success",
+            "You have successfully joined the campaign!",
+            "success"
+          )
+        }
       } catch (error) {
-        console.error("Error fetching campaigns:", error)
-        Swal.fire("Error", "Failed to load campaigns", "error")
+        console.error("Error joining campaign:", error)
+        Swal.fire("Error", "Failed to join the campaign", "error")
       }
     }
 
-    fetchCampaigns()
-  }, [])
+    console.log("INVITATION")
+    console.log("INVITATION2")
+    console.log("INVITATION")
+    console.log({ campaignId, fromuser })
+
+    if (campaignId && fromuser) {
+      joinToCampaign(campaignId as string, fromuser as string)
+    }
+  }, [campaignId, fromuser])
 
   const handleJoin = async (campaign: any) => {
     if (campaign.isJoined) {

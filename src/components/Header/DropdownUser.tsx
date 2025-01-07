@@ -15,12 +15,13 @@ const DropdownUser = () => {
       try {
         const response = await axios.get("/api/auth/user")
         const userData = response.data
-
         setUser({
+          sub: userData.sub,
           name: userData.name,
           email: userData.email,
           picture: userData.picture,
-          pictureKeycloak: userData.pictureKeycloak
+          pictureKeycloak: userData.pictureKeycloak,
+          roles: userData.roles
         })
 
         setPhotoUrl(userData.pictureKeycloak || userData.picture || null)

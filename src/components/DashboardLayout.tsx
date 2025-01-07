@@ -48,6 +48,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <button
           className='flex flex-col items-center'
           onClick={() => handleNavigation("/dashboard")}
+          data-cy='home-button'
         >
           <MdHome className='h-6 w-6' />
           <span className='text-xs'>Home</span>
@@ -55,6 +56,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <button
           className='flex flex-col items-center'
           onClick={() => handleNavigation("/dashboard/campaigns")}
+          data-cy='campaigns-button'
         >
           <MdEmojiEvents className='h-6 w-6' />
           <span className='text-xs'>Campaign</span>
@@ -62,23 +64,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <button
           className='flex flex-col items-center'
           onClick={() => handleNavigation("/dashboard/leaderboard")}
+          data-cy='leaderboard-button'
         >
           <MdEmojiEvents className='h-6 w-6' />
           <span className='text-xs'>Leaderboard</span>
         </button>
-        <button className='flex flex-col items-center' onClick={toggleTracking}>
+        <button
+          className='flex flex-col items-center'
+          onClick={toggleTracking}
+          data-cy='location-button'
+        >
           <MdLocationOn
             className={`h-6 w-6 ${
               isTracking ? "text-green-500" : "text-red-500"
             }`}
           />
-          <span className='text-xs'>
+          <span className='text-xs' data-cy='location-button-text'>
             {isTracking ? "Stop" : "Activate"} location
           </span>
         </button>
         <button
           className='flex flex-col items-center'
           onClick={() => handleNavigation("/dashboard/settings")}
+          data-cy='settings-button'
         >
           <MdSettings className='h-6 w-6' />
           <span className='text-xs'>Settings</span>
@@ -87,6 +95,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <button
             className='flex flex-col items-center'
             onClick={() => handleNavigation("/admin")}
+            data-cy='admin-button'
           >
             <MdAdminPanelSettings className='h-6 w-6' />
             <span className='text-xs'>Admin</span>

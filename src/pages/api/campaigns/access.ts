@@ -24,12 +24,26 @@ export default async function handler(
       console.log("New user created:", user)
     }
 
-    const { campaignId } = req.body
+    const { campaignId, fromuser } = req.body
 
     if (!campaignId) {
       return res
         .status(400)
         .json({ error: "Missing required fields: campaignId or accessType" })
+    }
+
+    if (!fromuser) {
+      return res
+        .status(400)
+        .json({ error: "Missing required fields: fromuser" })
+    }
+
+    const invitedBy = await prisma.user.findUnique({
+      where: { sub: fromuser }
+    })
+
+    if (!invitedBy) {
+      return res.status(404).json({ error: "Inviting user not found" })
     }
 
     const campaign = await prisma.campaign.findUnique({
@@ -60,6 +74,19 @@ export default async function handler(
         userId: user.id,
         campaignId,
         accessType: "participant"
+      }
+    })
+
+    const newLog = await prisma.log.create({
+      data: {
+        userId: user.id,
+        eventType: "CAMPAIGN_ACCESS_GRANTED_BY_INVITATION",
+        description: `User ${user.id} was granted access to campaign ${campaignId} by user ${invitedBy.id}`,
+        metadata: {
+          campaignId,
+          user: user,
+          invitedBy: invitedBy
+        }
       }
     })
 

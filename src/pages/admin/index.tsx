@@ -151,6 +151,17 @@ export default function Admin() {
                     fill='white'
                     fontSize='16'
                   >
+                    Task 2
+                  </text>
+
+                  <circle cx='350' cy='500' r='40' className='fill-red-500' />
+                  <text
+                    x='350'
+                    y='505'
+                    textAnchor='middle'
+                    fill='white'
+                    fontSize='16'
+                  >
                     Task O
                   </text>
 
@@ -226,9 +237,16 @@ export default function Admin() {
                     className='stroke-yellow-300 stroke-2'
                   />
                   <line
-                    x1='250'
+                    x1='150'
                     y1='390'
                     x2='250'
+                    y2='460'
+                    className='stroke-yellow-300 stroke-2'
+                  />
+                  <line
+                    x1='250'
+                    y1='390'
+                    x2='350'
                     y2='460'
                     className='stroke-yellow-300 stroke-2'
                   />
