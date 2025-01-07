@@ -5,7 +5,7 @@ import { useDashboard } from "../../context/DashboardContext"
 import CampaignsScreen from "../../screens/CampaignsScreen"
 import { useRouter } from "next/router"
 
-const MapDashboard = dynamic(() => import("../../components/MapDashboard"), {
+const Map = dynamic(() => import("../../components/Common/Map"), {
   ssr: false
 })
 
@@ -34,7 +34,6 @@ export default function Dashboard() {
     socket.onmessage = event => {
       const data = JSON.parse(event.data)
 
-      // Actualizar puntos y polígonos en el estado
       if (data.puntos) setPuntos(data.puntos)
       if (data.poligonos) setPoligonos(data.poligonos)
     }
@@ -67,11 +66,14 @@ export default function Dashboard() {
           </p>
         </Modal>
       ) : (
-        <MapDashboard
-          puntos={puntos}
-          poligonos={poligonos}
-          position={position}
+        <Map
+          showMyLocation={true}
+          points={puntos}
+          polygons={poligonos}
+          polygonsMultiColors={false}
+          polygonsTitle={false}
           selectedCampaign={selectedCampaign}
+          showMapControl={true}
         />
       )}
     </DashboardLayout>

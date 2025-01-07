@@ -1,0 +1,57 @@
+/* Ícono palpitante */
+.blinking-marker {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  background-color: rgba(255, 0, 0, 0.5);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+.blinking-marker .inner-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Ícono estático */
+.static-marker {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  background-color: gray;
+  border: 2px solid black;
+  border-radius: 50%;
+}
+
+
+.static-marker .inner-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background-color: black;
+  border-radius: 50%;
+}

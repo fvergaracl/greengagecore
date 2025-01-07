@@ -1,112 +1,64 @@
 import dynamic from "next/dynamic"
-import { useEffect, useMemo, useState, useRef } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import ReactDOMServer from "react-dom/server"
-import { Circle } from "react-leaflet"
+import {
+  MapContainer as LeafletMapContainer,
+  Circle,
+  Tooltip,
+  TileLayer,
+  Marker,
+  Polygon,
+  Popup
+} from "react-leaflet"
 import L, { DivIcon } from "leaflet"
-import CustomMarker from "./marker"
-import { FiMapPin } from "react-icons/fi"
-import { TbLassoPolygon } from "react-icons/tb"
+import CustomMarker from "../Mapmarker"
 import "leaflet/dist/leaflet.css"
-import { useDashboard } from "../context/DashboardContext"
-import "./styles.css"
-import { MapContainer as LeafletMapContainer, useMap } from "react-leaflet"
-interface Point {
-  latitud: number
-  longitud: number
-  titulo: string
-  detalle: string
-  tipo: string
-  punto: string
-}
-
-interface PolygonData {
-  coordinates: [number, number][]
-  score: number
-}
+import { useDashboard } from "../../../context/DashboardContext"
+import MapControls from "./MapControls"
+import FitBounds from "./FitBounds"
+import "../styles.css"
+import {
+  Point,
+  Task,
+  PolygonData,
+  CampaignData,
+  PointOfInterest
+} from "./types"
 
 interface MapProps {
-  puntos: Point[]
-  poligonos: PolygonData[]
-  selectedCampaign: { id: string; name: string } | null
+  showMyLocation?: boolean
+  points: Point[]
+  polygons: PolygonData[]
+  polygonsMultiColors?: boolean
+  polygonsTitle?: boolean
+  polygonsFitBounds?: boolean
+  clickOnPolygon?: (polygon: PolygonData) => void
+  selectedCampaign: CampaignData | null
+  modeView?: "contribuitor-view" | "admin-view"
+  showMapControl?: boolean
 }
 
-const TileLayer = dynamic(
-  () => import("react-leaflet").then(mod => mod.TileLayer),
-  { ssr: false }
-)
-const Marker = dynamic(() => import("react-leaflet").then(mod => mod.Marker), {
-  ssr: false
-})
-const Polygon = dynamic(
-  () => import("react-leaflet").then(mod => mod.Polygon),
-  { ssr: false }
-)
-const Popup = dynamic(() => import("react-leaflet").then(mod => mod.Popup), {
-  ssr: false
-})
+const colors = [
+  { border: "blue", fill: "lightblue" },
+  { border: "red", fill: "pink" },
+  { border: "green", fill: "lightgreen" },
+  { border: "purple", fill: "plum" },
+  { border: "orange", fill: "peachpuff" }
+]
 
-const MapControls = ({ position, campaignData }: any) => {
-  const map = useMap()
-
-  const focusOnCurrentLocation = () => {
-    if (position) {
-      map.setView([position.lat, position.lng], 16)
-      console.log("Focusing on current location:", position)
-    } else {
-      console.warn("Position is not available.")
-    }
-  }
-
-  const focusOnCampaign = () => {
-    if (campaignData?.areas) {
-      const bounds = L.latLngBounds([])
-      campaignData.areas.forEach((area: any) => {
-        area.polygon.forEach(([lat, lng]: [number, number]) => {
-          bounds.extend([lat, lng])
-        })
-      })
-      map.fitBounds(bounds)
-      console.log("Focusing on campaign area.")
-    } else {
-      console.warn("Campaign data is not available.")
-    }
-  }
-
-  return (
-    <div className='absolute bottom-4 right-4 z-99999 flex flex-col gap-2'>
-      <button
-        onClick={focusOnCampaign}
-        className={`p-3 ${
-          campaignData?.areas
-            ? "bg-green-500 hover:bg-green-600"
-            : "bg-gray-300"
-        } text-white rounded-full shadow-md focus:outline-none`}
-        title='Enfocar campaña'
-        disabled={!campaignData?.areas}
-      >
-        <TbLassoPolygon size={24} />
-      </button>
-      <button
-        onClick={focusOnCurrentLocation}
-        className={`p-3 ${
-          position ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300"
-        } text-white rounded-full shadow-md focus:outline-none`}
-        title='Mi ubicación'
-        disabled={!position}
-      >
-        <FiMapPin size={24} />
-      </button>
-    </div>
-  )
-}
-
-export default function MapDashboard({
-  puntos,
-  poligonos,
-  selectedCampaign
+export default function Map({
+  showMyLocation = false,
+  points = [],
+  polygons = [],
+  polygonsMultiColors = true,
+  polygonsTitle = false,
+  polygonsFitBounds = false,
+  clickOnPolygon = () => {},
+  selectedCampaign,
+  modeView = "contribuitor-view",
+  showMapControl = false
 }: MapProps) {
-  const { mapCenter, setMapCenter, position, isTracking } = useDashboard()
-  const mapRef = useRef<L.Map | null>(null)
+  const { mapCenter, position, isTracking } = useDashboard()
   const [campaignData, setCampaignData] = useState<any>(null)
   const [selectedPoi, setSelectedPoi] = useState<any>(null)
 
@@ -135,12 +87,6 @@ export default function MapDashboard({
     fetchCampaignData()
   }, [selectedCampaign])
 
-  useEffect(() => {
-    if (position && !mapCenter) {
-      setMapCenter(position)
-    }
-  }, [position, mapCenter, setMapCenter])
-
   const markerIcon = useMemo(() => {
     if (isTracking) {
       return new DivIcon({
@@ -167,14 +113,18 @@ export default function MapDashboard({
     }
   }, [isTracking])
 
+  const firstDivClassName =
+    modeView === "contribuitor-view" ? "h-[calc(100vh-4rem)]" : "h-96"
+
+  const secondDivClassName =
+    modeView === "contribuitor-view"
+      ? `${selectedPoi ? "h-[70%]" : "h-full"} transition-all duration-300`
+      : "h-full"
+
   return (
     <>
-      <div className='h-[calc(100vh-4rem)]'>
-        <div
-          className={`${
-            selectedPoi ? "h-[70%]" : "h-full"
-          } transition-all duration-300`}
-        >
+      <div className={firstDivClassName} data-cy='map-container-for-dashboard'>
+        <div className={secondDivClassName}>
           <LeafletMapContainer
             center={mapCenter || [0, 0]}
             zoom={mapCenter ? 16 : 13}
@@ -185,18 +135,38 @@ export default function MapDashboard({
               url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
-            <MapControls position={position} campaignData={campaignData} />
-            {poligonos.map((poligono, index) => (
-              <Polygon
-                key={index}
-                positions={poligono.coordinates}
-                pathOptions={{ color: "blue", weight: 2 }}
-              />
-            ))}
-            {puntos.map((punto, index) => (
+            {showMapControl && (
+              <MapControls position={position} campaignData={campaignData} />
+            )}
+            {polygons?.map((polygon, index) => {
+              if (polygonsMultiColors) {
+                const color = colors[index % colors.length] // Ciclar a través de los colores
+                return (
+                  <Polygon
+                    key={polygon.id}
+                    positions={polygon.polygon}
+                    pathOptions={{
+                      color: color.border,
+                      fillColor: color.fill,
+                      fillOpacity: 0.5
+                    }}
+                  >
+                    {polygonsTitle && <Tooltip>{polygon.name}</Tooltip>}
+                  </Polygon>
+                )
+              }
+              return (
+                <Polygon
+                  key={index}
+                  positions={polygon.coordinates}
+                  pathOptions={{ color: "blue", weight: 2 }}
+                />
+              )
+            })}
+            {points?.map((point, index) => (
               <Marker
                 key={index}
-                position={[punto.latitud, punto.longitud]}
+                position={[point.lat, point.lng]}
                 icon={L.icon({
                   iconUrl: "/marker-icon.png",
                   iconSize: [25, 41],
@@ -204,22 +174,31 @@ export default function MapDashboard({
                 })}
               />
             ))}
-
-            {campaignData?.areas.map(area => (
-              <Polygon
-                key={area.id}
-                positions={area.polygon}
-                pathOptions={{ color: "blue", weight: 2 }}
-              >
-                <Popup>
-                  <h3>{area.name}</h3>
-                  <p>{area.description}</p>
-                </Popup>
-              </Polygon>
-            ))}
+            {campaignData?.areas.map(
+              (area: {
+                id: string
+                name: string
+                description: string
+                polygon: [number, number][]
+                pointOfInterests: any[]
+              }) => (
+                <Polygon
+                  key={area.id}
+                  positions={area.polygon}
+                  pathOptions={{ color: "blue", weight: 2 }}
+                >
+                  <Popup>
+                    <h3>{area.name}</h3>
+                    <p>{area.description}</p>
+                  </Popup>
+                </Polygon>
+              )
+            )}
             {campaignData?.areas
-              ?.flatMap(area => area?.pointOfInterests)
-              .map(poi => (
+              ?.flatMap(
+                (area: { pointOfInterests: any }) => area?.pointOfInterests
+              )
+              .map((poi: PointOfInterest) => (
                 <>
                   <Circle
                     key={`${poi.id}-circle`}
@@ -252,13 +231,15 @@ export default function MapDashboard({
                   ></Marker>
                 </>
               ))}
-
-            {position && (
+            {showMyLocation && position && (
               <Marker position={[position.lat, position.lng]} icon={markerIcon}>
                 <Popup>
                   <h3>Your current location</h3>
                 </Popup>
               </Marker>
+            )}
+            {polygonsFitBounds && mapCenter && (
+              <FitBounds polygons={polygons} />
             )}
           </LeafletMapContainer>
         </div>
@@ -274,7 +255,7 @@ export default function MapDashboard({
                   Tasks
                 </h4>
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'>
-                  {selectedPoi.tasks.map(task => (
+                  {selectedPoi.tasks.map((task: Task) => (
                     <div
                       key={task.id}
                       className='p-3 border rounded-lg shadow bg-white dark:bg-gray-800 dark:border-gray-700'

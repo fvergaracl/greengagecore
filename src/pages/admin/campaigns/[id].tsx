@@ -39,9 +39,9 @@ export default function CampaignDetails() {
   const router = useRouter()
   const { id } = router.query
   const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const ViewMap = useMemo(
+  const Map = useMemo(
     () =>
-      dynamic(() => import("../../../components/AdminLayout/ViewMap"), {
+      dynamic(() => import("../../../components/Common/Map"), {
         loading: () => <p>A map is loading</p>,
         ssr: false
       }),
@@ -173,7 +173,12 @@ export default function CampaignDetails() {
               Areas
             </h2>
             <div className='h-96 rounded-lg overflow-hidden shadow-lg'>
-              <ViewMap polygons={campaign?.areas} />
+              <Map
+                polygons={campaign?.areas}
+                polygonsMultiColors={true}
+                polygonsFitBounds={true}
+                modeView='admin-view'
+              />
             </div>
           </div>
         </div>

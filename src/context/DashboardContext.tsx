@@ -26,8 +26,8 @@ interface DashboardContextType {
   toggleTracking: () => void
   mapCenter: Position | null
   setMapCenter: (center: Position) => void
-  selectedCampaign: string | null
-  setSelectedCampaign: (campaign: string | null) => void
+  selectedCampaign: any | null
+  setSelectedCampaign: (campaign: any | null) => void
   loading: boolean
 }
 
