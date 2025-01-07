@@ -1,4 +1,4 @@
-import dynamic from "next/dynamic"
+import { useRouter } from "next/router"
 import React, { useEffect, useMemo, useState } from "react"
 import ReactDOMServer from "react-dom/server"
 import {
@@ -53,7 +53,7 @@ export default function Map({
   polygonsMultiColors = true,
   polygonsTitle = false,
   polygonsFitBounds = false,
-  clickOnPolygon = () => {},
+  clickOnPolygon = undefined,
   selectedCampaign,
   modeView = "contribuitor-view",
   showMapControl = false
@@ -61,6 +61,11 @@ export default function Map({
   const { mapCenter, position, isTracking } = useDashboard()
   const [campaignData, setCampaignData] = useState<any>(null)
   const [selectedPoi, setSelectedPoi] = useState<any>(null)
+  const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(
+    null
+  )
+
+  const router = useRouter()
 
   const createCustomIcon = (color: string, size: number) => {
     const markerHtml = ReactDOMServer.renderToString(
@@ -150,8 +155,36 @@ export default function Map({
                       fillColor: color.fill,
                       fillOpacity: 0.5
                     }}
+                    eventHandlers={{
+                      click: () => {
+                        setSelectedPolygon(polygon)
+                        if (clickOnPolygon) clickOnPolygon(polygon)
+                      }
+                    }}
                   >
                     {polygonsTitle && <Tooltip>{polygon.name}</Tooltip>}
+                    {selectedPolygon?.id === polygon.id && (
+                      <Popup>
+                        <div>
+                          <h3>
+                            <strong>Title:</strong>
+                            {polygon.name}
+                          </h3>
+                          <p>
+                            <strong>Description:</strong>
+                            {polygon.description}
+                          </p>
+                          <button
+                            onClick={() => {
+                              router.push(`/admin/areas/${polygon.id}`)
+                            }}
+                            className='text-blue-600 underline'
+                          >
+                            See more
+                          </button>
+                        </div>
+                      </Popup>
+                    )}
                   </Polygon>
                 )
               }
