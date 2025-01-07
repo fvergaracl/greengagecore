@@ -11,7 +11,7 @@ datasource db {
 model User {
   id                  String               @id @default(uuid())
   sub                 String               @unique
-  dataEntries         DataEntry[]
+  UserTaskResponses   UserTaskResponse[]
   logs                Log[]
   trajectories        UserTrajectory[]
   accessibleCampaigns UserCampaignAccess[] @relation("UserCampaignAccess")
@@ -35,18 +35,20 @@ model UserSetting {
 }
 
 model Campaign {
-  id           String               @id @default(uuid())
-  name         String
-  description  String?
-  isOpen       Boolean              @default(true)
-  disabled     Boolean              @default(false)
-  deadline     DateTime?
-  category     String
-  gameId       String?
-  areas        Area[]
-  allowedUsers UserCampaignAccess[] @relation("UserCampaignAccess")
-  created_at   DateTime             @default(now())
-  updated_at   DateTime             @updatedAt
+  id            String               @id @default(uuid())
+  name          String
+  description   String?
+  isOpen        Boolean              @default(true)
+  disabled      Boolean              @default(false)
+  location      String?
+  startDatetime DateTime?
+  endDatetime   DateTime?
+  category      String
+  gameId        String?
+  areas         Area[]
+  allowedUsers  UserCampaignAccess[] @relation("UserCampaignAccess")
+  created_at    DateTime             @default(now())
+  updated_at    DateTime             @updatedAt
 }
 
 model Area {
@@ -78,27 +80,30 @@ model PointOfInterest {
 }
 
 model Task {
-  id                String          @id @default(uuid())
-  title             String
-  description       String?
-  type              String // "survey", "photo", "instruction"
-  taskData          Json // Stores questions, options, etc.
-  disabled          Boolean         @default(false)
-  dataEntries       DataEntry[]
-  pointOfInterestId String
-  pointOfInterest   PointOfInterest @relation(fields: [pointOfInterestId], references: [id])
-  created_at        DateTime        @default(now())
-  updated_at        DateTime        @updatedAt
+  id                    String             @id @default(uuid())
+  title                 String
+  description           String?
+  type                  String // "survey", "photo", "instruction"
+  taskData              Json // Stores questions, options, etc.
+  disabled              Boolean            @default(false)
+  UserTaskResponses     UserTaskResponse[]
+  responseLimit         Int? // 1 = single response, N = limited responses, null = unlimited
+  responseLimitInterval Int? // Time interval in minutes for response limit (null = no interval limit)
+  availableFrom         DateTime? // Task availability start time
+  availableTo           DateTime? // Task availability end time
+  pointOfInterestId     String
+  pointOfInterest       PointOfInterest    @relation(fields: [pointOfInterestId], references: [id])
+  created_at            DateTime           @default(now())
+  updated_at            DateTime           @updatedAt
 }
 
 model UserTrajectory {
-  id         String   @id @default(uuid())
-  userId     String
-  latitude   Float
-  longitude  Float
-  user       User     @relation(fields: [userId], references: [id])
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id        String   @id @default(uuid())
+  userId    String
+  latitude  Float
+  longitude Float
+  user      User     @relation(fields: [userId], references: [id])
+  timestamp DateTime @default(now())
 }
 
 model UserCampaignAccess {
@@ -114,7 +119,7 @@ model UserCampaignAccess {
   @@unique([userId, campaignId])
 }
 
-model DataEntry {
+model UserTaskResponse {
   id         String   @id @default(uuid())
   userId     String
   taskId     String?
@@ -135,5 +140,4 @@ model Log {
   metadata    Json
   user        User?    @relation(fields: [userId], references: [id])
   created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
 }

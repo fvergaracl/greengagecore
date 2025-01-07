@@ -13,11 +13,15 @@ export default async function handler(
       }
 
       case "POST": {
+        console.log("--------------------req.body ")
+        console.log("--------------------req.body ")
+        console.log("--------------------req.body ")
+        console.log("--------------------req.body ")
+        console.log('-')
+        console.log(req.body)
         const newCampaign = await CampaignController.createCampaign(req.body)
         return res.status(201).json(newCampaign)
       }
-
-     
 
       default: {
         res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"])

@@ -16,12 +16,16 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
     name: "",
     description: "",
     isOpen: true,
-    deadline: null as string | null,
+    startDatetime: null as string | null,
+    endDatetime: null as string | null,
+    location: "",
     category: "",
     gameId: ""
   })
   const router = useRouter()
-  const [hasDeadline, setHasDeadline] = useState(false)
+  const [hasStartDatetime, setHasStartDatetime] = useState(false)
+  const [hasEndDatetime, setHasEndDatetime] = useState(false)
+  // const [hasDeadline, setHasDeadline] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,11 +39,14 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
             name: response.data.name,
             description: response.data.description || "",
             isOpen: response.data.isOpen,
-            deadline: response.data.deadline || null,
+            startDatetime: response.data.startDatetime || null,
+            endDatetime: response.data.endDatetime || null,
+            location: response.data.location || "",
             category: response.data.category || "",
             gameId: response.data.gameId || ""
           })
-          setHasDeadline(!!response.data.deadline)
+          setHasStartDatetime(!!response.data.startDatetime)
+          setHasEndDatetime(!!response.data.endDatetime)
           setLoading(false)
         } catch (err) {
           console.error(err)
@@ -80,17 +87,40 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
     setFormValues(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleDeadlineToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setHasDeadline(e.target.checked)
-    if (!e.target.checked) {
-      setFormValues(prev => ({ ...prev, deadline: null }))
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) return
+
+    const now = new Date()
+    const endDatetime = formValues.endDatetime
+      ? new Date(formValues.endDatetime)
+      : null
+    const startDatetime = formValues.startDatetime
+      ? new Date(formValues.startDatetime)
+      : null
+
+    if (endDatetime && endDatetime <= now) {
+      Swal.fire({
+        title: "Validation Error",
+        text: "End date and time must be in the future.",
+        icon: "error",
+        timer: 5000,
+        timerProgressBar: true
+      })
+      return
+    }
+
+    if (endDatetime && startDatetime && endDatetime <= startDatetime) {
+      Swal.fire({
+        title: "Validation Error",
+        text: "End date and time must be after the start date and time.",
+        icon: "error",
+        timer: 5000,
+        timerProgressBar: true
+      })
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -133,6 +163,23 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
         icon: "error"
       })
       setLoading(false)
+    }
+  }
+
+  const handleDatetimeToggle = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "start" | "end"
+  ) => {
+    if (type === "start") {
+      setHasStartDatetime(e.target.checked)
+      if (!e.target.checked) {
+        setFormValues(prev => ({ ...prev, startDatetime: null }))
+      }
+    } else {
+      setHasEndDatetime(e.target.checked)
+      if (!e.target.checked) {
+        setFormValues(prev => ({ ...prev, endDatetime: null }))
+      }
     }
   }
 
@@ -201,37 +248,87 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
         />
       </div>
       <div className='mb-4'>
+        <label
+          htmlFor='location'
+          className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Location
+        </label>
+        <input
+          type='text'
+          id='location'
+          name='location'
+          value={formValues.location}
+          onChange={handleChange}
+          className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+        />
+      </div>
+      <div className='mb-4'>
         <input
           type='checkbox'
-          id='hasDeadline'
-          checked={hasDeadline}
-          onChange={handleDeadlineToggle}
+          id='hasStartDatetime'
+          checked={hasStartDatetime}
+          onChange={e => handleDatetimeToggle(e, "start")}
         />
         <label
-          htmlFor='hasDeadline'
+          htmlFor='hasStartDatetime'
           className='ml-2 text-sm font-medium text-gray-700 dark:text-gray-300'
         >
-          Set Deadline
+          Set Start Date and Time
         </label>
       </div>
-      {hasDeadline && (
+
+      {hasEndDatetime && (
         <div className='mb-4'>
           <label
-            htmlFor='deadline'
+            htmlFor='endDatetime'
             className='block text-sm font-medium text-gray-700 dark:text-gray-300'
           >
-            Deadline
+            End Date and Time
           </label>
           <input
-            type='date'
-            id='deadline'
-            name='deadline'
-            value={formValues.deadline || ""}
+            type='datetime-local'
+            id='endDatetime'
+            name='endDatetime'
+            value={formValues.endDatetime || ""}
             onChange={handleChange}
             className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
           />
         </div>
       )}
+      <div className='mb-4'>
+        <input
+          type='checkbox'
+          id='hasEndDatetime'
+          checked={hasEndDatetime}
+          onChange={e => handleDatetimeToggle(e, "end")}
+        />
+        <label
+          htmlFor='hasEndDatetime'
+          className='ml-2 text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Set End Date and Time
+        </label>
+      </div>
+      {hasStartDatetime && (
+        <div className='mb-4'>
+          <label
+            htmlFor='startDatetime'
+            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+          >
+            Start Date and Time
+          </label>
+          <input
+            type='datetime-local'
+            id='startDatetime'
+            name='startDatetime'
+            value={formValues.startDatetime || ""}
+            onChange={handleChange}
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+          />
+        </div>
+      )}
+
       <div className='mb-4'>
         <label
           htmlFor='isOpen'
@@ -263,8 +360,8 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
         {loading
           ? "Saving..."
           : campaignId
-          ? "Update Campaign"
-          : "Create Campaign"}
+            ? "Update Campaign"
+            : "Create Campaign"}
       </button>
     </form>
   )

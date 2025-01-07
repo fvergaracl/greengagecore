@@ -71,7 +71,9 @@ export default class CampaignController {
         name: data?.name,
         description: data?.description,
         isOpen: data?.isOpen,
-        deadline: data?.deadline && new Date(data.deadline),
+        startDatetime: data?.startDatetime,
+        endDatetime: data?.endDatetime,
+        location: data?.location,
         category: data?.category,
         gameId: data?.gameId
       }
