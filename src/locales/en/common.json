@@ -56,5 +56,19 @@
   "Edit Profile Photo": "Edit Profile Photo",
   "No Photo": "No Photo",
   "Upload Photo": "Upload Photo",
-  "Logout": "Logout"
+  "Logout": "Logout",
+  "System Overview": "System Overview",
+  "Explore how entities like Campaigns, Areas, POIs, Tasks, and Users are interrelated within the system. Campaigns have multiple Areas, Areas contain multiple POIs, and each POI can have multiple Tasks": "Explore how entities like Campaigns, Areas, POIs, Tasks, and Users are interrelated within the system. Campaigns have multiple Areas, Areas contain multiple POIs, and each POI can have multiple Tasks",
+  "Entity Relationships": "Entity Relationships",
+  "Area": "Area",
+  "Task": "Task",
+  "Campaigns represent overarching projects. Each campaign can contain one or many areas to organize tasks geographically": "Campaigns represent overarching projects. Each campaign can contain one or many areas to organize tasks geographically",
+  "Areas": "Areas",
+  "Areas define specific regions within a campaign. Each area can include one or more Points of Interest (POIs)": "Areas define specific regions within a campaign. Each area can include one or more Points of Interest (POIs)",
+  "Points of Interest (POIs)": "Points of Interest (POIs)",
+  "POIs are precise locations within an area where specific tasks can be assigned. Each POI can contain multiple tasks": "POIs are precise locations within an area where specific tasks can be assigned. Each POI can contain multiple tasks",
+  "Tasks": "Tasks",
+  "Tasks define the actions to be completed at a POI, such as filling surveys or performing specific actions": "Tasks define the actions to be completed at a POI, such as filling surveys or performing specific actions",
+  "Users": "Users",
+  "Users interact with the system by completing tasks and contributing data. They can also manage campaigns if granted permission": "Users interact with the system by completing tasks and contributing data. They can also manage campaigns if granted permission"
 }

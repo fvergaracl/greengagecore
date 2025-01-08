@@ -1,5 +1,3 @@
-import { useRouter } from "next/router"
-
 import en from "../locales/en/common.json"
 import it from "../locales/it/common.json"
 import da from "../locales/da/common.json"
