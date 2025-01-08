@@ -131,8 +131,14 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   }, [selectedCampaign, loading])
 
   useEffect(() => {
-    const interval = setInterval(updatePosition, 1000)
+    if (!isTracking) return
+
+    const interval = setInterval(() => {
+      updatePosition()
+    }, 5000)
+
     updatePosition()
+
     return () => clearInterval(interval)
   }, [isTracking])
 

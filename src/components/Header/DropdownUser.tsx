@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react"
-import { useDashboard } from "../../context/DashboardContext"
+import { useAdmin } from "../../context/AdminContext"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { useRouter } from "next/router"
 const DropdownUser = () => {
   const router = useRouter()
-  const { setUser, logout, user } = useDashboard()
+  const { setUser, logout, user } = useAdmin()
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)

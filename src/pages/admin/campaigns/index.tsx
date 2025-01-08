@@ -7,7 +7,7 @@ import Swal from "sweetalert2"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 import DefaultLayout from "../../../components/AdminLayout"
 import { MdCampaign } from "react-icons/md"
-import { useDashboard } from "@/context/DashboardContext"
+import { useAdmin } from "@/context/AdminContext"
 import { useTranslation } from "@/hooks/useTranslation"
 
 interface Campaign {
@@ -30,7 +30,7 @@ interface Campaign {
 }
 
 export default function AdminCampaigns() {
-  const { user } = useDashboard()
+  const { user } = useAdmin()
   const router = useRouter()
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([])
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([])
