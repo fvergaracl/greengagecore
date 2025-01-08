@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { useAdmin } from "../../context/AdminContext"
+import { useAdmin } from "../../../context/AdminContext"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { useRouter } from "next/router"
@@ -30,7 +30,7 @@ const DropdownUser = () => {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "Failed to load user information."
+          text: "Failed to load user information"
         })
         logout()
       }

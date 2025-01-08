@@ -1,6 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import CampaignController from "@/controllers/admin/CampaignController"
 
+const formatToISO = (datetime: string): string => {
+  const date = new Date(datetime)
+  if (isNaN(date.getTime())) {
+    throw new Error(`Invalid date: ${datetime}`)
+  }
+  return date.toISOString() // Devuelve en formato ISO-8601
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -13,13 +21,23 @@ export default async function handler(
       }
 
       case "POST": {
-        console.log("--------------------req.body ")
-        console.log("--------------------req.body ")
-        console.log("--------------------req.body ")
-        console.log("--------------------req.body ")
-        console.log('-')
-        console.log(req.body)
-        const newCampaign = await CampaignController.createCampaign(req.body)
+  
+        let formattedStartDatetime = undefined
+        if (req?.body?.startDatetime) {
+          formattedStartDatetime = formatToISO(req.body.startDatetime)
+        }
+        let formattedEndDatetime = undefined
+        if (req?.body?.endDatetime) {
+          formattedEndDatetime = formatToISO(req.body.endDatetime)
+        }
+        const newCampaignData = {
+          ...req.body,
+          startDatetime: formattedStartDatetime,
+          endDatetime: formattedEndDatetime
+        }
+
+        const newCampaign =
+          await CampaignController.createCampaign(newCampaignData)
         return res.status(201).json(newCampaign)
       }
 

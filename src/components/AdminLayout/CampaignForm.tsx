@@ -195,7 +195,6 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       >
         ← Back
       </a>
-
       {error && <p className='text-red-500 mb-4'>{error}</p>}
       <div className='mb-4'>
         <label
@@ -277,39 +276,6 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
           Set Start Date and Time
         </label>
       </div>
-
-      {hasEndDatetime && (
-        <div className='mb-4'>
-          <label
-            htmlFor='endDatetime'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            End Date and Time
-          </label>
-          <input
-            type='datetime-local'
-            id='endDatetime'
-            name='endDatetime'
-            value={formValues.endDatetime || ""}
-            onChange={handleChange}
-            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
-          />
-        </div>
-      )}
-      <div className='mb-4'>
-        <input
-          type='checkbox'
-          id='hasEndDatetime'
-          checked={hasEndDatetime}
-          onChange={e => handleDatetimeToggle(e, "end")}
-        />
-        <label
-          htmlFor='hasEndDatetime'
-          className='ml-2 text-sm font-medium text-gray-700 dark:text-gray-300'
-        >
-          Set End Date and Time
-        </label>
-      </div>
       {hasStartDatetime && (
         <div className='mb-4'>
           <label
@@ -328,7 +294,38 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
           />
         </div>
       )}
-
+      <div className='mb-4'>
+        <input
+          type='checkbox'
+          id='hasEndDatetime'
+          checked={hasEndDatetime}
+          onChange={e => handleDatetimeToggle(e, "end")}
+        />
+        <label
+          htmlFor='hasEndDatetime'
+          className='ml-2 text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Set End Date and Time
+        </label>
+      </div>{" "}
+      {hasEndDatetime && (
+        <div className='mb-4'>
+          <label
+            htmlFor='endDatetime'
+            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+          >
+            End Date and Time
+          </label>
+          <input
+            type='datetime-local'
+            id='endDatetime'
+            name='endDatetime'
+            value={formValues.endDatetime || ""}
+            onChange={handleChange}
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+          />
+        </div>
+      )}
       <div className='mb-4'>
         <label
           htmlFor='isOpen'

@@ -1,5 +1,5 @@
 import React, { useState, ReactNode } from "react"
-import Header from "../Header/index"
+import Header from "../Admin/Header/index"
 import Sidebar from "../Sidebar/index"
 
 const DefaultLayout: React.FC<{ children: ReactNode }> = ({ children }) => {

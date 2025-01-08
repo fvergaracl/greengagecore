@@ -8,7 +8,8 @@ import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 import DefaultLayout from "../../../components/AdminLayout"
 import { MdCampaign } from "react-icons/md"
 import { useAdmin } from "@/context/AdminContext"
-import { useTranslation } from "@/hooks/useTranslation"
+import { FaDrawPolygon, FaTasks, FaUsers } from "react-icons/fa"
+import { MdOutlinePinDrop } from "react-icons/md"
 
 interface Campaign {
   id: string
@@ -187,24 +188,60 @@ export default function AdminCampaigns() {
         <table className='min-w-full table-auto border-collapse'>
           <thead>
             <tr className='bg-gray-100 text-left text-sm font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300'>
-              <th className='border px-4 py-2'>#</th>
-              <th className='border px-4 py-2'>Name</th>
-              <th className='border px-4 py-2'>Description</th>
-              <th className='border px-4 py-2'>Status</th>
-              <th className='border px-4 py-2'>Start Date / Deadline</th>
-              <th className='border px-4 py-2'>Type</th>
-              <th className='border px-4 py-2'>Areas</th>
-              <th className='border px-4 py-2'>POIs</th>
-              <th className='border px-4 py-2'>Users</th>
-              <th className='border px-4 py-2'>Actions</th>
+              <th className='border px-2 py-2'>#</th>
+              <th className='border px-2 py-2'>Name</th>
+              <th className='border px-2 py-2'>Description</th>
+              <th className='border px-2 py-2'>Location</th>
+              <th className='border px-2 py-2'>Status</th>
+              <th className='border px-2 py-2'>Start Date / Deadline</th>
+              <th className='border px-2 py-2'>Category</th>
+              <th className='border px-2 py-2 text-center'>
+                <div className='flex flex-col items-center gap-2'>
+                  {/* Areas */}
+                  <div
+                    className='flex items-center gap-1'
+                    title='Number of areas'
+                  >
+                    <FaDrawPolygon className='inline-block text-blue-500' />
+                    <span className='text-sm font-medium '>Areas</span>
+                  </div>
+                  {/* POIs */}
+                  <div
+                    className='flex items-center gap-1'
+                    title='Number of points of interest'
+                  >
+                    <MdOutlinePinDrop className='inline-block text-green-500' />
+                    <span className='text-sm font-medium '>POIs</span>
+                  </div>
+                  {/* Tasks */}
+                  <div
+                    className='flex items-center gap-1'
+                    title='Number of tasks'
+                  >
+                    <FaTasks className='inline-block text-yellow-500' />
+                    <span className='text-sm font-medium'>Tasks</span>
+                  </div>
+                  {/* Users */}
+                  <div
+                    className='flex items-center gap-1'
+                    title='Number of users'
+                  >
+                    <FaUsers className='inline-block text-purple-500' />
+                    <span className='text-sm font-medium'>Users</span>
+                  </div>
+                </div>
+              </th>
+              <th className='border px-2 py-2 text-center'>
+                <span className='text-sm font-medium'>Actions</span>
+              </th>
             </tr>
           </thead>
 
           <tbody>
             {paginatedCampaigns?.map((campaign, index) => {
               console.log({ campaign })
+              console.log(campaign.startDatetime)
               const groupedUsers = groupParticipants(campaign.allowedUsers)
-              // Areas and Task counts
               const areaCount = campaign.areas.length
               const pointOfInterestsCount =
                 campaign?.areas?.pointOfInterests?.length || 0
@@ -215,14 +252,17 @@ export default function AdminCampaigns() {
                     isPastDeadline(campaign.deadline) && "opacity-50"
                   }`}
                 >
-                  <td className='border px-4 py-2'>{startIndex + index + 1}</td>
-                  <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
+                  <td className='border px-2 py-2'>{startIndex + index + 1}</td>
+                  <td className='border px-2 py-2 font-medium text-gray-800 dark:text-white'>
                     {campaign.name}
                   </td>
-                  <td className='border px-4 py-2 text-sm text-gray-600 dark:text-gray-400'>
+                  <td className='border px-2 py-2 text-sm text-gray-600 dark:text-gray-400'>
                     {campaign.description || "-"}
                   </td>
-                  <td className='border px-4 py-2'>
+                  <td className='border px-2 py-2 text-sm text-gray-600 dark:text-gray-400'>
+                    {campaign.location || "-"}
+                  </td>
+                  <td className='border px-2 py-2'>
                     {campaign.isOpen ? (
                       <span className='inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-700 dark:text-white'>
                         Open
@@ -236,7 +276,7 @@ export default function AdminCampaigns() {
                       </span>
                     )}
                   </td>
-                  <td className='border px-4 py-2 text-sm'>
+                  <td className='border px-2 py-2 text-sm'>
                     {
                       <>
                         {campaign.startDatetime && (
@@ -259,25 +299,72 @@ export default function AdminCampaigns() {
                       </>
                     }
                   </td>
-                  <td className='border px-4 py-2'>{campaign.category}</td>
-                  <td className='border px-4 py-2 text-center'>{areaCount}</td>
-                  <td className='border px-4 py-2 text-center'>
-                    {pointOfInterestsCount}
-                  </td>
-                  <td className='border px-4 py-2 text-center'>
-                    {Object.entries(groupedUsers).map(([accessType, count]) => (
-                      <span
-                        key={accessType}
-                        className={`rounded px-2 py-1 text-xs font-semibold ${
-                          accessTypeColors[accessType] ||
-                          "bg-gray-200 text-gray-800"
-                        }`}
+                  <td className='border px-2 py-2'>{campaign.category}</td>
+                  <td className='border px-2 py-2 text-center'>
+                    <div className='flex items-center justify-center gap-2'>
+                      {/* Areas */}
+                      <button
+                        onClick={() =>
+                          console.log("Clicked on Areas", areaCount)
+                        }
+                        className='rounded px-2 py-1 text-xs font-semibold bg-blue-200 text-blue-800 flex items-center gap-1 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400'
+                        title='Click to view areas in the campaign'
                       >
-                        {accessType}: {count}
-                      </span>
-                    )) || "-"}
+                        <FaDrawPolygon className='inline-block' />
+                        {areaCount}
+                      </button>
+
+                      {/* Points of Interest */}
+                      <button
+                        onClick={() =>
+                          console.log("Clicked on POIs", pointOfInterestsCount)
+                        }
+                        className='rounded px-2 py-1 text-xs font-semibold bg-green-200 text-green-800 flex items-center gap-1 hover:bg-green-300 focus:outline-none focus:ring-2 focus:ring-green-400'
+                        title='Click to view points of interest in the campaign'
+                      >
+                        <MdOutlinePinDrop className='inline-block' />
+                        {pointOfInterestsCount}
+                      </button>
+
+                      {/* Tasks */}
+                      <button
+                        onClick={() =>
+                          console.log(
+                            "Clicked on Tasks",
+                            campaign.areas.reduce(
+                              (acc, area) => acc + area.tasks.length,
+                              0
+                            )
+                          )
+                        }
+                        className='rounded px-2 py-1 text-xs font-semibold bg-yellow-200 text-yellow-800 flex items-center gap-1 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400'
+                        title='Click to view tasks in the campaign'
+                      >
+                        <FaTasks className='inline-block' />
+                        {campaign.areas.reduce(
+                          (acc, area) => acc + area.tasks.length,
+                          0
+                        )}
+                      </button>
+
+                      {/* Users */}
+                      <button
+                        onClick={() =>
+                          console.log(
+                            "Clicked on Users",
+                            Object.keys(groupedUsers)
+                          )
+                        }
+                        className='rounded px-2 py-1 text-xs font-semibold bg-purple-200 text-purple-800 flex items-center gap-1 hover:bg-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400'
+                        title='Click to view users with access to the campaign'
+                      >
+                        <FaUsers className='inline-block' />
+                        {Object.keys(groupedUsers).length || 0}
+                      </button>
+                    </div>
                   </td>
-                  <td className='border px-4 py-2'>
+
+                  <td className='border px-2 py-2'>
                     <div className='flex gap-2'>
                       <button
                         title='View'

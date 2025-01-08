@@ -11,7 +11,9 @@ const translations: { [key: string]: { [key: string]: string } } = {
 }
 
 export function useTranslation() {
-  const locale = localStorage.getItem("locale")
+  const isClient = typeof window !== "undefined"
+
+  const locale = isClient ? localStorage.getItem("locale") : null
 
   const currentLocale =
     locale && Object.keys(translations).includes(locale) ? locale : "en"

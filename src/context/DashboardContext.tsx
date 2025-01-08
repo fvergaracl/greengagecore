@@ -101,7 +101,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       setIsTracking(persistedIsTracking)
       setSelectedCampaign(persistedCampaign)
 
-      setLoading(false) // Finish loading
+      setLoading(false) 
     }
 
     if (typeof window !== "undefined") {
