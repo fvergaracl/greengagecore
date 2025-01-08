@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import axios from "axios"
 import { useRouter } from "next/router"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
@@ -8,14 +8,17 @@ import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 import DefaultLayout from "../../../components/AdminLayout"
 import { MdCampaign } from "react-icons/md"
 import { useDashboard } from "@/context/DashboardContext"
-import { FiCopy } from "react-icons/fi"
+import { useTranslation } from "@/hooks/useTranslation"
 
 interface Campaign {
   id: string
   name: string
   description: string
   isOpen: boolean
-  deadline: string | null
+  startDatetime: string | null
+  endDatetime: string | null
+  created_at: string
+  location: string | null
   category: string
   gameId: string | null
   areas: {
@@ -42,6 +45,7 @@ export default function AdminCampaigns() {
         const response = await axios.get("/api/admin/campaigns")
         setAllCampaigns(response.data)
         setFilteredCampaigns(response.data)
+        console.log({ response: response.data })
       } catch (err) {
         console.error("Failed to fetch campaigns:", err)
       }
@@ -64,20 +68,27 @@ export default function AdminCampaigns() {
     setCurrentPage(1)
   }, [searchQuery, allCampaigns])
 
-  const handleView = (id: string) => {
-    router.push(`/admin/campaigns/${id}`)
-  }
+  const handleView = useCallback(
+    (id: string) => {
+      router.push(`/admin/campaigns/${id}`)
+    },
+    [router]
+  )
 
-  const handleEdit = (id: string) => {
-    router.push(`/admin/campaigns/${id}/edit`)
-  }
+  const handleEdit = useCallback(
+    (id: string) => {
+      router.push(`/admin/campaigns/${id}/edit`)
+    },
+    [router]
+  )
 
-  const handleInviteOnly = (id: string) => {
-    const campaignLink = `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/campaigns?invite=${id}&fromuser=${user?.sub}`
+  const handleInviteOnly = useCallback(
+    (id: string) => {
+      const campaignLink = `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/campaigns?invite=${id}&fromuser=${user?.sub}`
 
-    Swal.fire({
-      title: "Invite-Only Campaign",
-      html: `
+      Swal.fire({
+        title: "Invite-Only Campaign",
+        html: `
         <p>This campaign is invite-only. Share the link below:</p>
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
           <input 
@@ -95,25 +106,27 @@ export default function AdminCampaigns() {
           </button>
         </div>
       `,
-      showConfirmButton: true,
-      confirmButtonText: "Close",
-      didOpen: () => {
-        const copyButton = document.getElementById("copy-to-clipboard")
-        if (copyButton) {
-          copyButton.addEventListener("click", () => {
-            navigator.clipboard.writeText(campaignLink)
-            Swal.fire({
-              icon: "success",
-              title: "Copied!",
-              text: "The link has been copied to your clipboard.",
-              timer: 1500,
-              showConfirmButton: false
+        showConfirmButton: true,
+        confirmButtonText: "Close",
+        didOpen: () => {
+          const copyButton = document.getElementById("copy-to-clipboard")
+          if (copyButton) {
+            copyButton.addEventListener("click", () => {
+              navigator.clipboard.writeText(campaignLink)
+              Swal.fire({
+                icon: "success",
+                title: "Copied!",
+                text: "The link has been copied to your clipboard.",
+                timer: 1500,
+                showConfirmButton: false
+              })
             })
-          })
+          }
         }
-      }
-    })
-  }
+      })
+    },
+    [user]
+  )
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
@@ -136,10 +149,10 @@ export default function AdminCampaigns() {
   }
 
   const startIndex = (currentPage - 1) * pageSize
-  const paginatedCampaigns = filteredCampaigns?.slice(
-    startIndex,
-    startIndex + pageSize
-  )
+  const paginatedCampaigns = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize
+    return filteredCampaigns.slice(startIndex, startIndex + pageSize)
+  }, [currentPage, filteredCampaigns])
 
   const isPastDeadline = (deadline: string | null) => {
     return deadline ? new Date(deadline) < new Date() : false
@@ -178,7 +191,7 @@ export default function AdminCampaigns() {
               <th className='border px-4 py-2'>Name</th>
               <th className='border px-4 py-2'>Description</th>
               <th className='border px-4 py-2'>Status</th>
-              <th className='border px-4 py-2'>Deadline</th>
+              <th className='border px-4 py-2'>Start Date / Deadline</th>
               <th className='border px-4 py-2'>Type</th>
               <th className='border px-4 py-2'>Areas</th>
               <th className='border px-4 py-2'>POIs</th>
@@ -189,6 +202,7 @@ export default function AdminCampaigns() {
 
           <tbody>
             {paginatedCampaigns?.map((campaign, index) => {
+              console.log({ campaign })
               const groupedUsers = groupParticipants(campaign.allowedUsers)
               // Areas and Task counts
               const areaCount = campaign.areas.length
@@ -223,9 +237,27 @@ export default function AdminCampaigns() {
                     )}
                   </td>
                   <td className='border px-4 py-2 text-sm'>
-                    {campaign.deadline
-                      ? new Date(campaign.deadline).toLocaleDateString()
-                      : "No Deadline"}
+                    {
+                      <>
+                        {campaign.startDatetime && (
+                          <span>
+                            Start:{" "}
+                            {new Date(
+                              campaign.startDatetime
+                            ).toLocaleDateString()}
+                          </span>
+                        )}
+                        {campaign.endDatetime && (
+                          <span>
+                            <br />
+                            Deadline:{" "}
+                            {new Date(
+                              campaign.endDatetime
+                            ).toLocaleDateString()}
+                          </span>
+                        )}
+                      </>
+                    }
                   </td>
                   <td className='border px-4 py-2'>{campaign.category}</td>
                   <td className='border px-4 py-2 text-center'>{areaCount}</td>

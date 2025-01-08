@@ -37,7 +37,7 @@ export default function Home({ flashMessage }: HomeProps) {
           {t("Welcome to GREENGAGE")}
         </h1>
         {message && (
-          <p className='mb-4 text-center text-yellow-400'>{message}</p>
+          <p className='mb-4 text-center text-yellow-400'>{t(message)}</p>
         )}
         <p className='text-center text-gray-300 mb-6'>
           {t("A simple app to manage your campaigns")}

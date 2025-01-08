@@ -4,7 +4,7 @@ import Sidebar from "../Sidebar/index"
 
 const DefaultLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
+  console.log("----------DefaultLayout ")
   return (
     <div className='dark:bg-boxdark-2 dark:text-bodydark'>
       {/* <!-- ===== Page Wrapper Start ===== --> */}

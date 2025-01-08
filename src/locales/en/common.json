@@ -70,5 +70,12 @@
   "Tasks": "Tasks",
   "Tasks define the actions to be completed at a POI, such as filling surveys or performing specific actions": "Tasks define the actions to be completed at a POI, such as filling surveys or performing specific actions",
   "Users": "Users",
-  "Users interact with the system by completing tasks and contributing data. They can also manage campaigns if granted permission": "Users interact with the system by completing tasks and contributing data. They can also manage campaigns if granted permission"
+  "Users interact with the system by completing tasks and contributing data. They can also manage campaigns if granted permission": "Users interact with the system by completing tasks and contributing data. They can also manage campaigns if granted permission",
+  "All Campaigns": "All Campaigns",
+  "Create New": "Create New",
+  "All Areas": "All Areas",
+  "You are already logged out": "You are already logged out",
+  "Failed to log out from Keycloak session": "Failed to log out from Keycloak session",
+  "Invite-Only Campaign": "Invite-Only Campaign",
+  "No ID": "No ID"
 }

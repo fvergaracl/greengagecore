@@ -116,16 +116,22 @@ export default function Settings() {
                 src={photoUrl}
                 alt='Profile Picture'
                 className='w-full h-full object-cover'
+                data-cy='settings-profile-photo'
               />
             ) : (
-              <div className='flex items-center justify-center w-full h-full bg-blue-500 text-white text-xl font-bold'>
+              <div
+                className='flex items-center justify-center w-full h-full bg-blue-500 text-white text-xl font-bold'
+                data-cy='settings-profile-initials'
+              >
                 {getInitials(user?.name)}
               </div>
             )}
           </div>
           <div className='ml-6'>
             <p className='text-gray-600'>{t("User ID")}:</p>
-            <p className='font-medium text-gray-800'>{user?.id || "No ID"}</p>
+            <p className='font-medium text-gray-800'>
+              {user?.id || t("No ID")}
+            </p>
             <hr className='my-4' />
 
             <p className='text-gray-600' data-cy='settings-user-name-label'>
