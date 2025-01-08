@@ -5,8 +5,10 @@ import Swal from "sweetalert2"
 import { API_BASE_URL } from "../config/api" // Import API config
 import { useRouter } from "next/router"
 import { SlEnvolopeLetter } from "react-icons/sl"
+import { useTranslation } from "@/hooks/useTranslation"
 
 export default function CampaignsScreen() {
+  const { t } = useTranslation()
   const router = useRouter()
   const { invite: campaignId, fromuser } = router.query
   console.log({ campaignId, fromuser })
@@ -44,7 +46,7 @@ export default function CampaignsScreen() {
       setCampaigns(filteredCampaigns)
     } catch (error) {
       console.error("Error fetching campaigns:", error)
-      Swal.fire("Error", "Failed to load campaigns", "error")
+      Swal.fire(t("Error"), t("Failed to load campaigns"), "error")
     }
   }
 
@@ -67,8 +69,8 @@ export default function CampaignsScreen() {
         if (response.ok) {
           fetchCampaigns()
           Swal.fire(
-            "Success",
-            "You have successfully joined the campaign!",
+            t("Success"),
+            t("You have successfully joined the campaign!"),
             "success"
           )
         }
@@ -110,21 +112,21 @@ export default function CampaignsScreen() {
           )
 
           Swal.fire(
-            "Success",
-            "You have successfully joined the campaign!",
+            t("Success"),
+            t("You have successfully joined the campaign!"),
             "success"
           )
         } else {
           const errorData = await response.json()
           Swal.fire(
-            "Error",
-            errorData.error || "Failed to join the campaign",
+            t("Error"),
+            errorData.error || t("Failed to join the campaign"),
             "error"
           )
         }
       } catch (error) {
         console.error("Error joining campaign:", error)
-        Swal.fire("Error", "An unexpected error occurred", "error")
+        Swal.fire(t("Error"), t("An unexpected error occurred"), "error")
       } finally {
         setLoadingCampaignId(null)
       }
@@ -137,7 +139,7 @@ export default function CampaignsScreen() {
         className='text-2xl font-bold mb-6 text-center text-gray-800'
         data-cy='campaigns-screen-title'
       >
-        Select a Campaign to Continue
+        {t("Select a Campaign to Continue")}
       </h1>
 
       <div className='w-full max-w-xxl space-y-4'>
@@ -155,8 +157,8 @@ export default function CampaignsScreen() {
                 isExpired
                   ? "bg-gray-200 opacity-70"
                   : isSelected
-                  ? "bg-blue-100 border-blue-500"
-                  : "bg-white"
+                    ? "bg-blue-100 border-blue-500"
+                    : "bg-white"
               }`}
             >
               <div className='flex items-center'>
@@ -176,13 +178,13 @@ export default function CampaignsScreen() {
                         <SlEnvolopeLetter className='text-red-500 mr-1' />
                         <div className='absolute hidden group-hover:flex flex-col items-center left-1/2 transform -translate-x-1 bottom-full mb-2 bg-gray-700 text-white text-xs rounded-md py-1 px-2 shadow-lg w-max'>
                           <span data-cy='campaign-status-message'>
-                            Access by invitation only.
+                            {t("Access by invitation only")}.
                           </span>
                           <span
                             className='text-gray-300'
                             data-cy='campaign-status-message'
                           >
-                            You can see this because you were invited.
+                            {t("You can see this because you were invited")}.
                           </span>
                         </div>
                       </span>
@@ -202,7 +204,7 @@ export default function CampaignsScreen() {
                       className='text-xs text-red-500'
                       data-cy='campaign-deadline'
                     >
-                      Open until:{" "}
+                      {t("Open until")}:{" "}
                       {new Date(campaign.deadline).toLocaleDateString()}
                     </span>
                   )}
@@ -216,20 +218,20 @@ export default function CampaignsScreen() {
                   isExpired
                     ? "bg-gray-300 text-gray-400 cursor-not-allowed"
                     : campaign.isJoined
-                    ? "bg-green-500 text-white hover:bg-green-600"
-                    : "bg-blue-500 text-white hover:bg-blue-600"
+                      ? "bg-green-500 text-white hover:bg-green-600"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
                 } ${isSelected ? "ring-2 ring-blue-500" : ""}`}
                 data-cy='join-campaign-button'
               >
                 {loadingCampaignId === campaign.id
-                  ? "Joining..."
+                  ? t("Joining...")
                   : isExpired
-                  ? "Expired"
-                  : campaign.isJoined
-                  ? isSelected
-                    ? "Go to Campaign"
-                    : "Joined"
-                  : "Join"}
+                    ? t("Expired")
+                    : campaign.isJoined
+                      ? isSelected
+                        ? t("Go to Campaign")
+                        : t("Joined")
+                      : t("Join")}
               </button>
             </div>
           )
@@ -240,14 +242,14 @@ export default function CampaignsScreen() {
         <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4'>
           <div className='bg-white p-6 rounded-lg shadow-lg w-full max-w-md'>
             <h2 className='text-lg font-bold mb-4 text-gray-800'>
-              Campaign: {selectedCampaign.name}
+              {t("Campaign")}: {selectedCampaign.name}
             </h2>
             <p className='text-gray-600'>{selectedCampaign.description}</p>
             <button
               onClick={() => setIsModalOpen(false)}
               className='mt-4 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition'
             >
-              Close
+              {t("Close")}
             </button>
           </div>
         </div>

@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from "react"
 import DashboardLayout from "../../components/DashboardLayout"
 import { useDashboard } from "../../context/DashboardContext"
+import { useTranslation } from "@/hooks/useTranslation"
+import LanguageDropdown from "@/components/Common/LanguageDropdown"
 import axios from "axios"
 import Swal from "sweetalert2"
 
-type LocaleKey = "en" | "es" | "nl" | "it"
-
-const locales: Record<LocaleKey, { label: string; flag: string }> = {
-  en: { label: "English", flag: "🇺🇸" },
-  es: { label: "Español", flag: "🇪🇸" },
-  nl: { label: "Nederlands", flag: "🇳🇱" },
-  it: { label: "Italiano", flag: "🇮🇹" }
-}
-
 export default function Settings() {
+  const { t } = useTranslation()
   const { setUser, logout, user } = useDashboard()
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
 
@@ -40,10 +34,12 @@ export default function Settings() {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "Failed to load user information. You will be redirected to the login page.",
+          text: t(
+            "Failed to load user information. You will be redirected to the login page."
+          ),
           timer: 10000,
           showConfirmButton: true,
-          confirmButtonText: "Ok"
+          confirmButtonText: t("Ok")
         }).then(() => {
           logout()
         })
@@ -76,15 +72,15 @@ export default function Settings() {
 
         Swal.fire({
           icon: "success",
-          title: "Success!",
-          text: "Photo updated successfully"
+          title: t("Success!"),
+          text: t("Photo updated successfully")
         })
       }
     } catch (error: any) {
       Swal.fire({
         icon: "error",
-        title: "Oops...",
-        text: "Failed to upload the photo"
+        title: t("Oops..."),
+        text: t("Failed to upload the photo")
       })
     }
   }
@@ -110,7 +106,7 @@ export default function Settings() {
           className='text-3xl font-bold text-gray-800 mb-6'
           data-cy='settings-screen-title'
         >
-          Settings
+          {t("Settings")}
         </h1>
 
         <div className='bg-white shadow-md rounded-lg p-6 mb-6 flex items-center'>
@@ -128,30 +124,30 @@ export default function Settings() {
             )}
           </div>
           <div className='ml-6'>
-            <p className='text-gray-600'>User ID:</p>
+            <p className='text-gray-600'>{t("User ID")}:</p>
             <p className='font-medium text-gray-800'>{user?.id || "No ID"}</p>
             <hr className='my-4' />
 
             <p className='text-gray-600' data-cy='settings-user-name-label'>
-              Name:
+              {t("Name")}:
             </p>
             <p
               className='font-medium text-gray-800'
               data-cy='settings-user-name'
             >
-              {user?.name || "No Name"}
+              {user?.name || t("No Name")}
             </p>
             <p
               className='text-gray-600 mt-2'
               data-cy='settings-user-email-label'
             >
-              Email:
+              {t("Email")}:
             </p>
             <p
               className='font-medium text-gray-800'
               data-cy='settings-user-email'
             >
-              {user?.email || "No Email"}
+              {user?.email || t("No Email")}
             </p>
             {user?.roles && user.roles.length > 0 ? (
               <>
@@ -159,7 +155,7 @@ export default function Settings() {
                   className='text-gray-600 mt-4 mb-2'
                   data-cy='settings-user-roles-label'
                 >
-                  Roles:
+                  {t("Roles")}:
                 </p>
                 <div className='flex flex-wrap gap-2'>
                   {user.roles.map((role: string) => (
@@ -168,29 +164,19 @@ export default function Settings() {
                       className='inline-block bg-blue-100 text-blue-800 text-sm font-medium py-1 px-3 rounded-lg shadow-sm'
                       data-cy='settings-user-role'
                     >
-                      {role}
+                      {t(role)}
                     </span>
                   ))}
                 </div>
               </>
             ) : (
               <p className='text-gray-500 mt-4' data-cy='settings-no-roles'>
-                No roles assigned.
+                {t("No roles assigned")}.
               </p>
             )}
-            <p
-              className='text-gray-600 mt-4'
-              data-cy='settings-user-locale-label'
-            >
-              Language:
-            </p>
+
             <div className='font-medium text-gray-800 flex items-center gap-2'>
-              <span data-cy='settings-user-locale-flag'>
-                {locales[user?.locale]?.flag || "🌍"}
-              </span>
-              <span data-cy='settings-user-locale'>
-                {locales[user?.locale]?.label || "Unknown Locale"}
-              </span>
+              <LanguageDropdown />
             </div>
           </div>
         </div>
@@ -200,7 +186,7 @@ export default function Settings() {
             className='text-xl font-semibold text-gray-700 mb-4'
             data-cy='settings-edit-photo-title'
           >
-            Edit Profile Photo
+            {t("Edit Profile Photo")}
           </h2>
           <div className='flex flex-col items-center'>
             {photoUrl ? (
@@ -213,7 +199,7 @@ export default function Settings() {
             ) : (
               <div className='w-24 h-24 rounded-full bg-gray-200 mb-4 flex items-center justify-center'>
                 <span className='text-gray-500' data-cy='settings-no-photo'>
-                  No Photo
+                  {t("No Photo")}
                 </span>
               </div>
             )}
@@ -221,7 +207,7 @@ export default function Settings() {
               className='cursor-pointer bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600'
               data-cy='settings-upload-photo-button'
             >
-              Upload Photo
+              {t("Upload Photo")}
               <input
                 type='file'
                 accept='image/*'
@@ -241,7 +227,7 @@ export default function Settings() {
             className='py-2 px-4 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600'
             data-cy='settings-logout-button'
           >
-            Logout
+            {t("Logout")}
           </button>
         </div>
       </div>

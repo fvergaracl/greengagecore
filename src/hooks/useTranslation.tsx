@@ -22,7 +22,11 @@ export function useTranslation() {
   const tLocale = (key: string, locale: string) =>
     translations[locale][key] || key
 
-  return { t, tLocale, locale: currentLocale }
+  const setLocale = (locale: string) => {
+    localStorage.setItem("locale", locale)
+  }
+
+  return { t, tLocale, setLocale, locale: currentLocale }
 }
 
 export class TranslationBackend {
