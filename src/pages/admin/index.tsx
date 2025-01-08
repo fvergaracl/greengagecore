@@ -27,10 +27,16 @@ export default function Admin() {
           {/* Graph Representation */}
           <div className='flex justify-center mb-16'>
             <div className='bg-white dark:bg-gray-800 shadow-lg p-8 rounded-lg'>
-              <h2 className='text-2xl font-semibold text-center mb-6'>
+              <h2
+                className='text-2xl font-semibold text-center mb-6'
+                data-cy='system-overview-title'
+              >
                 {t("Entity Relationships")}
               </h2>
-              <div className='flex justify-center'>
+              <div
+                className='flex justify-center'
+                data-cy='system-overview-graph'
+              >
                 <svg viewBox='0 0 800 600' className='w-full h-96'>
                   {/* Campaign Node */}
                   <circle cx='400' cy='50' r='40' className='fill-blue-500' />
@@ -270,7 +276,7 @@ export default function Admin() {
             </div>
           </div>
 
-          <div className='space-y-12'>
+          <div className='space-y-12' data-cy='system-overview-description'>
             <div className='flex items-center gap-6'>
               <FontAwesomeIcon
                 icon={faFlag}
