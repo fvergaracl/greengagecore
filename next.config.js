@@ -1,11 +1,9 @@
 const { withSentryConfig } = require("@sentry/nextjs")
+const { i18n } = require('./next-i18next.config');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  i18n: {
-    locales: ["en", "it", "da", "nl", "es"],
-    defaultLocale: "en"
-  },
+  i18n,
   eslint: {
     ignoreDuringBuilds: true
   },

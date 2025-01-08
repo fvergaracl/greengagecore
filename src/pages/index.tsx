@@ -1,7 +1,14 @@
 import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
 import cookie from "cookie"
-export default function Home({ flashMessage }) {
+import { useTranslation } from "@/hooks/useTranslation"
+
+interface HomeProps {
+  flashMessage?: string
+}
+
+export default function Home({ flashMessage }: HomeProps) {
+  const { t } = useTranslation()
   const router = useRouter()
   const [message, setMessage] = useState(flashMessage)
 
@@ -27,19 +34,19 @@ export default function Home({ flashMessage }) {
           />
         </div>
         <h1 className='text-2xl font-bold text-white mb-4 text-center'>
-          Welcome to GREENGAGE
+          {t("Welcome to GREENGAGE")}
         </h1>
         {message && (
           <p className='mb-4 text-center text-yellow-400'>{message}</p>
         )}
         <p className='text-center text-gray-300 mb-6'>
-          A simple app to manage your campaigns
+          {t("A simple app to manage your campaigns")}
         </p>
         <button
           onClick={handleLogin}
           className='w-full py-3 text-white font-bold bg-blue-600 rounded-lg hover:bg-blue-700 transition-all'
         >
-          Login
+          {t("Log in")}
         </button>
       </div>
     </div>
