@@ -5,6 +5,7 @@ import DefaultLayout from "../../../components/AdminLayout"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 import { MdArrowBack, MdEdit, MdCampaign } from "react-icons/md"
 import dynamic from "next/dynamic"
+import { useTranslation } from "@/hooks/useTranslation"
 interface Campaign {
   id: string
   name: string
@@ -36,6 +37,7 @@ interface Campaign {
 }
 
 export default function CampaignDetails() {
+  const { t } = useTranslation()
   const router = useRouter()
   const { id } = router.query
   const [campaign, setCampaign] = useState<Campaign | null>(null)

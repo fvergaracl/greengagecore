@@ -138,10 +138,16 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
         showConfirmButton: false
       })
 
+      const formValuesCleaned = {
+        ...formValues,
+        startDatetime: hasStartDatetime ? formValues?.startDatetime : null,
+        endDatetime: hasEndDatetime ? formValues?.endDatetime : null
+      }
+      console.log({ formValuesCleaned })
       if (campaignId) {
-        await axios.put(`/api/admin/campaigns/${campaignId}`, formValues)
+        await axios.put(`/api/admin/campaigns/${campaignId}`, formValuesCleaned)
       } else {
-        await axios.post("/api/admin/campaigns", formValues)
+        await axios.post("/api/admin/campaigns", formValuesCleaned)
       }
 
       setLoading(false)

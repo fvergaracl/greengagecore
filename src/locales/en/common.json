@@ -77,5 +77,9 @@
   "You are already logged out": "You are already logged out",
   "Failed to log out from Keycloak session": "Failed to log out from Keycloak session",
   "Invite-Only Campaign": "Invite-Only Campaign",
-  "No ID": "No ID"
+  "No ID": "No ID",
+  "Go to App": "Go to App",
+  "Configure Columns": "Configure Columns",
+  "Select Columns": "Select Columns",
+  "A map is loading": "A map is loading"
 }

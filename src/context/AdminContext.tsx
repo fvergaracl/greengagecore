@@ -17,7 +17,7 @@ interface User {
   email: string
 }
 
-interface AdminContextType {
+export interface AdminContextType {
   user: User | null
   setUser: (user: User | null) => void
   position: Position | null

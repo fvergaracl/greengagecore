@@ -17,7 +17,7 @@ interface User {
   email: string
 }
 
-interface DashboardContextType {
+export interface DashboardContextType {
   user: User | null
   setUser: (user: User | null) => void
   position: Position | null
@@ -101,7 +101,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
       setIsTracking(persistedIsTracking)
       setSelectedCampaign(persistedCampaign)
 
-      setLoading(false) 
+      setLoading(false)
     }
 
     if (typeof window !== "undefined") {

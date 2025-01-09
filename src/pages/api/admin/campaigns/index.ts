@@ -1,13 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import CampaignController from "@/controllers/admin/CampaignController"
-
-const formatToISO = (datetime: string): string => {
-  const date = new Date(datetime)
-  if (isNaN(date.getTime())) {
-    throw new Error(`Invalid date: ${datetime}`)
-  }
-  return date.toISOString() // Devuelve en formato ISO-8601
-}
+import { formatToISO } from "@/utils/dateTimeUtils"
 
 export default async function handler(
   req: NextApiRequest,
@@ -21,7 +14,6 @@ export default async function handler(
       }
 
       case "POST": {
-  
         let formattedStartDatetime = undefined
         if (req?.body?.startDatetime) {
           formattedStartDatetime = formatToISO(req.body.startDatetime)
@@ -35,7 +27,16 @@ export default async function handler(
           startDatetime: formattedStartDatetime,
           endDatetime: formattedEndDatetime
         }
-
+        const haveBothStartAndEndDatetime =
+          formattedStartDatetime && formattedEndDatetime
+        if (
+          haveBothStartAndEndDatetime &&
+          formattedStartDatetime > formattedEndDatetime
+        ) {
+          return res.status(400).json({
+            error: "Start datetime cannot be greater than end datetime"
+          })
+        }
         const newCampaign =
           await CampaignController.createCampaign(newCampaignData)
         return res.status(201).json(newCampaign)

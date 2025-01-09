@@ -11,6 +11,7 @@ datasource db {
 model User {
   id                  String               @id @default(uuid())
   sub                 String               @unique
+  alias               String?
   UserTaskResponses   UserTaskResponse[]
   logs                Log[]
   trajectories        UserTrajectory[]

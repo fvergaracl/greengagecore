@@ -3,7 +3,9 @@ import { useAdmin } from "../../../context/AdminContext"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { useRouter } from "next/router"
+import { useTranslation } from "@/hooks/useTranslation"
 const DropdownUser = () => {
+  const { t } = useTranslation()
   const router = useRouter()
   const { setUser, logout, user } = useAdmin()
 
@@ -29,8 +31,8 @@ const DropdownUser = () => {
         console.error("Error fetching user data:", error)
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: "Failed to load user information"
+          title: t("Error"),
+          text: t("Failed to load user information")
         })
         logout()
       }
@@ -47,9 +49,11 @@ const DropdownUser = () => {
       >
         <div className='text-right hidden lg:block'>
           <p className='text-sm font-medium text-black'>
-            {user?.name || "No Name"}
+            {user?.name || t("No Name")}
           </p>
-          <p className='text-xs text-gray-500'>{user?.email || "No Email"}</p>
+          <p className='text-xs text-gray-500'>
+            {user?.email || t("No Email")}
+          </p>
         </div>
         <div className='w-10 h-10 rounded-full bg-gray-300'>
           {photoUrl ? (
@@ -72,7 +76,7 @@ const DropdownUser = () => {
                 className='w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700'
                 data-cy='profile-button-dropdown'
               >
-                Go to App
+                {t("Go to App")}
               </button>
             </li>
             {/* divider*/}
@@ -86,7 +90,7 @@ const DropdownUser = () => {
                 className='w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700'
                 data-cy='logout-button-dropdown'
               >
-                Log Out
+                {t("Log Out")}
               </button>
             </li>
           </ul>

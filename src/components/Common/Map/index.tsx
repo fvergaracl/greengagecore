@@ -13,7 +13,8 @@ import {
 import L, { DivIcon } from "leaflet"
 import CustomMarker from "../Mapmarker"
 import "leaflet/dist/leaflet.css"
-import { useDashboard } from "../../../context/DashboardContext"
+import { useDashboard, DashboardContextType } from "@/context/DashboardContext"
+import { useAdmin, AdminContextType } from "@/context/AdminContext"
 import MapControls from "./MapControls"
 import FitBounds from "./FitBounds"
 import "../styles.css"
@@ -38,6 +39,38 @@ interface MapProps {
   showMapControl?: boolean
 }
 
+type ContextType = {
+  mapCenter: [number, number]
+  position: { lat: number; lng: number } | null
+  isTracking: boolean
+}
+
+export const useContextMapping = ():
+  | DashboardContextType
+  | AdminContextType
+  | ContextType => {
+  const router = useRouter()
+
+  // Determinar el contexto según la ruta actual
+  const isDashboard = router.pathname.startsWith("/dashboard")
+  const isAdmin = router.pathname.startsWith("/admin")
+
+  if (isAdmin) {
+    return useAdmin()
+  }
+
+  if (isDashboard) {
+    return useDashboard()
+  }
+
+  // Valores predeterminados si no coincide ninguna ruta
+  return {
+    mapCenter: [0, 0],
+    position: null,
+    isTracking: false
+  }
+}
+
 const colors = [
   { border: "blue", fill: "lightblue" },
   { border: "red", fill: "pink" },
@@ -58,14 +91,17 @@ export default function Map({
   modeView = "contribuitor-view",
   showMapControl = false
 }: MapProps) {
-  const { mapCenter, position, isTracking } = useDashboard()
+  const router = useRouter()
+  // const { mapCenter, position, isTracking } = useDashboard()
+  // const { mapCenter, position, isTracking } = useAdmin()
+
+  const { mapCenter, position, isTracking } = useContextMapping(router)
+
   const [campaignData, setCampaignData] = useState<any>(null)
   const [selectedPoi, setSelectedPoi] = useState<any>(null)
   const [selectedPolygon, setSelectedPolygon] = useState<PolygonData | null>(
     null
   )
-
-  const router = useRouter()
 
   const createCustomIcon = (color: string, size: number) => {
     const markerHtml = ReactDOMServer.renderToString(

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import CampaignController from "@/controllers/admin/CampaignController"
-
+import { formatToISO, formatFromISO } from "@/utils/dateTimeUtils"
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -9,7 +9,7 @@ export default async function handler(
 
   try {
     switch (req.method) {
-      case "GET":
+      case "GET": {
         if (!id) {
           return res.status(400).json({ error: "Campaign ID is required" })
         }
@@ -20,19 +20,68 @@ export default async function handler(
           return res.status(404).json({ error: "Campaign not found" })
         }
 
-        return res.status(200).json(campaign)
+        let formattedStartDatetime = undefined
+        if (campaign.startDatetime) {
+          formattedStartDatetime = formatFromISO(campaign.startDatetime)
+        }
+        let formattedEndDatetime = undefined
+        if (campaign.endDatetime) {
+          formattedEndDatetime = formatFromISO(campaign.endDatetime)
+        }
 
-      case "PUT":
+        const formattedCampaign = {
+          ...campaign,
+          startDatetime: formattedStartDatetime,
+          endDatetime: formattedEndDatetime
+        }
+        console.log("--------------------------")
+        console.log("-         GET            -")
+        console.log("--------------------------")
+        console.log({ formattedCampaign })
+        return res.status(200).json(formattedCampaign)
+      }
+
+      case "PUT": {
         if (!id) {
           return res.status(400).json({ error: "Campaign ID is required" })
         }
+        let formattedStartDatetime = undefined
+        if (req?.body?.startDatetime) {
+          formattedStartDatetime = formatToISO(req.body.startDatetime)
+        }
+        let formattedEndDatetime = undefined
+        if (req?.body?.endDatetime) {
+          formattedEndDatetime = formatToISO(req.body.endDatetime)
+        }
 
+        const haveBothStartAndEndDatetime =
+          formattedStartDatetime && formattedEndDatetime
+        if (
+          haveBothStartAndEndDatetime &&
+          formattedStartDatetime > formattedEndDatetime
+        ) {
+          return res.status(400).json({
+            error: "Start datetime cannot be greater than end datetime"
+          })
+        }
+
+        const newCampaignData = {
+          ...req.body,
+          startDatetime: formattedStartDatetime,
+          endDatetime: formattedEndDatetime
+        }
+        console.log("--------------------------")
+        console.log("-         UPDATE         -")
+        console.log("--------------------------")
+        console.log({ endDatetime: req.body.endDatetime })
+        console.log({ newCampaignData })
         const updatedCampaign = await CampaignController.updateCampaign(
           id as string,
-          req.body
+          newCampaignData
         )
 
         return res.status(200).json(updatedCampaign)
+      }
       default:
         res.setHeader("Allow", ["GET", "PUT"])
         return res.status(405).end(`Method ${req.method} Not Allowed`)

@@ -1,4 +1,5 @@
 import { prisma, withPrismaDisconnect } from "@/utils/withPrismaDisconnect"
+import { Prisma } from "@prisma/client"
 
 export default class CampaignController {
   @withPrismaDisconnect
@@ -65,33 +66,30 @@ export default class CampaignController {
   }
 
   @withPrismaDisconnect
-  static async createCampaign(data: any) {
+  static async createCampaign(data: Prisma.CampaignCreateInput) {
+    const filteredData: Prisma.CampaignCreateInput = Object.fromEntries(
+      Object.entries(data).map(([key, value]) => [
+        key,
+        value !== undefined ? value : null
+      ])
+    ) as Prisma.CampaignCreateInput
     return await prisma.campaign.create({
-      data: {
-        name: data?.name,
-        description: data?.description,
-        isOpen: data?.isOpen,
-        startDatetime: data?.startDatetime,
-        endDatetime: data?.endDatetime,
-        location: data?.location,
-        category: data?.category,
-        gameId: data?.gameId
-      }
+      data: filteredData
     })
   }
 
   @withPrismaDisconnect
   static async updateCampaign(id: string, data: any) {
+    const filteredData = Object.fromEntries(
+      Object.entries(data).map(([key, value]) => [
+        key,
+        value !== undefined ? value : null
+      ])
+    )
+
     return await prisma.campaign.update({
       where: { id },
-      data: {
-        name: data?.name,
-        description: data?.description,
-        isOpen: data?.isOpen,
-        deadline: data?.deadline && new Date(data.deadline),
-        category: data?.category,
-        gameId: data?.gameId
-      }
+      data: filteredData
     })
   }
 }
