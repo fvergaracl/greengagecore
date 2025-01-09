@@ -27,8 +27,8 @@ interface TaskDetails {
     }
   }
   taskData: Record<string, any>
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 export default function TaskDetailsPage() {
@@ -161,7 +161,7 @@ export default function TaskDetailsPage() {
               Created At:
             </strong>
             <p className='text-gray-800 dark:text-white'>
-              {new Date(task.created_at).toLocaleString()}
+              {new Date(task.createdAt).toLocaleString()}
             </p>
           </div>
 
@@ -170,7 +170,7 @@ export default function TaskDetailsPage() {
               Updated At:
             </strong>
             <p className='text-gray-800 dark:text-white'>
-              {new Date(task.updated_at).toLocaleString()}
+              {new Date(task.updatedAt).toLocaleString()}
             </p>
           </div>
         </div>
@@ -182,7 +182,6 @@ export default function TaskDetailsPage() {
           >
             Edit Task
           </button>
-         
         </div>
       </div>
     </DefaultLayout>

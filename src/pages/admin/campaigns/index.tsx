@@ -27,8 +27,8 @@ interface Campaign {
   allowedUsers: {
     accessType: string
   }[]
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface VisibleColumns {
@@ -41,8 +41,8 @@ interface VisibleColumns {
   category: boolean
   details: boolean
   actions: boolean
-  created_at: boolean
-  updated_at: boolean
+  createdAt: boolean
+  updatedAt: boolean
   gamificated: boolean
 }
 
@@ -64,8 +64,8 @@ export default function AdminCampaigns() {
     category: true,
     details: true,
     actions: true,
-    created_at: false,
-    updated_at: false,
+    createdAt: false,
+    updatedAt: false,
     gamificated: false
   })
 
@@ -100,7 +100,7 @@ export default function AdminCampaigns() {
 
     const lowercasedQuery = searchQuery.toLowerCase()
 
-    const filtered = allCampaigns.filter(campaign => {
+    const filtered = allCampaigns?.filter(campaign => {
       const { name, description, location, category, id } = campaign
 
       return (
@@ -121,7 +121,7 @@ export default function AdminCampaigns() {
       ...visibleColumns,
       [column]: !visibleColumns[column]
     }
-    
+
     setVisibleColumns(prev => newCampaingColumns)
   }
 
@@ -307,10 +307,10 @@ export default function AdminCampaigns() {
                   </div>
                 </th>
               )}
-              {visibleColumns.created_at && (
+              {visibleColumns.createdAt && (
                 <th className='border px-2 py-2'>Created At</th>
               )}
-              {visibleColumns.updated_at && (
+              {visibleColumns.updatedAt && (
                 <th className='border px-2 py-2'>Updated At</th>
               )}
               {visibleColumns.gamificated && (
@@ -465,14 +465,14 @@ export default function AdminCampaigns() {
                       </div>
                     </td>
                   )}
-                  {visibleColumns.created_at && (
+                  {visibleColumns.createdAt && (
                     <td className='border px-2 py-2'>
-                      {new Date(campaign.created_at).toLocaleString()}
+                      {new Date(campaign.createdAt).toLocaleString()}
                     </td>
                   )}
-                  {visibleColumns.updated_at && (
+                  {visibleColumns.updatedAt && (
                     <td className='border px-2 py-2'>
-                      {new Date(campaign.updated_at).toLocaleString()}
+                      {new Date(campaign.updatedAt).toLocaleString()}
                     </td>
                   )}
                   {visibleColumns.gamificated && (

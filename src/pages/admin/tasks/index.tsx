@@ -25,8 +25,8 @@ interface Task {
       }
     }
   }
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 export default function AdminTasks() {

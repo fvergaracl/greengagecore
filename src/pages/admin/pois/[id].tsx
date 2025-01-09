@@ -16,8 +16,8 @@ interface POI {
   longitude: number
   radius: number
   area: { id: string; name: string }
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 export default function POIList() {
@@ -50,9 +50,9 @@ export default function POIList() {
 
     return L.divIcon({
       html: markerHtml,
-      className: "custom-marker", 
+      className: "custom-marker",
       iconSize: [size, size],
-      iconAnchor: [size / 2, size] 
+      iconAnchor: [size / 2, size]
     })
   }
 
@@ -100,7 +100,7 @@ export default function POIList() {
                 Area: {poi.area.name}
               </p>
               <p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
-                Created At: {new Date(poi.created_at).toLocaleDateString()}
+                Created At: {new Date(poi.createdAt).toLocaleDateString()}
               </p>
               <div className='h-96 w-full mb-4'>
                 <MapContainer

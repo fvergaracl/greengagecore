@@ -27,8 +27,8 @@ interface Area {
   disabled: boolean
   polygon: [number, number][] | null
   tasks: { id: string; title: string }[]
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 export default function AreaDetails() {
@@ -125,11 +125,11 @@ export default function AreaDetails() {
             </p>
             <p>
               <strong>Created At:</strong>{" "}
-              {new Date(area.created_at).toLocaleDateString()}
+              {new Date(area.createdAt).toLocaleDateString()}
             </p>
             <p>
               <strong>Updated At:</strong>{" "}
-              {new Date(area.updated_at).toLocaleDateString()}
+              {new Date(area.updatedAt).toLocaleDateString()}
             </p>
           </div>
           <div className='mb-6'>

@@ -13,8 +13,8 @@ interface PointOfInterest {
   description: string | null
   disabled: boolean
   area: { id: string; name: string } // Parent area of the POI
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface Campaign {

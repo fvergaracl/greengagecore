@@ -29,15 +29,15 @@ export default function CampaignsScreen() {
 
       const allCampaigns = await allCampaignsRes.json()
       const mineCampaigns = await mineCampaignsRes.json()
-
-      const campaignsWithJoinStatus = allCampaigns.map(campaign => ({
+      console.log({ allCampaigns, mineCampaigns })
+      const campaignsWithJoinStatus = allCampaigns?.map(campaign => ({
         ...campaign,
         isJoined: mineCampaigns.some(
           (mine: { campaignId: string }) => mine.campaignId === campaign.id
         )
       }))
 
-      const filteredCampaigns = campaignsWithJoinStatus.sort((a, b) => {
+      const filteredCampaigns = campaignsWithJoinStatus?.sort((a, b) => {
         const aExpired = a.deadline ? new Date(a.deadline) < new Date() : false
         const bExpired = b.deadline ? new Date(b.deadline) < new Date() : false
         return aExpired - bExpired
@@ -134,7 +134,7 @@ export default function CampaignsScreen() {
   }
 
   return (
-    <div className='h-screen flex flex-col items-center bg-gray-50 p-4'>
+    <div className=' flex flex-col items-center bg-gray-50 p-4'>
       <h1
         className='text-2xl font-bold mb-6 text-center text-gray-800'
         data-cy='campaigns-screen-title'

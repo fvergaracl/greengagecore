@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
 import axios from "axios"
 import Swal from "sweetalert2"
+import GoBack from "@/components/Admin/GoBack"
 
 interface CampaignFormProps {
   campaignId?: string
@@ -194,13 +195,8 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       onSubmit={handleSubmit}
       className='max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
     >
-      <a
-        onClick={() => router.back()}
-        className='text-blue-600 cursor-pointer mb-4 inline-block'
-        data-cy='campaign-form-back-link'
-      >
-        ← Back
-      </a>
+            <GoBack data-cy='go-back-campaign-details' />
+
       {error && <p className='text-red-500 mb-4'>{error}</p>}
       <div className='mb-4'>
         <label

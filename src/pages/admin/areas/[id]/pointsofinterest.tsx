@@ -37,8 +37,8 @@ interface Area {
   disabled: boolean
   polygon: [number, number][] | null
   pointOfInterests: PointOfInterest[]
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 export default function AreaDetails() {

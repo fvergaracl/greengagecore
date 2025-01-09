@@ -1,39 +1,41 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import {
-  getAllCampaign,
-  createCampaign,
-  getAllCampaignsByUserId
-} from "../../../controllers/CampaignController"
+import CampaignController from "@/controllers/CampaignController"
 import { validateKeycloakToken } from "@/utils/validateToken" // Token validator
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  switch (req.method) {
-    case "GET":
-      try {
+  try {
+    switch (req.method) {
+      case "GET": {
         const { userId, userRoles } = await validateKeycloakToken(req)
-        if (userRoles.includes("admin")) {
-          const data = await getAllCampaign()
-          res.status(200).json(data)
+
+        if (userRoles?.includes("admin")) {
+          const allCampaigns = await CampaignController.getAllCampaigns()
+          return res.status(200).json(allCampaigns)
         }
-        const data = await getAllCampaignsByUserId(userId)
-        res.status(200).json(data)
-      } catch (err: any) {
-        res.status(500).json({ error: err.message })
+
+        const userCampaigns =
+          await CampaignController.getAllCampaignsAllowedByUserId(userId)
+        return res.status(200).json(userCampaigns)
       }
-      break
-    case "POST":
-      try {
-        const data = await createCampaign(req.body)
-        res.status(201).json(data)
-      } catch (err: any) {
-        res.status(500).json({ error: err.message })
+
+      case "POST": {
+        const createdCampaign = await CampaignController.createCampaign(
+          req.body
+        )
+        return res.status(201).json(createdCampaign)
       }
-      break
-    default:
-      res.setHeader("Allow", ["GET", "POST"])
-      res.status(405).end(`Method ${req.method} Not Allowed`)
+
+      default:
+        res.setHeader("Allow", ["GET", "POST"])
+        return res
+          .status(405)
+          .end(`Method ${req.method} is not allowed on this endpoint.`)
+    }
+  } catch (err: any) {
+    console.error("API Error:", err.message)
+    res.status(500).json({ error: err.message })
   }
 }

@@ -13,8 +13,8 @@ interface Area {
   campaign: { id: string; name: string } // Parent Campaign
   disabled: boolean
   tasks: { id: string }[]
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface Campaign {

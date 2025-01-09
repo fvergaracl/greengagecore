@@ -81,5 +81,9 @@
   "Go to App": "Go to App",
   "Configure Columns": "Configure Columns",
   "Select Columns": "Select Columns",
-  "A map is loading": "A map is loading"
+  "A map is loading": "A map is loading",
+  "Loading...": "Loading...",
+  "Campaign Details": "Campaign Details",
+  "Back": "Back",
+  "← Back": "← Back"
 }

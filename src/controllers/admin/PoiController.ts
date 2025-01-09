@@ -28,7 +28,7 @@ export default class POIController {
         }
       },
       orderBy: {
-        created_at: "desc"
+        createdAt: "desc"
       }
     })
   }

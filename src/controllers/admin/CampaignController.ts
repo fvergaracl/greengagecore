@@ -29,7 +29,7 @@ export default class CampaignController {
         }
       },
       orderBy: {
-        created_at: "desc"
+        createdAt: "desc"
       }
     })
   }

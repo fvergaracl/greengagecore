@@ -20,7 +20,7 @@ export default class AreaController {
         }
       },
       orderBy: {
-        created_at: "desc"
+        createdAt: "desc"
       }
     })
   }

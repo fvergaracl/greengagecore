@@ -1,17 +1,20 @@
 import { useRouter } from "next/router"
 import { useEffect, useState, useMemo } from "react"
-import axios from "axios"
-import DefaultLayout from "../../../components/AdminLayout"
-import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
-import { MdArrowBack, MdEdit, MdCampaign } from "react-icons/md"
+import { MdEdit, MdCampaign } from "react-icons/md"
 import dynamic from "next/dynamic"
+import axios from "axios"
+import DefaultLayout from "@/components/AdminLayout"
+import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb"
 import { useTranslation } from "@/hooks/useTranslation"
+import GoBack from "@/components/Admin/GoBack"
 interface Campaign {
   id: string
   name: string
   description: string
   isOpen: boolean
-  deadline: string | null
+  startDatetime?: string
+  endDatetime?: string
+  location?: string
   type: string
   gameId: string | null
   areas: {
@@ -44,7 +47,7 @@ export default function CampaignDetails() {
   const Map = useMemo(
     () =>
       dynamic(() => import("../../../components/Common/Map"), {
-        loading: () => <p>A map is loading</p>,
+        loading: () => <p>{t("A map is loading")}</p>,
         ssr: false
       }),
     []
@@ -68,7 +71,7 @@ export default function CampaignDetails() {
     return (
       <DefaultLayout>
         <div className='flex items-center justify-center h-screen'>
-          <p className='text-gray-500 text-lg'>Loading...</p>
+          <p className='text-gray-500 text-lg'>{t("Loading...")}</p>
         </div>
       </DefaultLayout>
     )
@@ -86,22 +89,14 @@ export default function CampaignDetails() {
     <DefaultLayout>
       <Breadcrumb
         icon={<MdCampaign />}
-        pageName='Campaign Details'
-        breadcrumbPath='Campaigns'
+        pageName={t("Campaign Details")}
+        breadcrumbPath={t("Campaigns")}
       />
+      <GoBack data-cy='go-back-campaign-details' />
       <div className='mx-auto p-6 bg-white rounded-lg shadow-md dark:bg-gray-800 max-full'>
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
-          {/* Columna izquierda */}
           <div>
             <div className='mb-4 flex justify-between'>
-              <button
-                onClick={() => router.back()}
-                className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 flex items-center space-x-2'
-              >
-                <MdArrowBack />
-                <span>Back to Campaigns</span>
-              </button>
-
               <button
                 onClick={() =>
                   router.push(`/admin/campaigns/${campaign.id}/edit`)
@@ -109,7 +104,7 @@ export default function CampaignDetails() {
                 className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 flex items-center space-x-2'
               >
                 <MdEdit />
-                <span>Edit Campaign</span>
+                <span>{t("Edit Campaign")}</span>
               </button>
             </div>
             <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
