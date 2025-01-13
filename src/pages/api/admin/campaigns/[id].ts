@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import CampaignController from "@/controllers/admin/CampaignController"
 import { formatToISO, formatFromISO } from "@/utils/dateTimeUtils"
+import { isUUID } from "@/utils/isUUID"
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -70,11 +71,9 @@ export default async function handler(
           startDatetime: formattedStartDatetime,
           endDatetime: formattedEndDatetime
         }
-        console.log("--------------------------")
-        console.log("-         UPDATE         -")
-        console.log("--------------------------")
-        console.log({ endDatetime: req.body.endDatetime })
-        console.log({ newCampaignData })
+        if (req?.body?.gameId && !isUUID(req?.body?.gameId)) {
+          return res.status(400).json({ error: "Invalid game ID" })
+        }
         const updatedCampaign = await CampaignController.updateCampaign(
           id as string,
           newCampaignData

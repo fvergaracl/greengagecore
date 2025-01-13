@@ -3,7 +3,7 @@ import { useRouter } from "next/router"
 import axios from "axios"
 import Swal from "sweetalert2"
 import GoBack from "@/components/Admin/GoBack"
-
+import { isUUID } from "@/utils/isUUID"
 interface CampaignFormProps {
   campaignId?: string
   onSuccess?: () => void
@@ -19,6 +19,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
     isOpen: true,
     startDatetime: null as string | null,
     endDatetime: null as string | null,
+    gameId: null as string | null,
     location: "",
     category: "",
     gameId: ""
@@ -26,6 +27,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
   const router = useRouter()
   const [hasStartDatetime, setHasStartDatetime] = useState(false)
   const [hasEndDatetime, setHasEndDatetime] = useState(false)
+  const [hasGamification, setHasGamification] = useState(false)
   // const [hasDeadline, setHasDeadline] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,6 +50,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
           })
           setHasStartDatetime(!!response.data.startDatetime)
           setHasEndDatetime(!!response.data.endDatetime)
+          setHasGamification(!!response.data.gameId)
           setLoading(false)
         } catch (err) {
           console.error(err)
@@ -123,6 +126,17 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       return
     }
 
+    if (hasGamification && !isUUID(formValues.gameId)) {
+      Swal.fire({
+        title: "Validation Error",
+        text: "Game ID must be a valid UUID.",
+        icon: "error",
+        timer: 5000,
+        timerProgressBar: true
+      })
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -142,7 +156,8 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       const formValuesCleaned = {
         ...formValues,
         startDatetime: hasStartDatetime ? formValues?.startDatetime : null,
-        endDatetime: hasEndDatetime ? formValues?.endDatetime : null
+        endDatetime: hasEndDatetime ? formValues?.endDatetime : null,
+        gameId: hasGamification ? formValues?.gameId : null
       }
       console.log({ formValuesCleaned })
       if (campaignId) {
@@ -195,8 +210,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       onSubmit={handleSubmit}
       className='max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
     >
-            <GoBack data-cy='go-back-campaign-details' />
-
+      <GoBack data-cy='go-back-campaign-details' />
       {error && <p className='text-red-500 mb-4'>{error}</p>}
       <div className='mb-4'>
         <label
@@ -263,7 +277,39 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
           onChange={handleChange}
           className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
         />
+      </div>{" "}
+      <div className='mb-4'>
+        <input
+          type='checkbox'
+          id='hasGamification'
+          checked={hasGamification}
+          onChange={e => setHasGamification(e.target.checked)}
+        />
+        <label
+          htmlFor='hasGamification'
+          className='ml-2 text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Set Gamification
+        </label>
       </div>
+      {hasGamification && (
+        <div className='mb-4'>
+          <label
+            htmlFor='gameId'
+            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+          >
+            Game ID
+          </label>
+          <input
+            type='text'
+            id='gameId'
+            name='gameId'
+            value={formValues.gameId}
+            onChange={handleChange}
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+          />
+        </div>
+      )}
       <div className='mb-4'>
         <input
           type='checkbox'

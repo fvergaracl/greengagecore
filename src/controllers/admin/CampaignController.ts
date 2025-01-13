@@ -5,7 +5,7 @@ export default class CampaignController {
   @withPrismaDisconnect
   static async getAllCampaigns() {
     return await prisma.campaign.findMany({
-      where: { disabled: false },
+      where: { isDisabled: false },
       include: {
         areas: {
           include: {

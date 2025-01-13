@@ -11,6 +11,7 @@ import { useAdmin } from "@/context/AdminContext"
 import { FaDrawPolygon, FaTasks, FaUsers } from "react-icons/fa"
 import { MdOutlinePinDrop } from "react-icons/md"
 import ColumnSelector from "@/components/Admin/ColumnSelector"
+import { useTranslation } from "@/hooks/useTranslation"
 interface Campaign {
   id: string
   name: string
@@ -47,6 +48,7 @@ interface VisibleColumns {
 }
 
 export default function AdminCampaigns() {
+  const { t } = useTranslation()
   const { user } = useAdmin()
   const router = useRouter()
   const { campaignId } = router.query
@@ -144,9 +146,9 @@ export default function AdminCampaigns() {
       const campaignLink = `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/campaigns?invite=${id}&fromuser=${user?.sub}`
 
       Swal.fire({
-        title: "Invite-Only Campaign",
+        title: t("Invite-only campaign"),
         html: `
-        <p>This campaign is invite-only. Share the link below:</p>
+        <p>${t("This campaign is invite-only. Share the link below")}:</p>
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
           <input 
             type="text" 
@@ -157,14 +159,14 @@ export default function AdminCampaigns() {
           <button 
             id="copy-to-clipboard" 
             style="display: flex; align-items: center; padding: 8px; background-color: #f1f1f1; border: none; cursor: pointer;"
-            title="Copy to clipboard"
+            title=${t("Copy to clipboard")}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16v4a2 2 0 002 2h8a2 2 0 002-2v-4M16 12v4m-4-4v4m4-4v4m-8 0h.01M4 4h8a2 2 0 012 2v2M4 6v2m16-2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2h4m4-2v2m-4-2v2" /></svg>
           </button>
         </div>
       `,
         showConfirmButton: true,
-        confirmButtonText: "Close",
+        confirmButtonText: t("Close"),
         didOpen: () => {
           const copyButton = document.getElementById("copy-to-clipboard")
           if (copyButton) {
@@ -172,8 +174,8 @@ export default function AdminCampaigns() {
               navigator.clipboard.writeText(campaignLink)
               Swal.fire({
                 icon: "success",
-                title: "Copied!",
-                text: "The link has been copied to your clipboard.",
+                title: t("Copied!"),
+                text: t("The link has been copied to your clipboard."),
                 timer: 1500,
                 showConfirmButton: false
               })
@@ -226,8 +228,8 @@ export default function AdminCampaigns() {
     <DefaultLayout>
       <Breadcrumb
         icon={<MdCampaign />}
-        pageName='Campaigns'
-        breadcrumbPath='Campaigns'
+        pageName={t("Campaigns")}
+        breadcrumbPath={t("Campaigns")}
       />
       <div className='flex justify-end gap-4 mb-4'>
         <ColumnSelector
@@ -240,7 +242,9 @@ export default function AdminCampaigns() {
         <div className='mb-4'>
           <input
             type='text'
-            placeholder='Search by name, description, location, category, or ID'
+            placeholder={t(
+              "Search by name, description, location, category, or ID"
+            )}
             value={searchQuery}
             onChange={handleSearchChange}
             className='w-full p-2 border border-gray-300 rounded-md focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white'
@@ -252,22 +256,24 @@ export default function AdminCampaigns() {
             <tr className='bg-gray-100 text-left text-sm font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300'>
               {visibleColumns.id && <th className='border px-2 py-2'>#</th>}
               {visibleColumns.name && (
-                <th className='border px-2 py-2'>Name</th>
+                <th className='border px-2 py-2'>{t("Name")}</th>
               )}
               {visibleColumns.description && (
-                <th className='border px-2 py-2'>Description</th>
+                <th className='border px-2 py-2'>{t("Description")}</th>
               )}
               {visibleColumns.location && (
-                <th className='border px-2 py-2'>Location</th>
+                <th className='border px-2 py-2'>{t("Location")}</th>
               )}
               {visibleColumns.status && (
-                <th className='border px-2 py-2'>Status</th>
+                <th className='border px-2 py-2'>{t("Status")}</th>
               )}
               {visibleColumns.dates && (
-                <th className='border px-2 py-2'>Start Date / Deadline</th>
+                <th className='border px-2 py-2'>
+                  {t("Start Date / Deadline")}
+                </th>
               )}
               {visibleColumns.category && (
-                <th className='border px-2 py-2'>Category</th>
+                <th className='border px-2 py-2'>{t("Category")}</th>
               )}
               {visibleColumns.category && (
                 <th className='border px-2 py-2 text-center'>
@@ -275,49 +281,49 @@ export default function AdminCampaigns() {
                     {/* Areas */}
                     <div
                       className='flex items-center gap-1'
-                      title='Number of areas'
+                      title={t("Number of areas")}
                     >
                       <FaDrawPolygon className='inline-block text-blue-500' />
-                      <span className='text-sm font-medium '>Areas</span>
+                      <span className='text-sm font-medium '>{t("Areas")}</span>
                     </div>
                     {/* POIs */}
                     <div
                       className='flex items-center gap-1'
-                      title='Number of points of interest'
+                      title={t("Number of points of interest")}
                     >
                       <MdOutlinePinDrop className='inline-block text-green-500' />
-                      <span className='text-sm font-medium '>POIs</span>
+                      <span className='text-sm font-medium '>{t("POIs")}</span>
                     </div>
                     {/* Tasks */}
                     <div
                       className='flex items-center gap-1'
-                      title='Number of tasks'
+                      title={t("Number of tasks")}
                     >
                       <FaTasks className='inline-block text-yellow-500' />
-                      <span className='text-sm font-medium'>Tasks</span>
+                      <span className='text-sm font-medium'>{t("Tasks")}</span>
                     </div>
                     {/* Users */}
                     <div
                       className='flex items-center gap-1'
-                      title='Number of users'
+                      title={t("Number of users")}
                     >
                       <FaUsers className='inline-block text-purple-500' />
-                      <span className='text-sm font-medium'>Users</span>
+                      <span className='text-sm font-medium'>{t("Users")}</span>
                     </div>
                   </div>
                 </th>
               )}
               {visibleColumns.createdAt && (
-                <th className='border px-2 py-2'>Created At</th>
+                <th className='border px-2 py-2'>{t("Created At")}</th>
               )}
               {visibleColumns.updatedAt && (
-                <th className='border px-2 py-2'>Updated At</th>
+                <th className='border px-2 py-2'>{t("Updated At")}</th>
               )}
               {visibleColumns.gamificated && (
-                <th className='border px-2 py-2'>Gamified</th>
+                <th className='border px-2 py-2'>{t("Gamified")}</th>
               )}
               {visibleColumns.actions && (
-                <th className='border px-2 py-2 text-center'>Actions</th>
+                <th className='border px-2 py-2 text-center'>{t("Actions")}</th>
               )}
             </tr>
           </thead>
@@ -332,22 +338,22 @@ export default function AdminCampaigns() {
                 <tr
                   key={campaign.id}
                   className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                    isPastDeadline(campaign.deadline) && "opacity-50"
+                    isPastDeadline(campaign.endDatetime) && "opacity-50"
                   }`}
                 >
                   {visibleColumns.id && (
-                    <td className='border px-2 py-2' title={campaign.id}>
+                    <td className='border px-2 py-2' title={campaign?.id}>
                       {startIndex + index + 1}
                     </td>
                   )}
                   {visibleColumns.name && (
                     <td className='border px-2 py-2 font-medium text-gray-800 dark:text-white'>
-                      {campaign.name}
+                      {campaign?.name}
                     </td>
                   )}
                   {visibleColumns.description && (
                     <td className='border px-2 py-2 text-sm text-gray-600 dark:text-gray-400'>
-                      {campaign.description || "-"}
+                      {campaign?.description || "-"}
                     </td>
                   )}
                   {visibleColumns.location && (
@@ -359,14 +365,14 @@ export default function AdminCampaigns() {
                     <td className='border px-2 py-2'>
                       {campaign.isOpen ? (
                         <span className='inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-700 dark:text-white'>
-                          Open
+                          {t("Open")}
                         </span>
                       ) : (
                         <span
                           className='inline-block rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-700 dark:text-white cursor-pointer'
                           onClick={() => handleInviteOnly(campaign.id)}
                         >
-                          Invite-only
+                          {t("Invite-only")}
                         </span>
                       )}
                     </td>
@@ -377,7 +383,7 @@ export default function AdminCampaigns() {
                         <>
                           {campaign.startDatetime && (
                             <span>
-                              Start:{" "}
+                              {t("Start Date")}:{" "}
                               {new Date(
                                 campaign.startDatetime
                               ).toLocaleString()}
@@ -386,7 +392,7 @@ export default function AdminCampaigns() {
                           {campaign.endDatetime && (
                             <span>
                               <br />
-                              Deadline:{" "}
+                              {t("Deadline")}:{" "}
                               {new Date(campaign.endDatetime).toLocaleString()}
                             </span>
                           )}
@@ -406,7 +412,7 @@ export default function AdminCampaigns() {
                             console.log("Clicked on Areas", areaCount)
                           }
                           className='rounded px-2 py-1 text-xs font-semibold bg-blue-200 text-blue-800 flex items-center gap-1 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400'
-                          title='Click to view areas in the campaign'
+                          title={t("Click to view areas in the campaign")}
                         >
                           <FaDrawPolygon className='inline-block' />
                           {areaCount}
@@ -421,7 +427,9 @@ export default function AdminCampaigns() {
                             )
                           }
                           className='rounded px-2 py-1 text-xs font-semibold bg-green-200 text-green-800 flex items-center gap-1 hover:bg-green-300 focus:outline-none focus:ring-2 focus:ring-green-400'
-                          title='Click to view points of interest in the campaign'
+                          title={t(
+                            "Click to view points of interest in the campaign"
+                          )}
                         >
                           <MdOutlinePinDrop className='inline-block' />
                           {pointOfInterestsCount}
@@ -439,7 +447,7 @@ export default function AdminCampaigns() {
                             )
                           }
                           className='rounded px-2 py-1 text-xs font-semibold bg-yellow-200 text-yellow-800 flex items-center gap-1 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400'
-                          title='Click to view tasks in the campaign'
+                          title={t("Click to view tasks in the campaign")}
                         >
                           <FaTasks className='inline-block' />
                           {campaign.areas.reduce(
@@ -452,12 +460,12 @@ export default function AdminCampaigns() {
                         <button
                           onClick={() =>
                             console.log(
-                              "Clicked on Users",
+                              t("Clicked on Users"),
                               Object.keys(groupedUsers)
                             )
                           }
                           className='rounded px-2 py-1 text-xs font-semibold bg-purple-200 text-purple-800 flex items-center gap-1 hover:bg-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400'
-                          title='Click to view users with access to the campaign'
+                          title={t("Click to view users in the campaign")}
                         >
                           <FaUsers className='inline-block' />
                           {Object.keys(groupedUsers).length || 0}
@@ -467,23 +475,26 @@ export default function AdminCampaigns() {
                   )}
                   {visibleColumns.createdAt && (
                     <td className='border px-2 py-2'>
-                      {new Date(campaign.createdAt).toLocaleString()}
+                      {new Date(campaign?.createdAt).toLocaleString()}
                     </td>
                   )}
                   {visibleColumns.updatedAt && (
                     <td className='border px-2 py-2'>
-                      {new Date(campaign.updatedAt).toLocaleString()}
+                      {new Date(campaign?.updatedAt).toLocaleString()}
                     </td>
                   )}
                   {visibleColumns.gamificated && (
                     <td className='border px-2 py-2'>
-                      {campaign.gameId ? (
-                        <span className='inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-700 dark:text-white'>
-                          Yes
+                      {campaign?.gameId ? (
+                        <span
+                          className='inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700 dark:bg-green-700 dark:text-white'
+                          title={campaign?.gameId}
+                        >
+                          {t("Yes")}
                         </span>
                       ) : (
                         <span className='inline-block rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 dark:bg-red-700 dark:text-white'>
-                          No
+                          {t("No")}
                         </span>
                       )}
                     </td>
@@ -492,21 +503,21 @@ export default function AdminCampaigns() {
                     <td className='border px-2 py-2'>
                       <div className='flex gap-2'>
                         <button
-                          title='View'
+                          title={t("View")}
                           onClick={() => handleView(campaign.id)}
                           className='rounded bg-blue-100 p-2 text-blue-600 hover:bg-blue-200'
                         >
                           <FontAwesomeIcon icon={faEye} />
                         </button>
                         <button
-                          title='Edit'
+                          title={t("Edit")}
                           onClick={() => handleEdit(campaign.id)}
                           className='rounded bg-yellow-100 p-2 text-yellow-600 hover:bg-yellow-200'
                         >
                           <FontAwesomeIcon icon={faEdit} />
                         </button>
                         <button
-                          title='Delete'
+                          title={t("Delete")}
                           className='rounded bg-red-100 p-2 text-red-600 hover:bg-red-200'
                         >
                           <FontAwesomeIcon icon={faTrash} />
@@ -526,10 +537,10 @@ export default function AdminCampaigns() {
             disabled={currentPage === 1}
             className='px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50'
           >
-            Previous
+            {t("Previous")}
           </button>
           <span>
-            Page {currentPage} of{" "}
+            {t("Page")} {currentPage} {t("of")}{" "}
             {filteredCampaigns?.length > 0
               ? Math.ceil(filteredCampaigns?.length / pageSize)
               : "1"}
@@ -541,7 +552,7 @@ export default function AdminCampaigns() {
             }
             className='px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50'
           >
-            Next
+            {t("Next")}
           </button>
         </div>
       </div>

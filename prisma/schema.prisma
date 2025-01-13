@@ -58,7 +58,6 @@ model Area {
   name             String
   description      String?
   campaignId       String
-  disabled         Boolean           @default(false)
   campaign         Campaign          @relation(fields: [campaignId], references: [id])
   pointOfInterests PointOfInterest[] // Relation with PointOfInterests
   polygon          Json
@@ -72,7 +71,6 @@ model PointOfInterest {
   name        String
   description String?
   radius      Float    @default(15) // In meters
-  disabled    Boolean  @default(false)
   areaId      String
   area        Area     @relation(fields: [areaId], references: [id])
   latitude    Float
@@ -89,7 +87,6 @@ model Task {
   description           String?
   type                  String // "survey", "photo", "instruction"
   taskData              Json // Stores questions, options, etc.
-  disabled              Boolean            @default(false)
   UserTaskResponses     UserTaskResponse[]
   responseLimit         Int? // 1 = single response, N = limited responses, null = unlimited
   responseLimitInterval Int? // Time interval in minutes for response limit (null = no interval limit)

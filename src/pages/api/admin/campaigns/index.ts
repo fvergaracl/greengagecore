@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 import CampaignController from "@/controllers/admin/CampaignController"
 import { formatToISO } from "@/utils/dateTimeUtils"
+import { isUUID } from "@/utils/isUUID"
 
 export default async function handler(
   req: NextApiRequest,
@@ -36,6 +37,9 @@ export default async function handler(
           return res.status(400).json({
             error: "Start datetime cannot be greater than end datetime"
           })
+        }
+        if (req?.body?.gameId && !isUUID(req?.body?.gameId)) {
+          return res.status(400).json({ error: "Invalid game ID" })
         }
         const newCampaign =
           await CampaignController.createCampaign(newCampaignData)
