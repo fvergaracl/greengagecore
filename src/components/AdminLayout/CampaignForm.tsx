@@ -21,8 +21,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
     endDatetime: null as string | null,
     gameId: null as string | null,
     location: "",
-    category: "",
-    gameId: ""
+    category: ""
   })
   const router = useRouter()
   const [hasStartDatetime, setHasStartDatetime] = useState(false)

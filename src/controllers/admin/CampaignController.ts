@@ -92,4 +92,30 @@ export default class CampaignController {
       data: filteredData
     })
   }
+
+  @withPrismaDisconnect
+  static async deleteCampaign(id: string) {
+    // change all campaing , areas, pois , task related with this campaign to isDisabled = true
+    const campaign = await prisma.campaign.update({
+      where: { id },
+      data: { isDisabled: true }
+    })
+
+    const areas = await prisma.area.updateMany({
+      where: { campaignId: id },
+      data: { isDisabled: true }
+    })
+
+    const pois = await prisma.pointOfInterest.updateMany({
+      where: { area: { campaignId: id } },
+      data: { isDisabled: true }
+    })
+
+    const tasks = await prisma.task.updateMany({
+      where: { pointOfInterest: { area: { campaignId: id } } },
+      data: { isDisabled: true }
+    })
+
+    return { campaign, areas, pois, tasks }
+  }
 }

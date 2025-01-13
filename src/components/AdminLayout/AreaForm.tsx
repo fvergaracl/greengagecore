@@ -10,6 +10,9 @@ import {
   Marker,
   useMap
 } from "react-leaflet"
+import GoBack from "@/components/Admin/GoBack"
+import { useTranslation } from "@/hooks/useTranslation"
+
 import { EditControl } from "react-leaflet-draw"
 import "leaflet/dist/leaflet.css"
 import "leaflet-draw/dist/leaflet.draw.css"
@@ -17,8 +20,15 @@ import L, { DivIcon } from "leaflet"
 import "./../styles.css"
 
 interface AreaFormProps {
-  areaId?: string // If provided, the form will be in edit mode
-  onSuccess?: () => void // Callback after successful create/edit
+  areaId?: string
+  onSuccess?: () => void
+}
+
+interface IFormValues {
+  name: string
+  description: string
+  polygon: number[][] | null
+  campaignId: string
 }
 
 const RecenterAndFitBounds = ({ polygon }: { polygon: number[][] | null }) => {
@@ -35,8 +45,9 @@ const RecenterAndFitBounds = ({ polygon }: { polygon: number[][] | null }) => {
 }
 
 const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
+  const { t } = useTranslation()
   const router = useRouter()
-  const [formValues, setFormValues] = useState({
+  const [formValues, setFormValues] = useState<IFormValues>({
     name: "",
     description: "",
     polygon: null as number[][] | null,
@@ -76,7 +87,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
           setLoading(false)
         } catch (err) {
           console.error(err)
-          setError("Failed to fetch area details.")
+          setError(t("Failed to fetch area details"))
           setLoading(false)
         }
       }
@@ -109,16 +120,18 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
         error => {
           console.warn("Geolocation not enabled or denied.", error)
           Swal.fire({
-            title: "Geolocation Error",
-            text: "Unable to access your location. Please enable geolocation in your browser.",
+            title: t("Geolocation Error"),
+            text: t(
+              "Unable to access your location. Please enable geolocation in your browser/phone settings"
+            ),
             icon: "error"
           })
         }
       )
     } else {
       Swal.fire({
-        title: "Geolocation Unsupported",
-        text: "Your browser does not support geolocation.",
+        title: t("Geolocation Unsupported"),
+        text: t("Your browser does not support geolocation"),
         icon: "warning"
       })
     }
@@ -128,15 +141,15 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
     const missingFields: string[] = []
 
     if (!formValues.name.trim()) missingFields.push("Name")
-    if (!formValues.campaignId.trim()) missingFields.push("Parent Campaign")
+    if (!formValues.campaignId.trim()) missingFields.push(t("Parent Campaign"))
     if (!formValues.polygon || formValues.polygon.length < 3)
-      missingFields.push("Polygon (at least 3 points)")
+      missingFields.push(t("Polygon (at least 3 points)"))
 
     if (missingFields.length > 0) {
       Swal.fire({
         icon: "error",
-        title: "Missing Fields",
-        html: `Please fill the following fields:<br><b>${missingFields.join(
+        title: t("Missing Fields"),
+        html: `${t("Please fill the following fields")}:<br><b>${missingFields.join(
           ", "
         )}</b>`
       })
@@ -165,7 +178,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
     setError(null)
 
     try {
-      const swalMessage = areaId ? "Updating area..." : "Creating area..."
+      const swalMessage = areaId ? t("Updating area...") : t("Creating area...")
 
       Swal.fire({
         title: swalMessage,
@@ -183,8 +196,8 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
 
       setLoading(false)
       Swal.fire({
-        title: "Success!",
-        text: `Area ${areaId ? "updated" : "created"} successfully!`,
+        title: t("Success!"),
+        text: `${t("Area")} ${areaId ? t("updated") : t("created")} ${t("successfully")}!`,
         icon: "success",
         timer: 3000,
         showConfirmButton: false
@@ -199,8 +212,8 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
     } catch (err) {
       console.error(err)
       Swal.fire({
-        title: "Error",
-        text: "Failed to save the area. Please try again.",
+        title: t("Error"),
+        text: t("Failed to save the area. Please try again."),
         icon: "error"
       })
       setLoading(false)
@@ -209,24 +222,20 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
 
   return (
     <>
-      <a
-        onClick={() => router.back()}
-        className='text-blue-600 cursor-pointer mb-4 inline-block'
-      >
-        ← Back
-      </a>
       <div className='flex space-x-6'>
         <form
           onSubmit={handleSubmit}
           className='w-1/2 bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
         >
-          {error && <p className='text-red-500 mb-4'>{error}</p>}
+          <GoBack data-cy='go-back-area-details' />
+
+          {error && <p className='text-red-500 mb-4'>{t(error)}</p>}
           <div className='mb-4'>
             <label
               htmlFor='name'
               className='block text-sm font-medium text-gray-700 dark:text-gray-300'
             >
-              Name <span className='text-red-500'>*</span>
+              {t("Name")} <span className='text-red-500'>*</span>
             </label>
             <input
               type='text'
@@ -243,7 +252,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               htmlFor='description'
               className='block text-sm font-medium text-gray-700 dark:text-gray-300'
             >
-              Description
+              {t("Description")}
             </label>
             <input
               type='text'
@@ -259,7 +268,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               htmlFor='campaignId'
               className='block text-sm font-medium text-gray-700 dark:text-gray-300'
             >
-              Parent Campaign <span className='text-red-500'>*</span>
+              {t("Parent Campaign")} <span className='text-red-500'>*</span>
             </label>
             <select
               id='campaignId'
@@ -269,7 +278,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               required
               className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-green-200 focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
             >
-              <option value=''>Select Campaign</option>
+              <option value=''>{t("Select Campaign")}</option>
               {allCampaigns?.map(campaign => (
                 <option key={campaign.id} value={campaign.id}>
                   {campaign.name}
@@ -282,7 +291,11 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
             className='mt-4 w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 focus:ring focus:ring-green-200 dark:bg-green-700 dark:hover:bg-green-600'
             disabled={loading}
           >
-            {loading ? "Saving..." : areaId ? "Update Area" : "Create Area"}
+            {loading
+              ? t("Saving...")
+              : areaId
+                ? t("Update Area")
+                : t("Create Area")}
           </button>
         </form>
 
@@ -312,15 +325,17 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
                 position='topright'
                 onEdited={e => {
                   const layers = e.layers
-                  layers.eachLayer(layer => {
-                    if (layer instanceof L.Polygon) {
-                      handlePolygonChange(
-                        layer
-                          .getLatLngs()[0]
-                          .map((latlng: L.LatLng) => [latlng.lat, latlng.lng])
-                      )
+                  layers.eachLayer(
+                    (layer: { getLatLngs: () => L.LatLng[][] }) => {
+                      if (layer instanceof L.Polygon) {
+                        handlePolygonChange(
+                          layer
+                            .getLatLngs()[0]
+                            .map((latlng: L.LatLng) => [latlng.lat, latlng.lng])
+                        )
+                      }
                     }
-                  })
+                  )
                 }}
                 onCreated={e => {
                   const layer = e.layer
@@ -350,7 +365,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               className='py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring focus:ring-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600'
               data-cy='geolocation-button'
             >
-              Go to My Location
+              {t("Go to My Location")}
             </button>
           </div>
         </div>

@@ -7,6 +7,8 @@ import DefaultLayout from "@/components/AdminLayout"
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb"
 import { useTranslation } from "@/hooks/useTranslation"
 import GoBack from "@/components/Admin/GoBack"
+import { TbLassoPolygon } from "react-icons/tb"
+import { FaCloudDownloadAlt } from "react-icons/fa"
 interface Campaign {
   id: string
   name: string
@@ -15,7 +17,7 @@ interface Campaign {
   startDatetime?: string
   endDatetime?: string
   location?: string
-  type: string
+  category: string
   gameId: string | null
   areas: {
     id: string
@@ -106,19 +108,35 @@ export default function CampaignDetails() {
                 <MdEdit />
                 <span>{t("Edit Campaign")}</span>
               </button>
+              <button
+                onClick={() => router.push(`/admin/areas/create`)}
+                className='px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center space-x-2'
+              >
+                <TbLassoPolygon />
+                <span>{t("Create area")}</span>
+              </button>
+
+              <button
+                onClick={() => console.log("WIP")}
+                className='px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed'
+                disabled
+              >
+                <FaCloudDownloadAlt />
+                <span>{t("Download data")}</span>
+              </button>
             </div>
             <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
               {campaign.name}
             </h1>
             <p className='text-gray-600 dark:text-gray-300 mb-6'>
-              {campaign.description || "No description available."}
+              {campaign.description || "No description available"}
             </p>
             <div className='mb-6'>
               <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-2'>
-                Details
+                {t("Details")}
               </h2>
               <p>
-                <strong>Status:</strong>{" "}
+                <strong>{t("Status")}:</strong>{" "}
                 <span
                   className={`px-2 py-1 text-sm font-medium rounded ${
                     campaign.isOpen
@@ -128,20 +146,39 @@ export default function CampaignDetails() {
                   data-cy='campaign-invitiation-status'
                 >
                   {campaign.isOpen
-                    ? "Open (Anyone can join)"
-                    : "Closed (Invite only)"}
+                    ? t("Open (Anyone can join)")
+                    : t("Closed (Invite only)")}
                 </span>
               </p>
+
               <p>
-                <strong>Deadline:</strong>{" "}
-                {campaign.deadline
-                  ? new Date(campaign.deadline).toLocaleDateString()
-                  : "No Deadline"}
+                <strong>{t("Location")}:</strong>{" "}
+                {campaign.location || t("No Location")}
+              </p>
+              <p>
+                <strong>{t("Category")}:</strong> {campaign.category}
+              </p>
+              <p>
+                <strong>{t("Is Game Enabled")}:</strong>{" "}
+                {campaign?.gameId ? t("Enabled") : t("Disabled")}
+              </p>
+              <br />
+              <p>
+                <strong>{t("Start Date")}:</strong>{" "}
+                {campaign.startDatetime
+                  ? new Date(campaign.startDatetime).toLocaleDateString()
+                  : t("No Start Date")}
+              </p>
+              <p>
+                <strong>{t("Deadline")}:</strong>{" "}
+                {campaign.endDatetime
+                  ? new Date(campaign.endDatetime).toLocaleDateString()
+                  : t("No Deadline")}
               </p>
             </div>
             <div className='mb-6'>
               <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-2'>
-                Users
+                {t("Users")}
               </h2>
               <ul>
                 {campaign.allowedUsers.map(user => (
@@ -164,10 +201,9 @@ export default function CampaignDetails() {
             </div>
           </div>
 
-          {/* Columna derecha */}
           <div className='h-full'>
             <h2 className='text-center text-xl font-semibold text-gray-800 dark:text-white mb-4'>
-              Areas
+              {t("Areas")}
             </h2>
             <div className='h-96 rounded-lg overflow-hidden shadow-lg'>
               <Map
@@ -187,7 +223,7 @@ export default function CampaignDetails() {
             className='text-xl font-semibold text-gray-800 dark:text-white mb-4'
             data-cy='areas-title'
           >
-            Areas
+            {t("Areas")}
           </h2>
           <ul className='space-y-4'>
             {campaign?.areas?.map(sub => (
@@ -214,14 +250,14 @@ export default function CampaignDetails() {
                       (acc, poi) => acc + poi.tasks.length,
                       0
                     )}{" "}
-                    Tasks
+                    {t("Tasks")}
                   </p>
                 </div>
                 <button
                   onClick={() => router.push(`/admin/areas/${sub.id}`)}
                   className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
                 >
-                  View Area
+                  {t("View Area")}
                 </button>
               </li>
             ))}

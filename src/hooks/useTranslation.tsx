@@ -1,10 +1,12 @@
 import en from "../locales/en/common.json"
+import es from "../locales/es/common.json"
 import it from "../locales/it/common.json"
 import da from "../locales/da/common.json"
 import nl from "../locales/nl/common.json"
 
 const translations: { [key: string]: { [key: string]: string } } = {
   en,
+  es,
   it,
   da,
   nl

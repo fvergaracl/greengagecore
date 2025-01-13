@@ -81,8 +81,18 @@ export default async function handler(
 
         return res.status(200).json(updatedCampaign)
       }
+      case "DELETE": {
+        if (!id) {
+          return res.status(400).json({ error: "Campaign ID is required" })
+        }
+
+        await CampaignController.deleteCampaign(id as string)
+
+        return res.status(204).send()
+      }
+
       default:
-        res.setHeader("Allow", ["GET", "PUT"])
+        res.setHeader("Allow", ["GET", "PUT", "DELETE"])
         return res.status(405).end(`Method ${req.method} Not Allowed`)
     }
   } catch (error) {

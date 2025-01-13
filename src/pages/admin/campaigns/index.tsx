@@ -141,6 +141,39 @@ export default function AdminCampaigns() {
     [router]
   )
 
+  const handleDelete = useCallback(
+    (id: string) => {
+      Swal.fire({
+        title: t("Are you sure?"),
+        text: t(
+          "If you do this, you will lose all the data related to this campaign (areas, POIs, and tasks)."
+        ),
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: t("Yes, delete it!"),
+        cancelButtonText: t("Cancel")
+      }).then(async result => {
+        if (result.isConfirmed) {
+          try {
+            await axios.delete(`/api/admin/campaigns/${id}`)
+            Swal.fire(
+              t("Deleted!"),
+              t("The campaign has been deleted."),
+              "success"
+            )
+            setAllCampaigns(prev => prev.filter(campaign => campaign.id !== id))
+          } catch (error) {
+            console.error("Failed to delete campaign:", error)
+            Swal.fire(t("Error"), t("Failed to delete the campaign."), "error")
+          }
+        }
+      })
+    },
+    [t]
+  )
+
   const handleInviteOnly = useCallback(
     (id: string) => {
       const campaignLink = `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/campaigns?invite=${id}&fromuser=${user?.sub}`
@@ -223,7 +256,6 @@ export default function AdminCampaigns() {
       return acc
     }, {})
   }
-  // ='Campaigns'
   return (
     <DefaultLayout>
       <Breadcrumb
@@ -518,6 +550,7 @@ export default function AdminCampaigns() {
                         </button>
                         <button
                           title={t("Delete")}
+                          onClick={() => handleDelete(campaign.id)}
                           className='rounded bg-red-100 p-2 text-red-600 hover:bg-red-200'
                         >
                           <FontAwesomeIcon icon={faTrash} />
