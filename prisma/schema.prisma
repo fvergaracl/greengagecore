@@ -41,7 +41,6 @@ model Campaign {
   name          String
   description   String?
   isOpen        Boolean              @default(true)
-  disabled      Boolean              @default(false)
   location      String?
   startDatetime DateTime?
   endDatetime   DateTime?
