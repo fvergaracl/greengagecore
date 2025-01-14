@@ -11,9 +11,9 @@ import {
   useMap,
   Popup
 } from "react-leaflet"
+import { EditControl } from "react-leaflet-draw"
 import GoBack from "@/components/Admin/GoBack"
 import { useTranslation } from "@/hooks/useTranslation"
-import { EditControl } from "react-leaflet-draw"
 import "leaflet/dist/leaflet.css"
 import "leaflet-draw/dist/leaflet.draw.css"
 import L, { DivIcon } from "leaflet"
@@ -31,19 +31,6 @@ interface IFormValues {
   campaignId: string
 }
 
-const RecenterAndFitBounds = ({ polygon }: { polygon: number[][] | null }) => {
-  const map = useMap()
-
-  useEffect(() => {
-    if (polygon && polygon.length > 0) {
-      const bounds = L.latLngBounds(polygon.map(([lat, lng]) => [lat, lng]))
-      map.fitBounds(bounds, { padding: [20, 20] })
-    }
-  }, [polygon, map])
-
-  return null
-}
-
 const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
   const { t } = useTranslation()
   const router = useRouter()
@@ -57,6 +44,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
   const [allCampaigns, setAllCampaigns] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [mapCenter, setMapCenter] = useState<[number, number]>([51.505, -0.09])
+  const [focusInPolygon, setFocusInPolygon] = useState<boolean>(true)
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null
   )
@@ -110,11 +98,35 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
 
   const RecenterMap = ({ center }: { center: [number, number] }) => {
     const map = useMap()
+
     useEffect(() => {
       if (center) {
-        map.setView(center, map.getZoom())
+        console.log("Recentering map to:", center)
+        map.setView(center, map.getZoom(), { animate: true })
       }
     }, [center, map])
+
+    return null
+  }
+
+  const RecenterAndFitBounds = ({
+    polygon
+  }: {
+    polygon: number[][] | null
+  }) => {
+    const map = useMap()
+
+    useEffect(() => {
+      if (polygon && polygon.length > 0 && map) {
+        try {
+          const bounds = L.latLngBounds(polygon.map(([lat, lng]) => [lat, lng]))
+          map.fitBounds(bounds, { padding: [20, 20] })
+        } catch (error) {
+          console.error("Error fitting bounds:", error)
+        }
+      }
+    }, [polygon, map])
+
     return null
   }
 
@@ -139,13 +151,16 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
   }
 
   const handleGeolocation = () => {
+    setFocusInPolygon(false)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         position => {
           const { latitude, longitude } = position.coords
           const newLocation: [number, number] = [latitude, longitude]
+
+          console.log("User location:", newLocation) // Verifica si las coordenadas son correctas
           setUserLocation(newLocation)
-          setMapCenter(newLocation)
+          setMapCenter(newLocation) // Actualiza el centro del mapa
         },
         error => {
           console.warn("Geolocation not enabled or denied.", error)
@@ -350,7 +365,10 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
               attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
             />
-            <RecenterAndFitBounds polygon={formValues.polygon} />
+            {focusInPolygon && formValues?.polygon?.length > 0 && (
+              <RecenterAndFitBounds polygon={formValues.polygon} />
+            )}
+
             {userLocation && (
               <Marker icon={markerIcon} position={userLocation}></Marker>
             )}
@@ -399,7 +417,30 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
               />
             </FeatureGroup>
           </MapContainer>
-          <div className='flex justify-center mt-2'>
+          <div className='flex justify-around mt-2'>
+            <button
+              onClick={() => {
+                setFocusInPolygon(true)
+                if (formValues.polygon && formValues.polygon.length > 0) {
+                  const bounds = L.latLngBounds(
+                    formValues.polygon.map(([lat, lng]) => [lat, lng])
+                  )
+                  setMapCenter(bounds.getCenter())
+                } else {
+                  Swal.fire({
+                    title: t("Polygon Not Found"),
+                    text: t("No polygon data available to center the map."),
+                    icon: "warning"
+                  })
+                }
+              }}
+              className='py-2 px-4 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:ring focus:ring-orange-200 dark:bg-orange-700 dark:hover:bg-orange-600'
+              data-cy='polygon-center-button'
+              disabled={!formValues.polygon || formValues.polygon.length === 0}
+            >
+              {t("Go to Polygon Center")}
+            </button>
+
             <button
               onClick={handleGeolocation}
               className='py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:ring focus:ring-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600'
