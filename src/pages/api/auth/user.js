@@ -2,9 +2,13 @@ import axios from "axios"
 import cookie from "cookie"
 import jwt from "jsonwebtoken"
 
+const axiosInstance = axios.create({
+  timeout: 10000 // 10 seconds
+})
+
 const refreshAccessToken = async refreshToken => {
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`,
       new URLSearchParams({
         client_id: process.env.KEYCLOAK_CLIENT_ID,
@@ -17,7 +21,7 @@ const refreshAccessToken = async refreshToken => {
       }
     )
 
-    return response.data // Returns new access_token and refresh_token
+    return response.data
   } catch (error) {
     console.error("Error refreshing token:", error.message)
     return null
@@ -26,8 +30,7 @@ const refreshAccessToken = async refreshToken => {
 
 export default async function handler(req, res) {
   const cookies = cookie.parse(req.headers?.cookie || "")
-  const token =
-    req.headers.authorization?.split(" ")[1] || cookies?.access_token
+  let token = req.headers.authorization?.split(" ")[1] || cookies?.access_token
   const refreshToken = req.headers?.refresh_token || cookies?.refresh_token
 
   if (!token || !refreshToken) {
@@ -42,6 +45,9 @@ export default async function handler(req, res) {
   if (!tokenData || tokenData.exp - now <= 900) {
     console.log("> Token is close to expiration or expired. Refreshing...")
     const newTokenData = await refreshAccessToken(refreshToken)
+    if (newTokenData) {
+      token = newTokenData.access_token
+    }
 
     if (!newTokenData) {
       console.error("> Failed to refresh token")
@@ -84,8 +90,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Validate the current or refreshed token
-    const validToken = jwt.decode(token)
     const userInfo = await axios.get(
       `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -98,6 +102,6 @@ export default async function handler(req, res) {
       "Error validating token:",
       error.response?.data || error.message
     )
-    res.status(401).json({ error: "Token inválido o expirado" })
+    res.status(401).json({ error: "Invalid token or expired" })
   }
 }

@@ -77,35 +77,4 @@ async function login(username, password) {
   }
 }
 
-// Cerrar sesión (invalidar token)
-async function logout(refreshToken) {
-  try {
-    await authenticateClient()
-
-    // Endpoint de logout de Keycloak
-    const logoutUrl = `${keycloakUrl}/realms/${realmName}/protocol/openid-connect/logout`
-
-    const params = new URLSearchParams()
-    params.append("client_id", clientId)
-    params.append("client_secret", clientSecret)
-    params.append("refresh_token", refreshToken)
-
-    const response = await fetch(logoutUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params
-    })
-
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Error en el cierre de sesión: ${error}`)
-    }
-
-    return { success: true, message: "Cierre de sesión exitoso" }
-  } catch (error) {
-    console.error("Error en el cierre de sesión:", error.message)
-    return { success: false, error: error.message }
-  }
-}
-
-module.exports = { verifyToken, login, logout }
+module.exports = { verifyToken, login }

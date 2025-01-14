@@ -4,6 +4,8 @@ import axios from "axios"
 import DefaultLayout from "../../../components/AdminLayout"
 import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
 import dynamic from "next/dynamic"
+import { useTranslation } from "@/hooks/useTranslation"
+import GoBack from "@/components/Admin/GoBack"
 
 // Dynamically import Leaflet components
 const MapContainer = dynamic(
@@ -32,6 +34,7 @@ interface Area {
 }
 
 export default function AreaDetails() {
+  const { t } = useTranslation()
   const router = useRouter()
   const { id } = router.query
   const [area, setArea] = useState<Area | null>(null)
@@ -55,53 +58,46 @@ export default function AreaDetails() {
     return (
       <DefaultLayout>
         <div className='flex items-center justify-center h-screen'>
-          <p className='text-gray-500 text-lg'>Loading...</p>
+          <p className='text-gray-500 text-lg'>{t("Loading...")}</p>
         </div>
       </DefaultLayout>
     )
   }
 
-  const polygonCoordinates = area.polygon || []
-  console.log({ area })
-  const bounds = polygonCoordinates.length > 0 ? polygonCoordinates : [[0, 0]]
-  console.log({ area })
+  const polygonCoordinates = area?.polygon || []
+  const bounds = polygonCoordinates?.length > 0 ? polygonCoordinates : [[0, 0]]
   return (
     <DefaultLayout>
-      <Breadcrumb pageName='Area Details' breadcrumbPath='Areas' />
+      <Breadcrumb pageName={t("Area Details")} breadcrumbPath={t("Areas")} />
+      <GoBack data-cy='go-back-area-details' />
       <div className='flex'>
         {/* Left Content */}
         <div className='flex-1 p-6 bg-white rounded-lg shadow-md dark:bg-gray-800'>
           <div className='mb-4 flex justify-between'>
-            <button
-              onClick={() => router.back()}
-              className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
-            >
-              ← Back to Areas
-            </button>
             <button
               onClick={() =>
                 router.push(`/admin/campaigns/${area.campaign.id}`)
               }
               className='px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600'
             >
-              View Parent Campaign
+              {t("View Parent Campaign")}
             </button>
             <button
               onClick={() => router.push(`/admin/areas/${area.id}/edit`)}
               className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600'
             >
-              Edit Area
+              {t("Edit Area")}
             </button>
           </div>
           <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
             {area.name}
           </h1>
           <p className='text-gray-600 dark:text-gray-300 mb-6'>
-            {area.description || "No description available."}
+            {area.description || t("No description available")}
           </p>
           <div className='mb-6'>
             <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
-              Parent Campaign
+              {t("Parent Campaign")}
             </h2>
             <p>
               <strong>Name:</strong> {area.campaign.name}
