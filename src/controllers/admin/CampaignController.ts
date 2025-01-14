@@ -45,6 +45,23 @@ export default class CampaignController {
   }
 
   @withPrismaDisconnect
+  static async getCampaignNamesWithPolygons() {
+    return await prisma.campaign.findMany({
+      where: { isDisabled: false },
+      select: {
+        id: true,
+        name: true,
+        areas: {
+          select: {
+            polygon: true,
+            name: true
+          }
+        }
+      }
+    })
+  }
+
+  @withPrismaDisconnect
   static async getCampaignById(id: string) {
     return await prisma.campaign.findUnique({
       where: { id },

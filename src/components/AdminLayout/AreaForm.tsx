@@ -8,11 +8,11 @@ import {
   Polygon,
   FeatureGroup,
   Marker,
-  useMap
+  useMap,
+  Popup
 } from "react-leaflet"
 import GoBack from "@/components/Admin/GoBack"
 import { useTranslation } from "@/hooks/useTranslation"
-
 import { EditControl } from "react-leaflet-draw"
 import "leaflet/dist/leaflet.css"
 import "leaflet-draw/dist/leaflet.draw.css"
@@ -37,7 +37,7 @@ const RecenterAndFitBounds = ({ polygon }: { polygon: number[][] | null }) => {
   useEffect(() => {
     if (polygon && polygon.length > 0) {
       const bounds = L.latLngBounds(polygon.map(([lat, lng]) => [lat, lng]))
-      map.fitBounds(bounds, { padding: [20, 20] }) // Margen opcional de 20px
+      map.fitBounds(bounds, { padding: [20, 20] })
     }
   }, [polygon, map])
 
@@ -98,7 +98,7 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const response = await axios.get("/api/admin/campaigns/names")
+        const response = await axios.get("/api/admin/campaigns/areas")
         setAllCampaigns(response.data)
       } catch (err) {
         console.error("Failed to fetch campaigns:", err)
@@ -107,6 +107,36 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
 
     fetchCampaigns()
   }, [])
+
+  const RecenterMap = ({ center }: { center: [number, number] }) => {
+    const map = useMap()
+    useEffect(() => {
+      if (center) {
+        map.setView(center, map.getZoom())
+      }
+    }, [center, map])
+    return null
+  }
+
+  const RenderPolygons = ({
+    polygons
+  }: {
+    polygons: { polygon: number[][]; name: string }[]
+  }) => {
+    return (
+      <>
+        {polygons.map((polygon, index) => (
+          <Polygon
+            key={index}
+            positions={polygon.polygon}
+            pathOptions={{ color: "gray", fillOpacity: 0.3 }}
+          >
+            {polygon?.name && <Popup>{polygon.name}</Popup>}
+          </Polygon>
+        ))}
+      </>
+    )
+  }
 
   const handleGeolocation = () => {
     if (navigator.geolocation) {
@@ -306,6 +336,16 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
             scrollWheelZoom={false}
             className='h-full rounded-lg shadow-md'
           >
+            <RecenterMap center={mapCenter} />
+            {formValues?.campaignId && allCampaigns.length > 0 && (
+              <RenderPolygons
+                polygons={
+                  allCampaigns
+                    .find(campaign => campaign.id === formValues.campaignId)
+                    ?.areas.map((area: any) => area) || []
+                }
+              />
+            )}
             <TileLayer
               url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
               attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"

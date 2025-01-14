@@ -7,7 +7,8 @@ export default async function handler(
 ) {
   if (req.method === "GET") {
     try {
-      const campaignNames = await CampaignController.getCampaignNames()
+      const campaignNames =
+        await CampaignController.getCampaignNamesWithPolygons()
 
       console.log("---------campaignNames campaignNames")
       console.log({ campaignNames })

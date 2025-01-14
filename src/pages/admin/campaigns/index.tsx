@@ -23,8 +23,25 @@ interface Campaign {
   category: string
   gameId: string | null
   areas: {
-    tasks: { id: string }[]
+    id: string
+    name: string
+    description: string
+    polygon: [number, number][]
+    pointOfInterests: {
+      id: string
+      name: string
+      latitude: number
+      longitude: number
+      disabled: boolean
+      tasks: {
+        id: string
+      }[]
+    }[]
+    tasks: {
+      id: string
+    }[]
   }[]
+
   allowedUsers: {
     accessType: string
   }[]
@@ -362,8 +379,9 @@ export default function AdminCampaigns() {
 
           <tbody>
             {paginatedCampaigns?.map((campaign, index) => {
-              const groupedUsers = groupParticipants(campaign.allowedUsers)
-              const areaCount = campaign.areas.length
+              const groupedUsers = groupParticipants(campaign?.allowedUsers)
+              const areaCount = campaign?.areas?.length
+              console.log(campaign?.areas)
               const pointOfInterestsCount =
                 campaign?.areas?.pointOfInterests?.length || 0
               return (
@@ -469,23 +487,16 @@ export default function AdminCampaigns() {
 
                         {/* Tasks */}
                         <button
-                          onClick={() =>
-                            console.log(
-                              "Clicked on Tasks",
-                              campaign.areas.reduce(
-                                (acc, area) => acc + area.tasks.length,
-                                0
-                              )
-                            )
-                          }
+                          onClick={() => console.log("Clicked on Tasks")}
                           className='rounded px-2 py-1 text-xs font-semibold bg-yellow-200 text-yellow-800 flex items-center gap-1 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400'
                           title={t("Click to view tasks in the campaign")}
                         >
                           <FaTasks className='inline-block' />
-                          {campaign.areas.reduce(
-                            (acc, area) => acc + area.tasks.length,
+                          {campaign?.areas.reduce(
+                            (acc, area) =>
+                              acc + area?.pointOfInterests?.tasks?.length,
                             0
-                          )}
+                          ) || 0}
                         </button>
 
                         {/* Users */}

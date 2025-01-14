@@ -61,7 +61,7 @@ export default class AreaController {
       data: {
         name: data?.name,
         description: data?.description,
-        disabled: false,
+        isDisabled: false,
         campaignId: data?.campaignId,
         polygon: data?.polygon
       }
@@ -74,7 +74,7 @@ export default class AreaController {
       data: {
         name: data?.name,
         description: data?.description,
-        disabled: data?.disabled,
+        isDisabled: data?.isDisabled,
         polygon: data?.polygon
       }
     })
