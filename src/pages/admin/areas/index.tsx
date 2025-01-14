@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import { useRouter } from "next/router"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEye, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons"
-import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
-import DefaultLayout from "../../../components/AdminLayout"
+import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb"
+import DefaultLayout from "@/components/AdminLayout"
+import ColumnSelector from "@/components/Admin/ColumnSelector"
+import Swal from "sweetalert2"
+import { useTranslation } from "@/hooks/useTranslation"
 
 interface Area {
   id: string
@@ -17,19 +20,41 @@ interface Area {
   updatedAt: string
 }
 
+interface VisibleColumns {
+  id: boolean
+  name: boolean
+  description: boolean
+  campaign: boolean
+  details: boolean
+  actions: boolean
+  createdAt: boolean
+  updatedAt: boolean
+}
+
 interface Campaign {
   id: string
   name: string
 }
 
 export default function AdminAreas() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [allAreas, setAllAreas] = useState<Area[]>([])
   const [filteredAreas, setFilteredAreas] = useState<Area[]>([])
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]) // List of parent campaigns
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCampaign, setSelectedCampaign] = useState("") // Selected parent campaign for filtering
+  const [selectedCampaign, setSelectedCampaign] = useState("")
+  const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>({
+    id: true,
+    name: true,
+    description: true,
+    campaign: true,
+    details: true,
+    actions: true,
+    createdAt: false,
+    updatedAt: false
+  })
 
   const pageSize = 10
 
@@ -75,6 +100,44 @@ export default function AdminAreas() {
     setCurrentPage(1)
   }, [searchQuery, selectedCampaign, allAreas])
 
+  const handleDelete = useCallback(
+    (id: string) => {
+      Swal.fire({
+        title: t("Are you sure?"),
+        text: t(
+          "If you do this, you will lose all the data related to this area (POIs, tasks, etc)."
+        ),
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: t("Yes, delete it!"),
+        cancelButtonText: t("Cancel")
+      }).then(async result => {
+        if (result.isConfirmed) {
+          try {
+            await axios.delete(`/api/admin/areas/${id}`)
+            setAllAreas(prev => prev.filter(area => area.id !== id))
+            Swal.fire(t("Deleted!"), t("The area has been deleted."), "success")
+          } catch (error) {
+            console.error("Error deleting area:", error)
+            Swal.fire(t("Error"), t("Failed to delete the area."), "error")
+          }
+        }
+      })
+    },
+    [t]
+  )
+
+  const handleColumnToggle = (column: string) => {
+    const newCampaingColumns = {
+      ...visibleColumns,
+      [column]: !visibleColumns[column]
+    }
+
+    setVisibleColumns(prev => newCampaingColumns)
+  }
+
   const handleView = (id: string) => {
     router.push(`/admin/areas/${id}`)
   }
@@ -106,14 +169,19 @@ export default function AdminAreas() {
 
   return (
     <DefaultLayout>
-      <Breadcrumb pageName='Areas' breadcrumbPath='Areas' />
-
+      <Breadcrumb pageName={t("Areas")} breadcrumbPath={t("Areas")} />
+      <div className='flex justify-end gap-4 mb-4'>
+        <ColumnSelector
+          visibleColumns={visibleColumns}
+          onToggleColumn={handleColumnToggle}
+        />
+      </div>
       <div className='overflow-x-auto rounded-lg bg-white p-6 shadow-lg dark:bg-boxdark'>
         <div className='flex items-center gap-4 mb-4'>
           {/* Search Bar */}
           <input
             type='text'
-            placeholder='Search by name or description'
+            placeholder={t("Search by name or description")}
             value={searchQuery}
             onChange={handleSearchChange}
             className='w-full p-2 border border-gray-300 rounded-md focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white'
@@ -125,7 +193,7 @@ export default function AdminAreas() {
             onChange={handleCampaignFilterChange}
             className='p-2 border border-gray-300 rounded-md focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white'
           >
-            <option value=''>All Campaigns</option>
+            <option value=''>{t("All Campaigns")}</option>
             {campaigns?.map(campaign => (
               <option key={campaign?.id} value={campaign?.id}>
                 {campaign?.name}
@@ -137,12 +205,30 @@ export default function AdminAreas() {
         <table className='min-w-full table-auto border-collapse'>
           <thead>
             <tr className='bg-gray-100 text-left text-sm font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300'>
-              <th className='border px-4 py-2'>#</th>
-              <th className='border px-4 py-2'>Name</th>
-              <th className='border px-4 py-2'>Description</th>
-              <th className='border px-4 py-2'>Parent Campaign</th>
-              <th className='border px-4 py-2'>Tasks</th>
-              <th className='border px-4 py-2'>Actions</th>
+              {visibleColumns.id && <th className='border px-2 py-2'>#</th>}
+              {visibleColumns.name && (
+                <th className='border px-2 py-2'>{t("Name")}</th>
+              )}
+              {visibleColumns.description && (
+                <th className='border px-2 py-2'>{t("Description")}</th>
+              )}
+              {visibleColumns.campaign && (
+                <th className='border px-2 py-2'>{t("Parent Campaign")}</th>
+              )}
+              {visibleColumns.details && (
+                <th className='border px-2 py-2'>{t("Details")}</th>
+              )}
+              {visibleColumns.actions && (
+                <th className='border px-2 py-2'>{t("Actions")}</th>
+              )}
+
+              {visibleColumns.createdAt && (
+                <th className='border px-2 py-2'>{t("Created At")}</th>
+              )}
+
+              {visibleColumns.updatedAt && (
+                <th className='border px-2 py-2'>{t("Updated At")}</th>
+              )}
             </tr>
           </thead>
 
@@ -152,10 +238,15 @@ export default function AdminAreas() {
                 key={area.id}
                 className='hover:bg-gray-50 dark:hover:bg-gray-700'
               >
-                <td className='border px-4 py-2'>{startIndex + index + 1}</td>
-                <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
-                  {area.name}
-                </td>
+                {visibleColumns.id && (
+                  <td className='border px-4 py-2'>{startIndex + index + 1}</td>
+                )}
+                {visibleColumns.name && (
+                  <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
+                    {area.name}
+                  </td>
+                )}
+
                 <td className='border px-4 py-2 text-sm text-gray-600 dark:text-gray-400'>
                   {area.description || "-"}
                 </td>
@@ -181,6 +272,7 @@ export default function AdminAreas() {
                     </button>
                     <button
                       title='Delete'
+                      onClick={() => handleDelete(area.id)}
                       className='rounded bg-red-100 p-2 text-red-600 hover:bg-red-200'
                     >
                       <FontAwesomeIcon icon={faTrash} />
@@ -198,10 +290,10 @@ export default function AdminAreas() {
             disabled={currentPage === 1}
             className='px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50'
           >
-            Previous
+            {t("Previous")}
           </button>
           <span>
-            Page {currentPage} of{" "}
+            {t("Page")} {currentPage} {t("of")}{" "}
             {filteredAreas.length > 0
               ? Math.ceil(filteredAreas.length / pageSize)
               : "1"}
@@ -213,7 +305,7 @@ export default function AdminAreas() {
             }
             className='px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50'
           >
-            Next
+            {t("Next")}
           </button>
         </div>
       </div>

@@ -35,9 +35,18 @@ export default async function handler(
 
         return res.status(200).json(updatedArea)
       }
+      case "DELETE": {
+        if (!id) {
+          return res.status(400).json({ error: "Area ID is required" })
+        }
+
+        await AreaController.deleteArea(id as string)
+
+        return res.status(204).end()
+      }
 
       default: {
-        res.setHeader("Allow", ["GET", "PUT"])
+        res.setHeader("Allow", ["GET", "PUT", "DELETE"])
         return res.status(405).end(`Method ${req.method} Not Allowed`)
       }
     }

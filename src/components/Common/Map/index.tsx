@@ -121,7 +121,7 @@ export default function Map({
       if (!selectedCampaign) return
       const res = await fetch(`/api/campaigns/${selectedCampaign?.id}`)
       const resJson = await res.json()
-
+      console.log({ resJson })
       setCampaignData(resJson)
     }
 
@@ -243,7 +243,7 @@ export default function Map({
                 })}
               />
             ))}
-            {campaignData?.areas.map(
+            {campaignData?.areas?.map(
               (area: {
                 id: string
                 name: string

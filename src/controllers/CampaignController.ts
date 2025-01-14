@@ -5,13 +5,16 @@ export default class CampaignControllerCommon {
   @withPrismaDisconnect
   static async getAllCampaigns() {
     return await prisma.campaign.findMany({
-      where: { isDisabled: false }, // Opcional: Filtrar campañas activas si es necesario
+      where: { isDisabled: false },
       include: {
         areas: {
+          where: { isDisabled: false },
           include: {
             pointOfInterests: {
+              where: { isDisabled: false },
               include: {
                 tasks: {
+                  where: { isDisabled: false },
                   select: { id: true }
                 }
               }
@@ -38,10 +41,13 @@ export default class CampaignControllerCommon {
       where: { id },
       include: {
         areas: {
+          where: { isDisabled: false },
           include: {
             pointOfInterests: {
+              where: { isDisabled: false },
               include: {
                 tasks: {
+                  where: { isDisabled: false },
                   select: { id: true }
                 }
               }
@@ -105,14 +111,24 @@ export default class CampaignControllerCommon {
 
       return await prisma.campaign.findMany({
         where: {
+          isDisabled: false,
           allowedUsers: {
             some: { userId: user.id }
           }
         },
         include: {
           areas: {
+            where: { isDisabled: false },
             include: {
-              pointOfInterests: true
+              pointOfInterests: {
+                where: { isDisabled: false },
+                include: {
+                  tasks: {
+                    where: { isDisabled: false },
+                    select: { id: true }
+                  }
+                }
+              }
             }
           },
           allowedUsers: true
@@ -139,21 +155,35 @@ export default class CampaignControllerCommon {
 
       return await prisma.campaign.findMany({
         where: {
-          OR: [
+          AND: [
+            { isDisabled: false },
             {
-              allowedUsers: {
-                some: { userId: user.id }
-              }
-            },
-            {
-              userId: user.id
+              OR: [
+                {
+                  allowedUsers: {
+                    some: { userId: user.id }
+                  }
+                },
+                {
+                  userId: user.id
+                }
+              ]
             }
           ]
         },
         include: {
           areas: {
+            where: { isDisabled: false },
             include: {
-              pointOfInterests: true
+              pointOfInterests: {
+                where: { isDisabled: false },
+                include: {
+                  tasks: {
+                    where: { isDisabled: false },
+                    select: { id: true }
+                  }
+                }
+              }
             }
           },
           allowedUsers: true
@@ -168,6 +198,7 @@ export default class CampaignControllerCommon {
   @withPrismaDisconnect
   static async getCampaignNames() {
     return await prisma.campaign.findMany({
+      where: { isDisabled: false },
       select: {
         id: true,
         name: true

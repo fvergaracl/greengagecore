@@ -1,11 +1,11 @@
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { prisma, withPrismaDisconnect } from "@/utils/withPrismaDisconnect"
+import { Prisma } from "@prisma/client"
 
 export default class AreaController {
+  @withPrismaDisconnect
   static async getAllAreas() {
     return await prisma.area.findMany({
-      where: { disabled: false },
+      where: { isDisabled: false },
       include: {
         pointOfInterests: {
           include: {
@@ -24,7 +24,7 @@ export default class AreaController {
       }
     })
   }
-
+  @withPrismaDisconnect
   static async getAreaNames() {
     try {
       const areas = await prisma.area.findMany({
@@ -39,7 +39,7 @@ export default class AreaController {
       throw new Error("Failed to fetch areas names")
     }
   }
-
+  @withPrismaDisconnect
   static async getAreaById(id: string) {
     return await prisma.area.findUnique({
       where: { id },
@@ -55,7 +55,7 @@ export default class AreaController {
       }
     })
   }
-
+  @withPrismaDisconnect
   static async createArea(data: any) {
     return await prisma.area.create({
       data: {
@@ -68,6 +68,7 @@ export default class AreaController {
     })
   }
 
+  @withPrismaDisconnect
   static async updateArea(id: string, data: any) {
     return await prisma.area.update({
       where: { id },
@@ -78,5 +79,23 @@ export default class AreaController {
         polygon: data?.polygon
       }
     })
+  }
+
+  @withPrismaDisconnect
+  static async deleteArea(id: string) {
+    const areas = await prisma.area.update({
+      where: { id },
+      data: { isDisabled: true }
+    })
+    const pois = await prisma.pointOfInterest.updateMany({
+      where: { areaId: id },
+      data: { isDisabled: true }
+    })
+    const tasks = await prisma.task.updateMany({
+      where: { pointOfInterest: { areaId: id } },
+      data: { isDisabled: true }
+    })
+
+    return { areas, pois, tasks }
   }
 }

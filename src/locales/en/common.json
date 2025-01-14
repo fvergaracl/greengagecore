@@ -163,5 +163,13 @@
   "Update Area": "Update Area",
   "Create Area": "Create Area",
   "Saving...": "Saving...",
-  "Go to My Location": "Go to My Location"
+  "Go to My Location": "Go to My Location",
+  "Search by name or description": "Search by name or description",
+  "If you do this, you will lose all the data related to this area (POIs, tasks, etc).": "If you do this, you will lose all the data related to this area (POIs, tasks, etc).",
+  "The area has been deleted.": "The area has been deleted.",
+  "Failed to delete the area.": "Failed to delete the area.",
+  "Yes, delete it!": "Yes, delete it!",
+  "Cancel": "Cancel",
+  "Are you sure?": "Are you sure?",
+  "Edit Area": "Edit Area"
 }
