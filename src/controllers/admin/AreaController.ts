@@ -16,7 +16,17 @@ export default class AreaController {
         },
 
         campaign: {
-          select: { id: true, name: true }
+          select: {
+            id: true,
+            name: true,
+            allowedUsers: {
+              include: {
+                user: {
+                  select: { id: true, sub: true }
+                }
+              }
+            }
+          }
         }
       },
       orderBy: {

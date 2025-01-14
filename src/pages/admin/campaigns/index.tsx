@@ -72,7 +72,9 @@ export default function AdminCampaigns() {
   const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([])
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [searchQuery, setSearchQuery] = useState(campaignId || "")
+  const [searchQuery, setSearchQuery] = useState<String | String[] | undefined>(
+    campaignId || ""
+  )
   const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>({
     id: true,
     name: true,
@@ -117,7 +119,7 @@ export default function AdminCampaigns() {
       return
     }
 
-    const lowercasedQuery = searchQuery.toLowerCase()
+    const lowercasedQuery = searchQuery?.toLowerCase()
 
     const filtered = allCampaigns?.filter(campaign => {
       const { name, description, location, category, id } = campaign
@@ -247,14 +249,6 @@ export default function AdminCampaigns() {
         ? Math.max(prev - 1, 1)
         : Math.min(prev + 1, Math.ceil(filteredCampaigns.length / pageSize))
     )
-  }
-
-  const accessTypeColors: Record<string, string> = {
-    admin: "bg-red-200 text-red-800 dark:bg-red-800 dark:text-white",
-    editor: "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-white",
-    viewer: "bg-green-200 text-green-800 dark:bg-green-800 dark:text-white",
-    contributor:
-      "bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-white"
   }
 
   const startIndex = (currentPage - 1) * pageSize
