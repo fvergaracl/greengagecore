@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   const now = Math.floor(Date.now() / 1000)
 
   if (!tokenData || tokenData.exp - now <= 900) {
-    console.log("> Token is close to expiration or expired. Refreshing...")
+    console.warn("> Token is close to expiration or expired. Refreshing...")
     const tokenDataRefreshed = await refreshAccessToken(refreshToken)
     if (tokenDataRefreshed) {
       token = tokenDataRefreshed.access_token

@@ -103,26 +103,6 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
     fetchPOI()
   }, [poiId])
 
-  const validateForm = () => {
-    const missingFields: string[] = []
-    if (!formValues.name.trim()) missingFields.push("Name")
-    if (!formValues.areaId.trim()) missingFields.push("Associated Area")
-
-    if (missingFields.length > 0) {
-      Swal.fire({
-        icon: "error",
-        title: "Missing Fields",
-        html: `Please fill the following fields:<br><b>${missingFields.join(
-          ", "
-        )}</b>`,
-        timer: 5000,
-        timerProgressBar: true
-      })
-      return false
-    }
-    return true
-  }
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -272,7 +252,7 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className='max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
+      className=' mx-auto bg-white p-6 rounded-lg shadow-md dark:bg-gray-800'
     >
       <a
         onClick={() => router.back()}
@@ -319,7 +299,10 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
       </div>
       <div className='mb-4 grid grid-cols-2 gap-4'>
         <div>
-          <label htmlFor='latitude' className='block text-sm font-medium'>
+          <label
+            htmlFor='latitude'
+            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+          >
             Latitude
           </label>
           <input
@@ -331,7 +314,10 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
           />
         </div>
         <div>
-          <label htmlFor='longitude' className='block text-sm font-medium'>
+          <label
+            htmlFor='longitude'
+            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+          >
             Longitude
           </label>
           <input

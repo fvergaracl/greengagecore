@@ -1,10 +1,18 @@
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { prisma, withPrismaDisconnect } from "@/utils/withPrismaDisconnect"
 
 export default class POIController {
+  @withPrismaDisconnect
   static async getAllPOIs() {
     return await prisma.pointOfInterest.findMany({
+      where: {
+        isDisabled: false,
+        area: {
+          isDisabled: false,
+          campaign: {
+            isDisabled: false
+          }
+        }
+      },
       include: {
         area: {
           select: {
@@ -33,18 +41,34 @@ export default class POIController {
     })
   }
 
+  @withPrismaDisconnect
   static async getPOIById(id: string) {
     return await prisma.pointOfInterest.findUnique({
-      where: { id },
+      where: {
+        id,
+        isDisabled: false,
+        area: {
+          isDisabled: false,
+          campaign: {
+            isDisabled: false
+          }
+        }
+      },
       include: {
         area: {
-          select: { id: true, name: true, polygon: true }
+          select: {
+            id: true,
+            name: true,
+            polygon: true
+          }
         },
-        tasks: true
+        tasks: {
+          where: { isDisabled: false }
+        }
       }
     })
   }
-
+  @withPrismaDisconnect
   static async createPOI(data: any) {
     try {
       return await prisma.pointOfInterest.create({
@@ -62,7 +86,7 @@ export default class POIController {
       throw new Error("Failed to create point of interest.")
     }
   }
-
+  @withPrismaDisconnect
   static async updatePOI(id: string, data: any) {
     try {
       return await prisma.pointOfInterest.update({
@@ -72,7 +96,7 @@ export default class POIController {
           description: data?.description,
           latitude: data?.latitude,
           longitude: data?.longitude,
-          disabled: data?.disabled,
+          isDisabled: data?.isDisabled,
           radius: data?.radius,
           areaId: data?.areaId
         }
@@ -82,11 +106,12 @@ export default class POIController {
       throw new Error("Failed to update point of interest.")
     }
   }
-
+  @withPrismaDisconnect
   static async deletePOI(id: string) {
     try {
-      return await prisma.pointOfInterest.delete({
-        where: { id }
+      return await prisma.pointOfInterest.update({
+        where: { id },
+        data: { isDisabled: true }
       })
     } catch (error) {
       console.error("Error in deletePOI:", error)
