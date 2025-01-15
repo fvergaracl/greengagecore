@@ -33,7 +33,6 @@ export default function Task() {
     alert("Thank you for completing the task!")
   }
 
-  console.log({ task })
 
   return (
     <DashboardLayout>

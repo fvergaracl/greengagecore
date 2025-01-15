@@ -9,10 +9,6 @@ export default async function handler(
     try {
       const campaignNames =
         await CampaignController.getCampaignNamesWithPolygons()
-
-      console.log("---------campaignNames campaignNames")
-      console.log({ campaignNames })
-
       res.status(200).json(campaignNames)
     } catch (error) {
       console.error("Error fetching campaign names:", error)

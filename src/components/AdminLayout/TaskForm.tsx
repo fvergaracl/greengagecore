@@ -68,10 +68,6 @@ export default function TaskForm({ mode, poiId, initialData }: TaskFormProps) {
 
     setSaving(true)
     try {
-      console.log("***************************1")
-      console.log("***************************2")
-      console.log("***************************3")
-      console.log(creator)
 
       if (creator?.JSON === {}) {
         Swal.fire({

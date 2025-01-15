@@ -20,12 +20,10 @@ interface CenterMapProps {
 }
 
 const CenterMap: React.FC<CenterMapProps> = ({ center }) => {
-  console.log("CenterMap:", center)
   const map = useMap()
 
   useEffect(() => {
     if (center) {
-      console.log("Centering map to:", center)
       map.setView(center, map.getZoom())
     }
   }, [center, map])
@@ -95,7 +93,6 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
     const fetchAreas = async () => {
       try {
         const response = await axios.get("/api/admin/areas")
-        console.log({ response })
         setAreas(response.data)
       } catch (err) {
         console.error("Failed to fetch areas:", err)
@@ -116,7 +113,6 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
             longitude: response.data.longitude || -0.09,
             areaId: response.data.area.id || ""
           })
-          console.log("Selected area:", response.data.area)
           setSelectedArea(response.data.area)
           setLoading(false)
         } catch (err) {

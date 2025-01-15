@@ -57,13 +57,6 @@ export default async function handler(req, res) {
         path: "/"
       })
     ])
-    console.log({
-      access_token: new Date(Date.now() + 3600 * 1000).toLocaleString(),
-      refresh_token: new Date(
-        Date.now() + 7 * 24 * 3600 * 1000
-      ).toLocaleString(),
-      id_token: new Date(Date.now() + 3600 * 1000).toLocaleString()
-    })
   } catch (error) {
     console.error("Error refreshing token:", error.message)
     return res.status(401).json({ error: "Failed to refresh token" })

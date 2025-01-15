@@ -37,7 +37,6 @@ export default function AdminPOIs() {
     const fetchPOIs = async () => {
       try {
         const response = await axios.get("/api/admin/pois")
-        console.log("-response", response)
         setPois(response.data)
         setFilteredPOIs(response.data)
       } catch (err) {

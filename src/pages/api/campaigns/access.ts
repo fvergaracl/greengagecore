@@ -73,11 +73,11 @@ export default async function handler(
 
     const userAccess = await prisma.userCampaignAccess.upsert({
       where: { userId_campaignId: { userId: user.id, campaignId } },
-      update: { accessType: "participant" },
+      update: { accessType: "contributor" },
       create: {
         userId: user.id,
         campaignId,
-        accessType: "participant"
+        accessType: "contributor"
       }
     })
 

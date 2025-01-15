@@ -37,6 +37,7 @@ export default class CampaignController {
   @withPrismaDisconnect
   static async getCampaignNames() {
     return await prisma.campaign.findMany({
+      where: { isDisabled: false },
       select: {
         id: true,
         name: true
@@ -52,6 +53,7 @@ export default class CampaignController {
         id: true,
         name: true,
         areas: {
+          where: { isDisabled: false },
           select: {
             polygon: true,
             name: true
@@ -64,13 +66,16 @@ export default class CampaignController {
   @withPrismaDisconnect
   static async getCampaignById(id: string) {
     return await prisma.campaign.findUnique({
-      where: { id },
+      where: { id, isDisabled: false },
       include: {
         areas: {
+          where: { isDisabled: false },
           include: {
             pointOfInterests: {
+              where: { isDisabled: false },
               include: {
                 tasks: {
+                  where: { isDisabled: false },
                   select: { id: true }
                 }
               }

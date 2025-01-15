@@ -11,7 +11,6 @@ export default function CampaignsScreen() {
   const { t } = useTranslation()
   const router = useRouter()
   const { invite: campaignId, fromuser } = router.query
-  console.log({ campaignId, fromuser })
 
   const { setSelectedCampaign, selectedCampaign } = useDashboard()
   const [campaigns, setCampaigns] = useState([])
@@ -29,7 +28,6 @@ export default function CampaignsScreen() {
 
       const allCampaigns = await allCampaignsRes.json()
       const mineCampaigns = await mineCampaignsRes.json()
-      console.log({ allCampaigns, mineCampaigns })
       const campaignsWithJoinStatus = allCampaigns?.map(campaign => ({
         ...campaign,
         isJoined: mineCampaigns.some(
@@ -80,10 +78,6 @@ export default function CampaignsScreen() {
       }
     }
 
-    console.log("INVITATION")
-    console.log("INVITATION2")
-    console.log("INVITATION")
-    console.log({ campaignId, fromuser })
 
     if (campaignId && fromuser) {
       joinToCampaign(campaignId as string, fromuser as string)

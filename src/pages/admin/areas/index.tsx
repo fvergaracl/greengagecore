@@ -247,8 +247,6 @@ export default function AdminAreas() {
 
           <tbody>
             {paginatedAreas.map((area, index) => {
-              console.log("|||||||||||||||||||||||||||")
-              console.log(area.campaign)
               const pointOfInterestsCount = area.pointOfInterests?.length || 0
               const tasksCount = area.tasks?.length || 0
               const participantsCount = groupParticipants(
@@ -283,12 +281,6 @@ export default function AdminAreas() {
                       <div className='flex items-center justify-center gap-2'>
                         {/* Points of Interest */}
                         <button
-                          onClick={() =>
-                            console.log(
-                              "Clicked on POIs",
-                              pointOfInterestsCount
-                            )
-                          }
                           className='rounded px-2 py-1 text-xs font-semibold bg-green-200 text-green-800 flex items-center gap-1 hover:bg-green-300 focus:outline-none focus:ring-2 focus:ring-green-400'
                           title={t(
                             "Click to view points of interests in the area"
@@ -300,7 +292,6 @@ export default function AdminAreas() {
 
                         {/* Tasks */}
                         <button
-                          onClick={() => console.log("Clicked on Tasks")}
                           className='rounded px-2 py-1 text-xs font-semibold bg-yellow-200 text-yellow-800 flex items-center gap-1 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400'
                           title={t("Click to view tasks in the area")}
                         >
@@ -309,13 +300,7 @@ export default function AdminAreas() {
                         </button>
 
                         {/* Users */}
-                        <button
-                          onClick={() =>
-                            console.log(
-                              t("Clicked on Users"),
-                              participantsCount
-                            )
-                          }
+                        <button 
                           className='rounded px-2 py-1 text-xs font-semibold bg-purple-200 text-purple-800 flex items-center gap-1 hover:bg-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400'
                           title={t("Click to view users in the area")}
                         >

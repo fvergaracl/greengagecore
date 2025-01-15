@@ -35,10 +35,6 @@ export default async function handler(
           startDatetime: formattedStartDatetime,
           endDatetime: formattedEndDatetime
         }
-        console.log("--------------------------")
-        console.log("-         GET            -")
-        console.log("--------------------------")
-        console.log({ formattedCampaign })
         return res.status(200).json(formattedCampaign)
       }
 

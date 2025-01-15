@@ -9,6 +9,8 @@ import { useTranslation } from "@/hooks/useTranslation"
 import GoBack from "@/components/Admin/GoBack"
 import { TbLassoPolygon } from "react-icons/tb"
 import { FaCloudDownloadAlt } from "react-icons/fa"
+import accessTypeColors from "@/utils/accessTypeColors"
+
 interface Campaign {
   id: string
   name: string
@@ -77,14 +79,6 @@ export default function CampaignDetails() {
         </div>
       </DefaultLayout>
     )
-  }
-
-  const accessTypeColors: Record<string, string> = {
-    admin: "bg-red-200 text-red-800 dark:bg-red-800 dark:text-white",
-    editor: "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-white",
-    viewer: "bg-green-200 text-green-800 dark:bg-green-800 dark:text-white",
-    contributor:
-      "bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-white"
   }
 
   return (

@@ -11,7 +11,6 @@ export default async function handler(req, res) {
     NEXTAUTH_URL
   } = process.env
 
-  console.log("Query parameters received:", req.query)
   const { code } = req.query
 
   if (!code) {

@@ -41,7 +41,6 @@ export default async function handler(req, res) {
   )}`
 
   if (req.query.logout === "true") {
-    console.log("Redirecting to Keycloak logout:", logoutUrl)
     return res.redirect(logoutUrl)
   }
 
@@ -56,14 +55,6 @@ export default async function handler(req, res) {
       code_challenge_method: "S256",
       prompt: "login"
     })
-
-  console.log("Redirecting to Keycloak:", authUrl) // Debug logs
-  console.log({
-    KEYCLOAK_BASE_URL,
-    KEYCLOAK_REALM,
-    KEYCLOAK_CLIENT_ID,
-    NEXTAUTH_URL
-  })
 
   res.redirect(authUrl)
 }

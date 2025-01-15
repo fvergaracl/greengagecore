@@ -17,7 +17,6 @@ export default function LanguageDropdown() {
   const [isOpen, setIsOpen] = useState(false)
 
   const handleLocaleChange = (locale: LocaleKey) => {
-    console.log({ locale })
     setLocale(locale)
     setIsOpen(false)
   }

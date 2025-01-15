@@ -101,7 +101,6 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
 
     useEffect(() => {
       if (center) {
-        console.log("Recentering map to:", center)
         map.setView(center, map.getZoom(), { animate: true })
       }
     }, [center, map])
@@ -157,10 +156,8 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
         position => {
           const { latitude, longitude } = position.coords
           const newLocation: [number, number] = [latitude, longitude]
-
-          console.log("User location:", newLocation) // Verifica si las coordenadas son correctas
           setUserLocation(newLocation)
-          setMapCenter(newLocation) // Actualiza el centro del mapa
+          setMapCenter(newLocation) 
         },
         error => {
           console.warn("Geolocation not enabled or denied.", error)

@@ -121,7 +121,6 @@ export default function Map({
       if (!selectedCampaign) return
       const res = await fetch(`/api/campaigns/${selectedCampaign?.id}`)
       const resJson = await res.json()
-      console.log({ resJson })
       setCampaignData(resJson)
     }
 

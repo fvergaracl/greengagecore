@@ -16,7 +16,6 @@ export default function Settings() {
       try {
         const response = await axios.get("/api/auth/user")
         const userData = response.data
-        console.log({ userData })
         setUser({
           id: userData.sub,
           name: userData.name,

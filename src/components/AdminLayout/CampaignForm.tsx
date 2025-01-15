@@ -158,7 +158,6 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
         endDatetime: hasEndDatetime ? formValues?.endDatetime : null,
         gameId: hasGamification ? formValues?.gameId : null
       }
-      console.log({ formValuesCleaned })
       if (campaignId) {
         await axios.put(`/api/admin/campaigns/${campaignId}`, formValuesCleaned)
       } else {

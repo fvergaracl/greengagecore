@@ -104,7 +104,6 @@ export default function AdminCampaigns() {
         const response = await axios.get("/api/admin/campaigns")
         setAllCampaigns(response.data)
         setFilteredCampaigns(response.data)
-        console.log({ response: response.data })
       } catch (err) {
         console.error("Failed to fetch campaigns:", err)
       }
@@ -375,7 +374,6 @@ export default function AdminCampaigns() {
             {paginatedCampaigns?.map((campaign, index) => {
               const groupedUsers = groupParticipants(campaign?.allowedUsers)
               const areaCount = campaign?.areas?.length
-              console.log(campaign?.areas)
               const pointOfInterestsCount =
                 campaign?.areas?.pointOfInterests?.length || 0
               return (
@@ -452,9 +450,6 @@ export default function AdminCampaigns() {
                       <div className='flex items-center justify-center gap-2'>
                         {/* Areas */}
                         <button
-                          onClick={() =>
-                            console.log("Clicked on Areas", areaCount)
-                          }
                           className='rounded px-2 py-1 text-xs font-semibold bg-blue-200 text-blue-800 flex items-center gap-1 hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400'
                           title={t("Click to view areas in the campaign")}
                         >
@@ -464,12 +459,6 @@ export default function AdminCampaigns() {
 
                         {/* Points of Interest */}
                         <button
-                          onClick={() =>
-                            console.log(
-                              "Clicked on POIs",
-                              pointOfInterestsCount
-                            )
-                          }
                           className='rounded px-2 py-1 text-xs font-semibold bg-green-200 text-green-800 flex items-center gap-1 hover:bg-green-300 focus:outline-none focus:ring-2 focus:ring-green-400'
                           title={t(
                             "Click to view points of interest in the campaign"
@@ -481,7 +470,6 @@ export default function AdminCampaigns() {
 
                         {/* Tasks */}
                         <button
-                          onClick={() => console.log("Clicked on Tasks")}
                           className='rounded px-2 py-1 text-xs font-semibold bg-yellow-200 text-yellow-800 flex items-center gap-1 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400'
                           title={t("Click to view tasks in the campaign")}
                         >
@@ -495,12 +483,6 @@ export default function AdminCampaigns() {
 
                         {/* Users */}
                         <button
-                          onClick={() =>
-                            console.log(
-                              t("Clicked on Users"),
-                              Object.keys(groupedUsers)
-                            )
-                          }
                           className='rounded px-2 py-1 text-xs font-semibold bg-purple-200 text-purple-800 flex items-center gap-1 hover:bg-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400'
                           title={t("Click to view users in the campaign")}
                         >
