@@ -177,5 +177,12 @@
   "Click to view tasks in the area": "Click to view tasks in the area",
   "Click to view users in the area": "Click to view users in the area",
   "Area Details": "Area Details",
-  "View Parent Campaign": "View Parent Campaign"
+  "View Parent Campaign": "View Parent Campaign",
+  "No tasks available for this area": "No tasks available for this area",
+  "Disabled": "Disabled",
+  "Active": "Active",
+  "Area Map": "Area Map",
+  "No polygon defined for this area": "No polygon defined for this area",
+  "Points of Interests": "Points of Interests",
+  "Activity Log": "Activity Log"
 }

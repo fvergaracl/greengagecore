@@ -26,7 +26,12 @@ interface Area {
   name: string
   description: string
   campaign: { id: string; name: string }
-  disabled: boolean
+  isDisabled: boolean
+  pointOfInterests: {
+    id: string
+    title: string
+    tasks: { id: string; title: string }[]
+  }[]
   polygon: [number, number][] | null
   tasks: { id: string; title: string }[]
   createdAt: string
@@ -100,37 +105,37 @@ export default function AreaDetails() {
               {t("Parent Campaign")}
             </h2>
             <p>
-              <strong>Name:</strong> {area.campaign.name}
+              <strong>{t("Name")}:</strong> {area.campaign.name}
             </p>
           </div>
           <div className='mb-6'>
             <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
-              Details
+              {t("Details")}
             </h2>
             <p>
-              <strong>Status:</strong>{" "}
+              <strong>{t("Status")}:</strong>{" "}
               <span
                 className={`px-2 py-1 text-sm font-medium rounded ${
-                  area.disabled
+                  area.isDisabled
                     ? "bg-red-100 text-red-700 dark:bg-red-700 dark:text-white"
                     : "bg-green-100 text-green-700 dark:bg-green-700 dark:text-white"
                 }`}
               >
-                {area.disabled ? "Disabled" : "Active"}
+                {area.isDisabled ? t("Disabled") : t("Active")}
               </span>
             </p>
             <p>
-              <strong>Created At:</strong>{" "}
+              <strong>{t("Created At")}:</strong>{" "}
               {new Date(area.createdAt).toLocaleDateString()}
             </p>
             <p>
-              <strong>Updated At:</strong>{" "}
+              <strong>{t("Updated At")}:</strong>{" "}
               {new Date(area.updatedAt).toLocaleDateString()}
             </p>
           </div>
           <div className='mb-6'>
             <h2 className='text-xl font-semibold text-gray-800 dark:text-white'>
-              Tasks
+              {t("Tasks")}
             </h2>
             <ul className='list-disc pl-5 space-y-2'>
               {area?.pointOfInterests?.tasks?.map(task => (
@@ -140,7 +145,7 @@ export default function AreaDetails() {
               ))}
               {area?.tasks?.length === 0 && (
                 <li className='text-gray-600 dark:text-gray-300'>
-                  No tasks available for this area.
+                  {t("No tasks available for this area")}.
                 </li>
               )}
             </ul>
@@ -149,7 +154,7 @@ export default function AreaDetails() {
         {/* Right Map */}
         <div className='w-1/2 p-6'>
           <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-4'>
-            Polygon Map
+            {t("Area Map")}
           </h2>
           {polygonCoordinates.length > 2 ? (
             <MapContainer
@@ -167,7 +172,7 @@ export default function AreaDetails() {
             </MapContainer>
           ) : (
             <p className='text-gray-600 dark:text-gray-300'>
-              No polygon defined for this area.
+              {t("No polygon defined for this area")}.
             </p>
           )}
         </div>
