@@ -1,5 +1,5 @@
-import axios from "axios"
 import cookie from "cookie"
+import getUserInfo from "./getUserInfo"
 
 export async function validateKeycloakToken(req: any) {
   try {
@@ -10,20 +10,12 @@ export async function validateKeycloakToken(req: any) {
       throw new Error("No access token provided")
     }
 
-    const { KEYCLOAK_BASE_URL, KEYCLOAK_REALM } = process.env
-
-    const userInfoResponse = await axios.get(
-      `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    )
     const decoded_token = token.split(".")[1]
     const base64 = decoded_token.replace(/-/g, "+").replace(/_/g, "/")
     const userInfo_decoded = JSON.parse(
       Buffer.from(base64, "base64").toString("binary")
     )
-    const userInfo = userInfoResponse.data
+    const userInfo = await getUserInfo(token)
 
     const userId = userInfo.sub
     const userRoles = userInfo_decoded?.roles

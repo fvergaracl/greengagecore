@@ -32,22 +32,20 @@ const CenterMap: React.FC<CenterMapProps> = ({ center }) => {
 }
 
 interface POIFormProps {
-  poiId?: string 
-  onSuccess?: () => void 
+  poiId?: string
+  onSuccess?: () => void
 }
 
 const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
   const [formValues, setFormValues] = useState({
     name: "",
     description: "",
-    radius: 20, 
+    radius: 20,
     latitude: 51.505,
     longitude: -0.09,
     areaId: ""
   })
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(
-    null
-  )
+
   const [areas, setAreas] = useState<{ id: string; name: string }[]>([])
   const [selectedArea, setSelectedArea] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
@@ -61,32 +59,10 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
 
     return L.divIcon({
       html: markerHtml,
-      className: "custom-marker", 
+      className: "custom-marker",
       iconSize: [size, size],
-      iconAnchor: [size / 2, size] 
+      iconAnchor: [size / 2, size]
     })
-  }
-
-  const getUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          setUserLocation([position.coords.latitude, position.coords.longitude])
-          if (!poiId) {
-            setFormValues(prev => ({
-              ...prev,
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            }))
-          }
-        },
-        error => {
-          console.error("Error fetching user location:", error)
-        }
-      )
-    } else {
-      console.error("Geolocation is not supported by this browser.")
-    }
   }
 
   useEffect(() => {
@@ -125,7 +101,6 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
 
     fetchAreas()
     fetchPOI()
-    getUserLocation()
   }, [poiId])
 
   const validateForm = () => {
@@ -326,6 +301,22 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
           className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
         />
       </div>
+      <div className='mb-4'>
+        <label
+          htmlFor='description'
+          className='block text-sm font-medium text-gray-700 dark:text-gray-300'
+        >
+          Description
+        </label>
+        <input
+          type='text'
+          id='description'
+          name='description'
+          value={formValues.description}
+          onChange={handleChange}
+          className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+        />
+      </div>
       <div className='mb-4 grid grid-cols-2 gap-4'>
         <div>
           <label htmlFor='latitude' className='block text-sm font-medium'>
@@ -351,22 +342,6 @@ const POIForm: React.FC<POIFormProps> = ({ poiId, onSuccess }) => {
             className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700'
           />
         </div>
-      </div>
-      <div className='mb-4'>
-        <label
-          htmlFor='description'
-          className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-        >
-          Description
-        </label>
-        <input
-          type='text'
-          id='description'
-          name='description'
-          value={formValues.description}
-          onChange={handleChange}
-          className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
-        />
       </div>
 
       <div className='mb-4'>

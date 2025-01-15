@@ -1,32 +1,8 @@
-import axios from "axios"
+import getUserInfo from "@/utils/getUserInfo"
 import cookie from "cookie"
 import jwt from "jsonwebtoken"
-
-const axiosInstance = axios.create({
-  timeout: 10000 // 10 seconds
-})
-
-const refreshAccessToken = async refreshToken => {
-  try {
-    const response = await axiosInstance.post(
-      `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`,
-      new URLSearchParams({
-        client_id: process.env.KEYCLOAK_CLIENT_ID,
-        client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
-        grant_type: "refresh_token",
-        refresh_token: refreshToken
-      }),
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
-      }
-    )
-
-    return response.data
-  } catch (error) {
-    console.error("Error refreshing token:", error.message)
-    return null
-  }
-}
+import refreshAccessToken from "@/utils/refreshAccessToken"
+import setAuthCookies from "@/utils/setAuthCookies"
 
 export default async function handler(req, res) {
   const cookies = cookie.parse(req.headers?.cookie || "")
@@ -38,65 +14,47 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "No autenticado" })
   }
 
-  // Decode the current token
   const tokenData = jwt.decode(token)
   const now = Math.floor(Date.now() / 1000)
 
   if (!tokenData || tokenData.exp - now <= 900) {
     console.log("> Token is close to expiration or expired. Refreshing...")
-    const newTokenData = await refreshAccessToken(refreshToken)
-    if (newTokenData) {
-      token = newTokenData.access_token
+    const tokenDataRefreshed = await refreshAccessToken(refreshToken)
+    if (tokenDataRefreshed) {
+      token = tokenDataRefreshed.access_token
     }
 
-    if (!newTokenData) {
+    if (!tokenDataRefreshed) {
       console.error("> Failed to refresh token")
       return res.status(401).json({ error: "Failed to refresh token" })
     }
 
-    // Update the cookies with the new tokens
-    res.setHeader("Set-Cookie", [
-      cookie.serialize("access_token", newTokenData.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600, // 1 hour
-        path: "/"
-      }),
-      cookie.serialize("refresh_token", newTokenData.refresh_token || "", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 3600, // 7 days
-        path: "/"
-      }),
-      cookie.serialize("id_token", newTokenData.id_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600, // 1 hour
-        path: "/"
-      })
-    ])
+    const newTokenData = {
+      access_token: {
+        value: tokenDataRefreshed?.access_token,
+        maxAge: tokenDataRefreshed.expires_in
+      },
+      refresh_token: {
+        value: tokenDataRefreshed?.refresh_token,
+        maxAge: tokenDataRefreshed.expires_in
+      },
+      id_token: {
+        value: tokenDataRefreshed?.id_token,
+        maxAge: tokenDataRefreshed.expires_in
+      }
+    }
+    token = tokenDataRefreshed.access_token
+
+    setAuthCookies(res, newTokenData)
 
     console.log("> Refreshed token. New expiration times:")
-    console.log({
-      access_token: new Date(Date.now() + 3600 * 1000).toLocaleString(),
-      refresh_token: new Date(
-        Date.now() + 7 * 24 * 3600 * 1000
-      ).toLocaleString(),
-      id_token: new Date(Date.now() + 3600 * 1000).toLocaleString()
-    })
   }
 
   try {
-    const userInfo = await axios.get(
-      `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const userInfo = await getUserInfo(token)
 
     console.log("> User info retrieved successfully")
-    res.status(200).json(userInfo.data)
+    res.status(200).json(userInfo)
   } catch (error) {
     console.error(
       "Error validating token:",

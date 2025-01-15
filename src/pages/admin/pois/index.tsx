@@ -4,17 +4,34 @@ import { useRouter } from "next/router"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faEye, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons"
 import { MdOutlinePinDrop } from "react-icons/md"
-import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb"
-import DefaultLayout from "../../../components/AdminLayout"
-
+import ColumnSelector from "@/components/Admin/ColumnSelector"
+import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb"
+import DefaultLayout from "@/components/AdminLayout"
+import { useTranslation } from "@/hooks/useTranslation"
 interface PointOfInterest {
   id: string
   name: string
   description: string | null
-  disabled: boolean
-  area: { id: string; name: string } // Parent area of the POI
+  isDisabled: boolean
+  area: { id: string; name: string }
   createdAt: string
   updatedAt: string
+}
+
+interface VisibleColumns {
+  id: boolean
+  name: boolean
+  description: boolean
+  radius: boolean
+  campaign: boolean
+  area: boolean
+  tasks: boolean
+  latitude: boolean
+  longitude: boolean
+  details: boolean
+  actions: boolean
+  createdAt: boolean
+  updatedAt: boolean
 }
 
 interface Campaign {
@@ -23,6 +40,7 @@ interface Campaign {
 }
 
 export default function AdminPOIs() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [pois, setPois] = useState<PointOfInterest[]>([])
   const [filteredPOIs, setFilteredPOIs] = useState<PointOfInterest[]>([])
@@ -30,6 +48,21 @@ export default function AdminPOIs() {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCampaign, setSelectedCampaign] = useState("")
+  const [visibleColumns, setVisibleColumns] = useState<VisibleColumns>({
+    id: true,
+    name: true,
+    description: true,
+    radius: true,
+    campaign: true,
+    area: true,
+    tasks: true,
+    latitude: true,
+    longitude: true,
+    details: true,
+    actions: true,
+    createdAt: true,
+    updatedAt: true
+  })
 
   const pageSize = 10
 
@@ -37,6 +70,10 @@ export default function AdminPOIs() {
     const fetchPOIs = async () => {
       try {
         const response = await axios.get("/api/admin/pois")
+        console.log("-----------response.data ")
+        console.log("-----------response.data1 ")
+        console.log("-----------response.data ")
+        console.log(response.data)
         setPois(response.data)
         setFilteredPOIs(response.data)
       } catch (err) {
@@ -75,6 +112,15 @@ export default function AdminPOIs() {
     setCurrentPage(1)
   }, [searchQuery, selectedCampaign, pois])
 
+  const handleColumnToggle = (column: string) => {
+    const newCampaingColumns = {
+      ...visibleColumns,
+      [column]: !visibleColumns[column]
+    }
+
+    setVisibleColumns(prev => newCampaingColumns)
+  }
+
   const handleView = (id: string) => {
     router.push(`/admin/pois/${id}`)
   }
@@ -108,15 +154,20 @@ export default function AdminPOIs() {
     <DefaultLayout>
       <Breadcrumb
         icon={<MdOutlinePinDrop />}
-        pageName='Points of Interest'
-        breadcrumbPath='POIs'
+        pageName={t("Points of Interest")}
+        breadcrumbPath={t("POIs")}
       />
-
+      <div className='flex justify-end gap-4 mb-4'>
+        <ColumnSelector
+          visibleColumns={visibleColumns}
+          onToggleColumn={handleColumnToggle}
+        />
+      </div>
       <div className='overflow-x-auto rounded-lg bg-white p-6 shadow-lg dark:bg-boxdark'>
         <div className='flex items-center gap-4 mb-4'>
           <input
             type='text'
-            placeholder='Search by name or description'
+            placeholder={t("Search by name or description")}
             value={searchQuery}
             onChange={handleSearchChange}
             className='w-full p-2 border border-gray-300 rounded-md focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:text-white'
@@ -139,13 +190,32 @@ export default function AdminPOIs() {
         <table className='min-w-full table-auto border-collapse'>
           <thead>
             <tr className='bg-gray-100 text-left text-sm font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300'>
-              <th className='border px-4 py-2'>#</th>
-              <th className='border px-4 py-2'>Name</th>
-              <th className='border px-4 py-2'>Description</th>
-              <th className='border px-4 py-2'>Campaign</th>
-              <th className='border px-4 py-2'>Parent Area</th>
-              <th className='border px-4 py-2'>Tasks</th>
-              <th className='border px-4 py-2'>Actions</th>
+              {visibleColumns.id && <th className='border px-4 py-2'>#</th>}
+              {visibleColumns.name && (
+                <th className='border px-4 py-2'>{t("Name")}</th>
+              )}
+              {visibleColumns.description && (
+                <th className='border px-4 py-2'>{t("Description")}</th>
+              )}
+              {visibleColumns.campaign && (
+                <th className='border px-4 py-2'>{t("Parent Campaign")}</th>
+              )}
+              {visibleColumns.area && (
+                <th className='border px-4 py-2'>{t("Parent Area")}</th>
+              )}
+              {visibleColumns.tasks && (
+                <th className='border px-4 py-2'>{t("Tasks")}</th>
+              )}
+              {visibleColumns.details && (
+                <th className='border px-4 py-2'>{t("Details")}</th>
+              )}
+              {<th className='border px-4 py-2'>{t("Actions")}</th>}
+              {visibleColumns.createdAt && (
+                <th className='border px-4 py-2'>{t("Created At")}</th>
+              )}
+              {visibleColumns.updatedAt && (
+                <th className='border px-4 py-2'>{t("Updated At")}</th>
+              )}
             </tr>
           </thead>
 
@@ -155,7 +225,11 @@ export default function AdminPOIs() {
                 key={poi.id}
                 className='hover:bg-gray-50 dark:hover:bg-gray-700'
               >
-                <td className='border px-4 py-2'>{startIndex + index + 1}</td>
+                {visibleColumns.id && (
+                  <td className='border px-4 py-2' title={poi.id}>
+                    {startIndex + index + 1}
+                  </td>
+                )}
                 <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
                   {poi.name}
                 </td>

@@ -1,6 +1,8 @@
 import axios from "axios"
 import cookie from "cookie"
+import getUserInfo from "@/utils/getUserInfo"
 import prisma from "@/prismaClient"
+import setAuthCookies from "@/utils/setAuthCookies"
 
 export default async function handler(req, res) {
   const {
@@ -33,15 +35,10 @@ export default async function handler(req, res) {
       }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     )
+    const { access_token, refresh_token, id_token, expires_in } =
+      tokenResponse.data
 
-    const { access_token, refresh_token, id_token } = tokenResponse.data
-
-    const userInfoResponse = await axios.get(
-      `${KEYCLOAK_BASE_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
-      { headers: { Authorization: `Bearer ${access_token}` } }
-    )
-
-    const userInfo = userInfoResponse.data // e.g., { sub, email, name, etc. }
+    const userInfo = await getUserInfo(access_token)
     const userSub = userInfo.sub
 
     let user = await prisma.user.findUnique({
@@ -59,30 +56,21 @@ export default async function handler(req, res) {
       console.log("User already exists:", user)
     }
 
-    // Set cookies for the tokens
-    res.setHeader("Set-Cookie", [
-      cookie.serialize("access_token", access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600, // 1 hour
-        path: "/"
-      }),
-      cookie.serialize("refresh_token", refresh_token || "", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 3600, // 7 days
-        path: "/"
-      }),
-      cookie.serialize("id_token", id_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600, // 1 hour
-        path: "/"
-      })
-    ])
+    const newTokenData = {
+      access_token: {
+        value: access_token,
+        maxAge: expires_in
+      },
+      refresh_token: {
+        value: refresh_token,
+        maxAge: expires_in
+      },
+      id_token: {
+        value: id_token,
+        maxAge: expires_in
+      }
+    }
+    setAuthCookies(res, newTokenData)
 
     res.redirect("/dashboard")
   } catch (error) {

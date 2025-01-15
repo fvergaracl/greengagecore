@@ -1,27 +1,6 @@
 import cookie from "cookie"
-import axios from "axios"
-
-const refreshAccessToken = async refreshToken => {
-  try {
-    const response = await axios.post(
-      `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`,
-      new URLSearchParams({
-        client_id: process.env.KEYCLOAK_CLIENT_ID,
-        client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
-        grant_type: "refresh_token",
-        refresh_token: refreshToken
-      }),
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
-      }
-    )
-
-    return response.data // Returns new access_token and refresh_token
-  } catch (error) {
-    console.error("Error refreshing token:", error.message)
-    return null
-  }
-}
+import refreshAccessToken from "@/utils/refreshAccessToken"
+import setAuthCookies from "@/utils/setAuthCookies"
 
 export default async function handler(req, res) {
   const cookies = cookie.parse(req.headers.cookie || "")
@@ -34,29 +13,21 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "Failed to refresh token" })
     }
 
-    res.setHeader("Set-Cookie", [
-      cookie.serialize("access_token", tokenData.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600, // 1 hour
-        path: "/"
-      }),
-      cookie.serialize("refresh_token", tokenData.refresh_token || "", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 3600, // 7 days
-        path: "/"
-      }),
-      cookie.serialize("id_token", tokenData.id_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600, // 1 hour
-        path: "/"
-      })
-    ])
+    const newTokenData = {
+      access_token: {
+        value: tokenData.access_token,
+        maxAge: tokenData.expires_in
+      },
+      refresh_token: {
+        value: tokenData.refresh_token,
+        maxAge: tokenData.expires_in
+      },
+      id_token: {
+        value: tokenData.id_token,
+        maxAge: tokenData.expires_in
+      }
+    }
+    setAuthCookies(res, newTokenData)
   } catch (error) {
     console.error("Error refreshing token:", error.message)
     return res.status(401).json({ error: "Failed to refresh token" })

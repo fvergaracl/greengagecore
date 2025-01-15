@@ -1,8 +1,10 @@
 const Minio = require("minio")
+import getDecodedToken from "@/utils/getDecodedToken"
 import multer from "multer"
 import cookie from "cookie"
 import sharp from "sharp"
-import axios from "axios"
+import refreshAccessToken from "@/utils/refreshAccessToken"
+import setAuthCookies from "@/utils/setAuthCookies"
 
 const KcAdminClient = require("keycloak-admin").default
 
@@ -28,47 +30,6 @@ const minioClient = new Minio.Client({
   accessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
   secretKey: process.env.MINIO_SECRET_KEY || "minioadmin"
 })
-
-const getDecodedToken = token => {
-  try {
-    if (!token) throw new Error("Token not provided")
-
-    const base64Url = token.split(".")[1]
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    )
-
-    return JSON.parse(jsonPayload)
-  } catch (error) {
-    return null
-  }
-}
-
-const refreshAccessToken = async refreshToken => {
-  try {
-    const response = await axios.post(
-      `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`,
-      new URLSearchParams({
-        client_id: process.env.KEYCLOAK_CLIENT_ID,
-        client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
-        grant_type: "refresh_token",
-        refresh_token: refreshToken
-      }),
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" }
-      }
-    )
-
-    return response.data // Returns new access_token and refresh_token
-  } catch (error) {
-    console.error("Error refreshing token:", error.message)
-    return null
-  }
-}
 
 const updatePhoto = async (userId, ext, file) => {
   const bucketName = process.env.MINIO_BUCKET_NAME || "users"
@@ -178,30 +139,21 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: "Failed to refresh token" })
       }
 
-      // Set the new tokens in cookies
-      res.setHeader(
-        "Set-Cookie",
-        [
-          cookie.serialize("access_token", tokenData.access_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 3600,
-            path: "/"
-          }),
-          cookie.serialize("refresh_token", tokenData.refresh_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 3600 * 24 * 7,
-            path: "/"
-          }),
-          cookie.serialize("id_token", tokenData.id_token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 3600,
-            path: "/"
-          })
-        ].join("; ")
-      )
+      const newTokenData = {
+        access_token: {
+          value: tokenData.access_token,
+          maxAge: tokenData.expires_in
+        },
+        refresh_token: {
+          value: tokenData.refresh_token,
+          maxAge: tokenData.expires_in
+        },
+        id_token: {
+          value: tokenData.id_token,
+          maxAge: tokenData.expires_in
+        }
+      }
+      setAuthCookies(res, newTokenData)
 
       res.status(200).json({ success: true, url: photoUrl })
     } catch (error) {

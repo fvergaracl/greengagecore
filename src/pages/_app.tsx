@@ -5,10 +5,12 @@ import { AppProps } from "next/app"
 import { useRouter } from "next/router"
 import { DashboardProvider } from "../context/DashboardContext"
 import { AdminProvider } from "../context/AdminContext"
-
-/**
- * Higher-order component to conditionally wrap a component in a provider.
- */
+import enhanceConsole from "@/utils/enhanceConsole"
+let isEnhanced = false
+if (!isEnhanced) {
+  enhanceConsole()
+  isEnhanced = true
+}
 const withProvider = (
   Component: AppProps["Component"],
   Provider: ({ children }: { children: ReactNode }) => JSX.Element

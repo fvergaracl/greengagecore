@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import PoiController from "@/controllers/admin/PoiController"
+import AreaController from "@/controllers/admin/AreaController"
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
@@ -22,6 +23,30 @@ export default async function handler(
 
       case "POST": {
         try {
+          console.log("-----------------------------")
+          console.log("-----------------------------")
+          console.log("-----------------------------")
+          console.log("-----------------------------")
+          console.log(req.body)
+          console.log("*****************************")
+          console.log("*****************************")
+          console.log("*****************************")
+          console.log("*****************************")
+          if (!req.body.areaId) {
+            return res.status(400).json({ error: "Area ID is required" })
+          }
+          const area = await AreaController.getAreaById(req.body.areaId)
+          if (!area) {
+            return res.status(404).json({ error: "Area not found" })
+          }
+          if (area?.isDisabled) {
+            return res
+              .status(404)
+              .json({ error: "Area is disabled and/or cannot have POIs" })
+          }
+
+          console.log("-----------------------------222222222222222")
+          console.log(area)
           const newPOI = await PoiController.createPOI(req.body)
           return res.status(201).json(newPOI)
         } catch (error) {

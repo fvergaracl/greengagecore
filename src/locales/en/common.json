@@ -184,5 +184,8 @@
   "Area Map": "Area Map",
   "No polygon defined for this area": "No polygon defined for this area",
   "Points of Interests": "Points of Interests",
-  "Activity Log": "Activity Log"
+  "Activity Log": "Activity Log",
+  "Parent Area": "Parent Area",
+  "Create Point of Interest": "Create Point of Interest",
+  "Points of Interest / Create": "Points of Interest / Create"
 }

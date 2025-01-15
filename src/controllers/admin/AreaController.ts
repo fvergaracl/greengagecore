@@ -1,5 +1,4 @@
 import { prisma, withPrismaDisconnect } from "@/utils/withPrismaDisconnect"
-import { Prisma } from "@prisma/client"
 
 export default class AreaController {
   @withPrismaDisconnect
