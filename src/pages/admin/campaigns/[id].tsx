@@ -97,6 +97,7 @@ export default function CampaignDetails() {
                 onClick={() =>
                   router.push(`/admin/campaigns/${campaign.id}/edit`)
                 }
+                data-cy='edit-campaign-button'
                 className='px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 flex items-center space-x-2'
               >
                 <MdEdit />
@@ -104,6 +105,7 @@ export default function CampaignDetails() {
               </button>
               <button
                 onClick={() => router.push(`/admin/areas/create`)}
+                data-cy='create-area-button'
                 className='px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center space-x-2'
               >
                 <TbLassoPolygon />
@@ -112,6 +114,7 @@ export default function CampaignDetails() {
 
               <button
                 onClick={() => console.log("WIP")}
+                data-cy='download-data-button'
                 className='px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed'
                 disabled
               >
@@ -119,14 +122,23 @@ export default function CampaignDetails() {
                 <span>{t("Download data")}</span>
               </button>
             </div>
-            <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-4'>
+            <h1
+              className='text-3xl font-bold text-gray-800 dark:text-white mb-4'
+              data-cy='campaign-name'
+            >
               {campaign.name}
             </h1>
-            <p className='text-gray-600 dark:text-gray-300 mb-6'>
-              {campaign.description || "No description available"}
+            <p
+              className='text-gray-600 dark:text-gray-300 mb-6'
+              data-cy='campaign-description'
+            >
+              {campaign.description || t("No description available")}
             </p>
             <div className='mb-6'>
-              <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-2'>
+              <h2
+                className='text-xl font-semibold text-gray-800 dark:text-white mb-2'
+                data-cy='campaign-details-title'
+              >
                 {t("Details")}
               </h2>
               <p>
@@ -145,39 +157,44 @@ export default function CampaignDetails() {
                 </span>
               </p>
 
-              <p>
+              <p data-cy='campaign-location'>
                 <strong>{t("Location")}:</strong>{" "}
                 {campaign.location || t("No Location")}
               </p>
-              <p>
+              <p data-cy='campaign-category'>
                 <strong>{t("Category")}:</strong> {campaign.category}
               </p>
-              <p>
+              <p data-cy='campaign-game-enabled'>
                 <strong>{t("Is Game Enabled")}:</strong>{" "}
-                {campaign?.gameId ? t("Enabled") : t("Disabled")}
+                {campaign?.gameId ? <span>✅</span> : <span>❌</span>}
               </p>
               <br />
               <p>
                 <strong>{t("Start Date")}:</strong>{" "}
-                {campaign.startDatetime
-                  ? new Date(campaign.startDatetime).toLocaleDateString()
-                  : t("No Start Date")}
+                <span data-cy='campaign-start-date'>
+                  {campaign.startDatetime
+                    ? new Date(campaign.startDatetime).toLocaleDateString()
+                    : t("No Start Date")}
+                </span>
               </p>
               <p>
                 <strong>{t("Deadline")}:</strong>{" "}
-                {campaign.endDatetime
-                  ? new Date(campaign.endDatetime).toLocaleDateString()
-                  : t("No Deadline")}
+                <span data-cy='campaign-deadline'>
+                  {campaign.endDatetime
+                    ? new Date(campaign.endDatetime).toLocaleDateString()
+                    : t("No Deadline")}
+                </span>
               </p>
             </div>
             <div className='mb-6'>
               <h2 className='text-xl font-semibold text-gray-800 dark:text-white mb-2'>
                 {t("Users")}
               </h2>
-              <ul>
+              <ul data-cy='campaign-users'>
                 {campaign.allowedUsers.map(user => (
                   <li
                     key={user.userId}
+                    data-cy={`campaign-user-${user.userId}`}
                     className='text-gray-600 dark:text-gray-300 flex justify-between items-center'
                   >
                     <span>{user.userId}</span>
@@ -186,6 +203,7 @@ export default function CampaignDetails() {
                         accessTypeColors[user.accessType] ||
                         "bg-gray-200 text-gray-800"
                       }`}
+                      data-cy={`campaign-user-access-type-${user.userId}`}
                     >
                       {user.accessType}
                     </span>
@@ -224,22 +242,38 @@ export default function CampaignDetails() {
               <li
                 key={sub.id}
                 className='flex justify-between items-center p-4 bg-gray-100 rounded-lg shadow-md dark:bg-gray-700'
+                data-cy={`area-${sub.id}`}
               >
                 <div>
-                  <h3 className='text-lg font-semibold text-gray-800 dark:text-white'>
+                  <h3
+                    data-cy={`area-${sub.id}-name`}
+                    className='text-lg font-semibold text-gray-800 dark:text-white'
+                  >
                     {sub.name}
                   </h3>
-                  <p className='text-sm text-gray-600 dark:text-gray-300'>
+                  <p
+                    data-cy={`area-${sub.id}-description`}
+                    className='text-sm text-gray-600 dark:text-gray-300'
+                  >
                     {sub.description || "No description available."}
                   </p>
-                  <p className='text-sm text-gray-600 dark:text-gray-300'>
+                  <p
+                    data-cy={`area-${sub.id}-polygon`}
+                    className='text-sm text-gray-600 dark:text-gray-300'
+                  >
                     {sub.polygon ? "Polygon" : "No Polygon"}
                   </p>
-                  <p className='text-sm text-gray-600 dark:text-gray-300'>
+                  <p
+                    data-cy={`area-${sub.id}-poi-count`}
+                    className='text-sm text-gray-600 dark:text-gray-300'
+                  >
                     {sub.pointOfInterests.length} Points of Interest
                   </p>
 
-                  <p className='text-sm text-gray-600 dark:text-gray-300'>
+                  <p
+                    data-cy={`area-${sub.id}-tasks-count`}
+                    className='text-sm text-gray-600 dark:text-gray-300'
+                  >
                     {sub.pointOfInterests.reduce(
                       (acc, poi) => acc + poi.tasks.length,
                       0
@@ -249,6 +283,7 @@ export default function CampaignDetails() {
                 </div>
                 <button
                   onClick={() => router.push(`/admin/areas/${sub.id}`)}
+                  data-cy={`view-area-${sub.id}`}
                   className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
                 >
                   {t("View Area")}

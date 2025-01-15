@@ -11,28 +11,17 @@ const FitBounds: React.FC<FitBoundsProps> = ({ polygons }) => {
   const map = useMap()
 
   useEffect(() => {
-    if (polygons.length > 0 && polygons.some(p => p.polygon.length > 0)) {
-      // Lógica de ajuste
-    } else {
+    if (!(polygons?.length > 0 && polygons?.some(p => p.polygon.length > 0))) {
       console.warn("No polygons with valid coordinates to fit bounds.")
     }
     if (polygons && polygons.length > 0) {
-      const latLngs: L.LatLngTuple[] = polygons.flatMap(polygon =>
-        polygon.polygon
-          .map(([lat, lng]) =>
-            typeof lat === "number" && typeof lng === "number"
-              ? [lat, lng]
-              : null
-          )
-          .filter((point): point is L.LatLngTuple => point !== null)
+      const latLngs = polygons.map(polygon =>
+        polygon.polygon.map(([lat, lng]) => new L.LatLng(lat, lng))
       )
+      const bounds = new L.LatLngBounds(latLngs.flat())
+      map.fitBounds(bounds)
 
-      if (latLngs.length > 0) {
-        const bounds = L.latLngBounds(latLngs)
-        map.fitBounds(bounds, { padding: [10, 10] })
-      } else {
-        console.warn("No valid lat/lng pairs found in polygons.")
-      }
+      console.log("Fitting bounds to", bounds)
     }
   }, [polygons, map])
 

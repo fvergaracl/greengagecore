@@ -306,9 +306,7 @@ export default function Map({
                 </Popup>
               </Marker>
             )}
-            {polygonsFitBounds && mapCenter && (
-              <FitBounds polygons={polygons} />
-            )}
+            {polygonsFitBounds && <FitBounds polygons={polygons} />}
           </LeafletMapContainer>
         </div>
         {selectedPoi && (
