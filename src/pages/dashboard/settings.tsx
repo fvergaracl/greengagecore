@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import DashboardLayout from "../../components/DashboardLayout"
 import { useDashboard } from "../../context/DashboardContext"
 import { useTranslation } from "@/hooks/useTranslation"
@@ -10,9 +10,16 @@ export default function Settings() {
   const { t } = useTranslation()
   const { setUser, logout, user } = useDashboard()
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const lastFetchTime = useRef<number | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
+      const now = Date.now()
+
+      if (lastFetchTime.current && now - lastFetchTime.current < 60000) {
+        return
+      }
+
       try {
         const response = await axios.get("/api/auth/user")
         const userData = response.data
@@ -27,12 +34,13 @@ export default function Settings() {
         })
 
         setPhotoUrl(userData.pictureKeycloak || userData.picture || null)
+        lastFetchTime.current = now // Update the last fetch time
       } catch (error) {
         console.error("Error fetching user data:", error)
 
         Swal.fire({
           icon: "error",
-          title: "Error",
+          title: t("Error"),
           text: t(
             "Failed to load user information. You will be redirected to the login page."
           ),
@@ -46,7 +54,7 @@ export default function Settings() {
     }
 
     fetchUser()
-  }, [])
+  }, [setUser, t, logout])
 
   const handleUpload = async (file: File) => {
     const formData = new FormData()

@@ -158,16 +158,9 @@ export default class CampaignControllerCommon {
           AND: [
             { isDisabled: false },
             {
-              OR: [
-                {
-                  allowedUsers: {
-                    some: { userId: user.id }
-                  }
-                },
-                {
-                  userId: user.id
-                }
-              ]
+              allowedUsers: {
+                some: { userId: user.id }
+              }
             }
           ]
         },

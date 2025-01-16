@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useAdmin } from "../../../context/AdminContext"
 import axios from "axios"
 import Swal from "sweetalert2"
@@ -11,9 +11,16 @@ const DropdownUser = () => {
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const lastFetchTime = useRef<number | null>(null)
 
   useEffect(() => {
     const fetchUser = async () => {
+      const now = Date.now()
+      if (lastFetchTime.current && now - lastFetchTime.current < 60000) {
+        // If the last fetch was less than 1 minute ago, don't fetch again
+        return
+      }
+
       try {
         const response = await axios.get("/api/auth/user")
         const userData = response.data
@@ -27,6 +34,7 @@ const DropdownUser = () => {
         })
 
         setPhotoUrl(userData.pictureKeycloak || userData.picture || null)
+        lastFetchTime.current = now 
       } catch (error) {
         console.error("Error fetching user data:", error)
         Swal.fire({
@@ -39,7 +47,7 @@ const DropdownUser = () => {
     }
 
     fetchUser()
-  }, [])
+  }, [setUser, t, logout])
 
   return (
     <div className='relative'>

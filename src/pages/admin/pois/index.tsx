@@ -8,12 +8,24 @@ import ColumnSelector from "@/components/Admin/ColumnSelector"
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb"
 import DefaultLayout from "@/components/AdminLayout"
 import { useTranslation } from "@/hooks/useTranslation"
+import Swal from "sweetalert2"
 interface PointOfInterest {
   id: string
   name: string
   description: string | null
   isDisabled: boolean
-  area: { id: string; name: string }
+  area: {
+    id: string
+    name: string
+    campaign: {
+      id: string
+      name: string
+    }
+  }
+  tasks: { id: string; name: string }[]
+  latitude: number
+  longitude: number
+  radius: number
   createdAt: string
   updatedAt: string
 }
@@ -60,8 +72,8 @@ export default function AdminPOIs() {
     longitude: true,
     details: true,
     actions: true,
-    createdAt: true,
-    updatedAt: true
+    createdAt: false,
+    updatedAt: false
   })
 
   const pageSize = 10
@@ -70,10 +82,6 @@ export default function AdminPOIs() {
     const fetchPOIs = async () => {
       try {
         const response = await axios.get("/api/admin/pois")
-        console.log("-----------response.data ")
-        console.log("-----------response.data1 ")
-        console.log("-----------response.data ")
-        console.log(response.data)
         setPois(response.data)
         setFilteredPOIs(response.data)
       } catch (err) {
@@ -118,7 +126,7 @@ export default function AdminPOIs() {
       [column]: !visibleColumns[column]
     }
 
-    setVisibleColumns(prev => newCampaingColumns)
+    setVisibleColumns(() => newCampaingColumns)
   }
 
   const handleView = (id: string) => {
@@ -127,6 +135,40 @@ export default function AdminPOIs() {
 
   const handleEdit = (id: string) => {
     router.push(`/admin/pois/${id}/edit`)
+  }
+
+  const handleDelete = async (id: string) => {
+    const confirmed = await Swal.fire({
+      title: t("Are you sure?"),
+      text: t("This action cannot be undone"),
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: t("Yes, delete it"),
+      cancelButtonText: t("No, keep it")
+    })
+
+    if (!confirmed.isConfirmed) {
+      return
+    }
+
+    try {
+      await axios.delete(`/api/admin/pois/${id}`)
+      const updatedPOIs = pois.filter(poi => poi.id !== id)
+      setPois(updatedPOIs)
+      setFilteredPOIs(updatedPOIs)
+      Swal.fire({
+        title: t("Deleted"),
+        text: t("The POI has been deleted"),
+        icon: "success"
+      })
+    } catch (err) {
+      console.error("Failed to delete POI:", err)
+      Swal.fire({
+        title: t("Error"),
+        text: t("Failed to delete the POI"),
+        icon: "error"
+      })
+    }
   }
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,55 +272,96 @@ export default function AdminPOIs() {
                     {startIndex + index + 1}
                   </td>
                 )}
-                <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
-                  {poi.name}
-                </td>
-                <td className='border px-4 py-2 text-sm text-gray-600 dark:text-gray-400'>
-                  {poi.description || "-"}
-                </td>
-                <td className='border px-4 py-2'>{poi.area.campaign.name}</td>
-                <td className='border px-4 py-2'>{poi.area.name}</td>
-                <td className='border px-4 py-2'>
-                  {poi.tasks.length > 0 ? (
-                    <span
-                      className='text-green-600'
-                      data-cy={`poi-${poi.id}-tasks`}
-                    >
-                      {poi.tasks.length}
-                    </span>
-                  ) : (
-                    <span
-                      className='text-red-600'
-                      data-cy={`poi-${poi.id}-tasks`}
-                    >
-                      No
-                    </span>
-                  )}
-                </td>
-                <td className='border px-4 py-2'>
-                  <div className='flex gap-2'>
-                    <button
-                      title='View'
-                      onClick={() => handleView(poi.id)}
-                      className='rounded bg-blue-100 p-2 text-blue-600 hover:bg-blue-200'
-                    >
-                      <FontAwesomeIcon icon={faEye} />
-                    </button>
-                    <button
-                      title='Edit'
-                      onClick={() => handleEdit(poi.id)}
-                      className='rounded bg-yellow-100 p-2 text-yellow-600 hover:bg-yellow-200'
-                    >
-                      <FontAwesomeIcon icon={faEdit} />
-                    </button>
-                    <button
-                      title='Delete'
-                      className='rounded bg-red-100 p-2 text-red-600 hover:bg-red-200'
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
-                </td>
+                {visibleColumns.name && (
+                  <td className='border px-4 py-2 font-medium text-gray-800 dark:text-white'>
+                    {poi.name}
+                  </td>
+                )}
+                {visibleColumns.description && (
+                  <td className='border px-4 py-2 text-sm text-gray-600 dark:text-gray-400'>
+                    {poi.description || "-"}
+                  </td>
+                )}
+                {visibleColumns.campaign && (
+                  <td className='border px-4 py-2'>{poi.area.campaign.name}</td>
+                )}
+
+                {visibleColumns.area && (
+                  <td className='border px-4 py-2'>{poi.area.name}</td>
+                )}
+                {visibleColumns.tasks && (
+                  <td className='border px-4 py-2'>
+                    {poi.tasks.length > 0 ? (
+                      <span
+                        className='text-green-600'
+                        data-cy={`poi-${poi.id}-tasks`}
+                      >
+                        {poi.tasks.length}
+                      </span>
+                    ) : (
+                      <span
+                        className='text-red-600'
+                        data-cy={`poi-${poi.id}-tasks`}
+                      >
+                        {t("No")}
+                      </span>
+                    )}
+                  </td>
+                )}
+                {visibleColumns.details && (
+                  <td className='border px-4 py-2'>
+                    <div>
+                      <span className='font-semibold'>{t("Latitude")}:</span>{" "}
+                      {poi.latitude}
+                    </div>
+                    <div>
+                      <span className='font-semibold'>{t("Longitude")}:</span>{" "}
+                      {poi.longitude}
+                    </div>
+                    <div>
+                      <span className='font-semibold'>{t("Radius")}:</span>{" "}
+                      {poi.radius}
+                    </div>
+                  </td>
+                )}
+
+                {visibleColumns.details && (
+                  <td className='border px-4 py-2'>
+                    <div className='flex gap-2'>
+                      <button
+                        title='View'
+                        onClick={() => handleView(poi.id)}
+                        className='rounded bg-blue-100 p-2 text-blue-600 hover:bg-blue-200'
+                      >
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                      <button
+                        title='Edit'
+                        onClick={() => handleEdit(poi.id)}
+                        className='rounded bg-yellow-100 p-2 text-yellow-600 hover:bg-yellow-200'
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </button>
+                      <button
+                        title='Delete'
+                        onClick={() => handleDelete(poi.id)}
+                        className='rounded bg-red-100 p-2 text-red-600 hover:bg-red-200'
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
+                  </td>
+                )}
+                {visibleColumns.createdAt && (
+                  <td className='border px-4 py-2'>
+                    {new Date(poi.createdAt).toLocaleString()}
+                  </td>
+                )}
+                {visibleColumns.updatedAt && (
+                  <td className='border px-4 py-2'>
+                    {new Date(poi.updatedAt).toLocaleString()}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -290,10 +373,10 @@ export default function AdminPOIs() {
             disabled={currentPage === 1}
             className='px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50'
           >
-            Previous
+            {t("Previous")}
           </button>
           <span>
-            Page {currentPage} of{" "}
+            {t("Page")} {currentPage} {t("of")}{" "}
             {filteredPOIs.length > 0
               ? Math.ceil(filteredPOIs.length / pageSize)
               : "1"}
@@ -303,7 +386,7 @@ export default function AdminPOIs() {
             disabled={currentPage === Math.ceil(filteredPOIs.length / pageSize)}
             className='px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50'
           >
-            Next
+            {t("Next")}
           </button>
         </div>
       </div>

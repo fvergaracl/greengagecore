@@ -5,17 +5,40 @@ import Swal from "sweetalert2"
 import "survey-core/defaultV2.min.css"
 import "survey-creator-core/survey-creator-core.min.css"
 import { SurveyCreatorComponent, SurveyCreator } from "survey-creator-react"
+import GoBack from "@/components/Admin/GoBack"
+import { useTranslation } from "@/hooks/useTranslation"
 
-// Types
+interface SurveyElement {
+  name: string
+  type: string
+  title: string
+}
+
+interface SurveyPage {
+  name: string
+  elements: SurveyElement[]
+}
+
+interface TaskData {
+  pages: SurveyPage[]
+}
+
+interface InitialData {
+  title: string
+  description: string
+  type: "Form" | "Instruction" | "Data collection"
+  surveyJSON: TaskData
+  responseLimit?: number
+  responseLimitInterval?: number
+  availableFrom?: string
+  availableTo?: string
+}
+
 interface TaskFormProps {
   mode: "create" | "edit"
   poiId?: string
-  initialData?: {
-    title: string
-    description: string
-    type: "form" | "instruction" | "recogida de dato"
-    surveyJSON: object
-  }
+  taskId?: string
+  initialData?: InitialData
 }
 
 const creatorOptions = {
@@ -23,13 +46,30 @@ const creatorOptions = {
   showLogicTab: false
 }
 
-export default function TaskForm({ mode, poiId, initialData }: TaskFormProps) {
+export default function TaskForm({
+  mode,
+  poiId,
+  taskId = undefined,
+  initialData
+}: TaskFormProps) {
   const router = useRouter()
-
+  const { t } = useTranslation()
   const [title, setTitle] = useState(initialData?.title || "")
   const [description, setDescription] = useState(initialData?.description || "")
-  const [type, setType] = useState<"form" | "instruction" | "recogida de dato">(
-    initialData?.type || "form"
+  const [type, setType] = useState<"Form" | "Instruction" | "Data collection">(
+    initialData?.type || "Form"
+  )
+  const [responseLimit, setResponseLimit] = useState<number | null>(
+    initialData?.responseLimit || null
+  )
+  const [responseLimitInterval, setResponseLimitInterval] = useState<
+    number | null
+  >(initialData?.responseLimitInterval || null)
+  const [availableFrom, setAvailableFrom] = useState<string | null>(
+    initialData?.availableFrom || null
+  )
+  const [availableTo, setAvailableTo] = useState<string | null>(
+    initialData?.availableTo || null
   )
   const [saving, setSaving] = useState(false)
 
@@ -51,29 +91,79 @@ export default function TaskForm({ mode, poiId, initialData }: TaskFormProps) {
     if (!title || !description || !type) {
       Swal.fire({
         icon: "error",
-        title: "Missing Fields",
-        text: "Title, description, and type are required."
+        title: t("Missing Fields"),
+        text: t("Title, description, and type are required")
       })
       return
     }
 
-    if (!poiId) {
+    if (!poiId && mode === "create") {
       Swal.fire({
         icon: "error",
-        title: "Invalid POI",
-        text: "A valid Point of Interest is required to save the task."
+        title: t("Invalid POI"),
+        text: t("A valid Point of Interest is required to save the task")
+      })
+      return
+    }
+    if (!taskId && mode === "edit") {
+      Swal.fire({
+        icon: "error",
+        title: t("Invalid Task"),
+        text: t("A valid task is required to save the task")
       })
       return
     }
 
     setSaving(true)
     try {
+      // responseLimit and responseLimitInterval are optional and should be number
+      if (responseLimit && isNaN(responseLimit)) {
+        Swal.fire({
+          icon: "error",
+          title: t("Invalid Response Limit"),
+          text: t("Response limit should be a number")
+        })
+        return
+      }
+      if (responseLimitInterval && isNaN(responseLimitInterval)) {
+        Swal.fire({
+          icon: "error",
+          title: t("Invalid Response Limit Interval"),
+          text: t("Response limit (minutes) interval should be a number")
+        })
+        return
+      }
+      // availableFrom and availableTo are optional and should be string
+      if (availableFrom && isNaN(Date.parse(availableFrom))) {
+        Swal.fire({
+          icon: "error",
+          title: t("Invalid Available From"),
+          text: t("Available from should be a valid date")
+        })
+        return
+      }
+      if (availableTo && isNaN(Date.parse(availableTo))) {
+        Swal.fire({
+          icon: "error",
+          title: t("Invalid Available To"),
+          text: t("Available to should be a valid date")
+        })
+        return
+      }
+      if (availableFrom && availableTo && availableFrom > availableTo) {
+        Swal.fire({
+          icon: "error",
+          title: t("Invalid Dates"),
+          text: t("Available from date should be before available to date")
+        })
+        return
+      }
 
       if (creator?.JSON === {}) {
         Swal.fire({
           icon: "error",
-          title: "Empty Survey",
-          text: "The survey is empty. Please design the survey before saving."
+          title: t("Empty Survey"),
+          text: t("Please design a survey before saving the task")
         })
         return
       }
@@ -82,95 +172,174 @@ export default function TaskForm({ mode, poiId, initialData }: TaskFormProps) {
         title,
         description,
         type,
+        responseLimit,
+        responseLimitInterval,
+        availableFrom,
+        availableTo,
         taskData: creator.JSON,
         poiId
       }
-
+      console.log({ taskId })
       const response =
         mode === "create"
           ? await axios.post("/api/admin/tasks", payload)
-          : await axios.put(`/api/admin/tasks/${poiId}`, payload)
+          : await axios.put(`/api/admin/tasks/${taskId}`, payload)
 
       if (response.status === 201 || response.status === 200) {
         Swal.fire({
           icon: "success",
-          title: mode === "create" ? "Task Created" : "Task Updated",
-          text: `The task was successfully ${
-            mode === "create" ? "created" : "updated"
+          title: mode === "create" ? t("Task Created") : t("Task Updated"),
+          text: `${t("The task was successfully")} ${
+            mode === "create" ? t("created") : t("updated")
           }.`
         })
-        router.push(`/admin/pois/${poiId}/tasks`)
+        router.push(`/admin/pois/${poiId}`)
       }
     } catch (err) {
       console.error("Error saving task:", err)
       Swal.fire({
         icon: "error",
-        title: "Error",
-        text: "Failed to save the task. Please try again."
+        title: t("Error"),
+        text: t("Failed to save the task. Please try again")
       })
     } finally {
       setSaving(false)
     }
-  }, [poiId, mode, title, description, type, creator, router])
+  }, [
+    poiId,
+    mode,
+    title,
+    description,
+    type,
+    responseLimit,
+    responseLimitInterval,
+    availableFrom,
+    availableTo,
+    creator,
+    router,
+    taskId,
+    t
+  ])
 
   return (
     <>
+      <GoBack />
       <div className='p-6 max-w-6xl mx-auto bg-white rounded-lg shadow-md dark:bg-gray-800'>
-        <h1 className='text-3xl font-bold text-gray-800 dark:text-white mb-6'>
-          {mode === "create" ? "Create a New Task" : "Edit Task"}
-        </h1>
-
         <div className='mb-4'>
           <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
-            Title
+            {t("Title")}
+            <span className='text-red-500'>*</span>
           </label>
           <input
             type='text'
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
             required
           />
         </div>
 
         <div className='mb-4'>
           <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
-            Description
+            {t("Description")}
           </label>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value)}
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
             required
           />
         </div>
 
         <div className='mb-4'>
           <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
-            Type
+            {t("Type")}
           </label>
           <select
             value={type}
             onChange={e => setType(e.target.value as any)}
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
             required
           >
-            <option value='form'>Form</option>
-            <option value='instruction'>Instruction</option>
-            <option value='recogida de dato'>Recogida de Dato</option>
+            <option value='Form'>{t("Form")}</option>
+            <option value='Instruction'>{t("Instruction")}</option>
+            <option value='Data collection'>{t("Data collection")}</option>
           </select>
         </div>
 
         <div className='mb-6'>
           <p className='text-gray-600 dark:text-gray-300'>
-            Use the Survey Creator below to{" "}
+            {t("Use the Survey Creator below to")}{" "}
             {mode === "create"
-              ? "design a new survey"
-              : "edit the existing survey"}
+              ? t("design a new survey")
+              : t("edit the existing survey")}
             .
           </p>
         </div>
+        <div className='mb-4'>
+          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
+            <strong> {t("Response Limit")} </strong>
+            <small>
+              {" - "}
+              {t("Number of responses allowed before the task is disabled")}
+            </small>
+          </label>
+          <input
+            type='number'
+            value={responseLimit || ""}
+            onChange={e =>
+              setResponseLimit(e.target.value ? parseInt(e.target.value) : null)
+            }
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+          />
+        </div>
 
+        {/* Response Limit Interval */}
+        <div className='mb-4'>
+          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
+            <strong>{t("Response Limit Interval")}</strong>{" "}
+            <small>
+              {" - "}
+              {t("Number of minutes to reset the response limit")}
+            </small>
+          </label>
+          <input
+            type='number'
+            value={responseLimitInterval || ""}
+            onChange={e =>
+              setResponseLimitInterval(
+                e.target.value ? parseInt(e.target.value) : null
+              )
+            }
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+          />
+        </div>
+
+        {/* Available From */}
+        <div className='mb-4'>
+          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
+            {t("Available From")}
+          </label>
+          <input
+            type='datetime-local'
+            value={availableFrom || ""}
+            onChange={e => setAvailableFrom(e.target.value || null)}
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+          />
+        </div>
+
+        {/* Available To */}
+        <div className='mb-4'>
+          <label className='block text-sm font-medium text-gray-700 dark:text-gray-300'>
+            {t("Available To")}
+          </label>
+          <input
+            type='datetime-local'
+            value={availableTo || ""}
+            onChange={e => setAvailableTo(e.target.value || null)}
+            className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
+          />
+        </div>
         <SurveyCreatorComponent creator={creator} />
 
         <div className='flex justify-end mt-6'>
@@ -180,10 +349,10 @@ export default function TaskForm({ mode, poiId, initialData }: TaskFormProps) {
             disabled={saving}
           >
             {saving
-              ? "Saving..."
+              ? t("Saving...")
               : mode === "create"
-              ? "Create Task"
-              : "Update Task"}
+                ? t("Create Task")
+                : t("Update Task")}
           </button>
         </div>
       </div>
