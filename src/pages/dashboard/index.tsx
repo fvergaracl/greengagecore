@@ -4,12 +4,14 @@ import dynamic from "next/dynamic"
 import { useDashboard } from "@/context/DashboardContext"
 import CampaignsScreen from "@/screens/CampaignsScreen"
 import { useRouter } from "next/router"
+import { useTranslation } from "@/hooks/useTranslation"
 
 const Map = dynamic(() => import("@/components/Common/Map"), {
   ssr: false
 })
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const { position, selectedCampaign } = useDashboard()
   const [puntos, setPuntos] = useState([])
   const [poligonos, setPoligonos] = useState([])
@@ -24,28 +26,28 @@ export default function Dashboard() {
     }
   }, [campaignId])
 
-  useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8080")
+  // useEffect(() => {
+  //   const socket = new WebSocket("ws://localhost:8080")
 
-    socket.onopen = () => {
-      console.log("Connected to WebSocket server")
-    }
+  //   socket.onopen = () => {
+  //     console.log("Connected to WebSocket server")
+  //   }
 
-    socket.onmessage = event => {
-      const data = JSON.parse(event.data)
+  //   socket.onmessage = event => {
+  //     const data = JSON.parse(event.data)
 
-      if (data.puntos) setPuntos(data.puntos)
-      if (data.poligonos) setPoligonos(data.poligonos)
-    }
+  //     if (data.puntos) setPuntos(data.puntos)
+  //     if (data.poligonos) setPoligonos(data.poligonos)
+  //   }
 
-    socket.onclose = () => {
-      console.log("WebSocket connection closed")
-    }
+  //   socket.onclose = () => {
+  //     console.log("WebSocket connection closed")
+  //   }
 
-    return () => {
-      socket.close()
-    }
-  }, [])
+  //   return () => {
+  //     socket.close()
+  //   }
+  // }, [])
 
   if (!selectedCampaign) {
     return (
