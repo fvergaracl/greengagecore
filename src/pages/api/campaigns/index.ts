@@ -9,12 +9,7 @@ export default async function handler(
   try {
     switch (req.method) {
       case "GET": {
-        const { userId, userRoles } = await validateKeycloakToken(req)
-
-        if (userRoles?.includes("admin")) {
-          const allCampaigns = await CampaignController.getAllCampaigns()
-          return res.status(200).json(allCampaigns)
-        }
+        const { userId } = await validateKeycloakToken(req)
 
         const userCampaigns =
           await CampaignController.getAllCampaignsAllowedByUserId(userId)

@@ -247,5 +247,7 @@
   "Task deleted": "Task deleted",
   "Failed to delete task": "Failed to delete task",
   "Search by title or description": "Search by title or description",
-  "Users tasks responses": "Users tasks responses"
+  "Users tasks responses": "Users tasks responses",
+  "We need your location to continue. Please enable location": "We need your location to continue. Please enable location",
+  "If you are using a desktop computer, please use a mobile device": "If you are using a desktop computer, please use a mobile device"
 }

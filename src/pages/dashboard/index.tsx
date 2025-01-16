@@ -61,10 +61,13 @@ export default function Dashboard() {
     <DashboardLayout>
       {!position ? (
         <Modal isVisible={isModalVisible}>
-          <h2>Ubicación requerida</h2>
+          <h2>{
+            t("We need your location to continue. Please enable location")
+            }
+            </h2>
           <p>
-            Necesitamos tu ubicación para continuar. Por favor, activa la
-            ubicación.
+            {t("If you are using a desktop computer, please use a mobile device")}
+            
           </p>
         </Modal>
       ) : (

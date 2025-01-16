@@ -27,6 +27,7 @@ export default function CampaignsScreen() {
       ])
 
       const allCampaigns = await allCampaignsRes.json()
+
       const mineCampaigns = await mineCampaignsRes.json()
       const campaignsWithJoinStatus = allCampaigns?.map(campaign => ({
         ...campaign,
@@ -74,10 +75,9 @@ export default function CampaignsScreen() {
         }
       } catch (error) {
         console.error("Error joining campaign:", error)
-        Swal.fire("Error", "Failed to join the campaign", "error")
+        Swal.fire(t("Error"), t("Failed to join the campaign"), "error")
       }
     }
-
 
     if (campaignId && fromuser) {
       joinToCampaign(campaignId as string, fromuser as string)
@@ -96,7 +96,7 @@ export default function CampaignsScreen() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             campaignId: campaign.id,
-            accessType: "participant"
+            accessType: "contributor"
           })
         })
 
@@ -130,7 +130,7 @@ export default function CampaignsScreen() {
   return (
     <div className=' flex flex-col items-center bg-gray-50 p-4'>
       <h1
-        className='text-2xl font-bold mb-6 text-center text-gray-800'
+        className='text-2xl font-bold mb-6 text-center text-white-500'
         data-cy='campaigns-screen-title'
       >
         {t("Select a Campaign to Continue")}
@@ -161,7 +161,7 @@ export default function CampaignsScreen() {
                 )}
                 <div>
                   <h2
-                    className='text-lg font-semibold text-gray-800 flex items-center'
+                    className='text-lg font-semibold text-white-500 flex items-center'
                     data-cy='campaign-name'
                   >
                     {!campaign?.isOpen && (
@@ -235,12 +235,18 @@ export default function CampaignsScreen() {
       {isModalOpen && selectedCampaign && (
         <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4'>
           <div className='bg-white p-6 rounded-lg shadow-lg w-full max-w-md'>
-            <h2 className='text-lg font-bold mb-4 text-gray-800'>
+            <h2
+              className='text-lg font-bold mb-4 text-white-500'
+              data-cy='campaign-modal-title'
+            >
               {t("Campaign")}: {selectedCampaign.name}
             </h2>
-            <p className='text-gray-600'>{selectedCampaign.description}</p>
+            <p className='text-gray-600' data-cy='campaign-modal-description'>
+              {selectedCampaign.description}
+            </p>
             <button
               onClick={() => setIsModalOpen(false)}
+              data-cy='campaign-modal-close'
               className='mt-4 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition'
             >
               {t("Close")}

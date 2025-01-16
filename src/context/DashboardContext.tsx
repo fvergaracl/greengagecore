@@ -6,6 +6,7 @@ import {
   useEffect
 } from "react"
 import { getPersistedState, persistState } from "../utils/persistentState"
+import axios from "axios"
 
 interface Position {
   lat: number
@@ -53,7 +54,7 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
 
   const toggleTracking = () => setIsTracking(prev => !prev)
 
-  const updatePosition = () => {
+  const updatePosition = async () => {
     if (!isTracking) return
 
     navigator.geolocation.getCurrentPosition(
@@ -63,6 +64,10 @@ export const DashboardProvider = ({ children }: { children: ReactNode }) => {
           lng: location.coords.longitude
         }
         setPosition(newPosition)
+        console.log("New position:", newPosition)
+        // src/pages/api/userTrajectory/index.ts
+        axios.post("/api/userTrajectory", newPosition)
+
         if (!mapCenter) setMapCenter(newPosition)
       },
       error => {

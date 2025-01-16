@@ -4,35 +4,94 @@ import { Prisma } from "@prisma/client"
 export default class CampaignControllerCommon {
   @withPrismaDisconnect
   static async getAllCampaigns() {
-    return await prisma.campaign.findMany({
-      where: { isDisabled: false },
-      include: {
-        areas: {
-          where: { isDisabled: false },
-          include: {
-            pointOfInterests: {
-              where: { isDisabled: false },
-              include: {
-                tasks: {
-                  where: { isDisabled: false },
-                  select: { id: true }
+    try {
+      const campaigns = await prisma.campaign.findMany({
+        where: {
+          AND: [{ isDisabled: false }]
+        },
+        select: {
+          id: true,
+          name: true,
+          areas: {
+            where: { isDisabled: false },
+            select: {
+              id: true,
+              name: true,
+              pointOfInterests: {
+                where: { isDisabled: false },
+                select: {
+                  id: true,
+                  name: true,
+                  tasks: {
+                    where: { isDisabled: false },
+                    select: {
+                      id: true,
+                      title: true,
+                      description: true,
+                      responseLimit: true,
+                      responseLimitInterval: true,
+                      availableFrom: true,
+                      availableTo: true,
+                      UserTaskResponses: {
+                        where: { user: { sub: userId } },
+                        select: { createdAt: true }
+                      }
+                    }
+                  }
                 }
               }
             }
           }
-        },
-        allowedUsers: {
-          include: {
-            user: {
-              select: { id: true, sub: true }
-            }
-          }
         }
-      },
-      orderBy: {
-        createdAt: "desc"
-      }
-    })
+      })
+
+      // Agregar lógica para calcular si puede responder
+      return campaigns.map(campaign => ({
+        ...campaign,
+        areas: campaign.areas.map(area => ({
+          ...area,
+          pointOfInterests: area.pointOfInterests.map(poi => ({
+            ...poi,
+            tasks: poi.tasks.map(task => {
+              const now = new Date()
+              const lastResponse = task.UserTaskResponses.length
+                ? new Date(
+                    Math.max(
+                      ...task.UserTaskResponses.map(response =>
+                        new Date(response.createdAt).getTime()
+                      )
+                    )
+                  )
+                : null
+
+              let canRespond = true
+              let waitTime = null
+
+              if (task.responseLimitInterval && lastResponse) {
+                const nextAllowedResponseTime = new Date(
+                  lastResponse.getTime() +
+                    task.responseLimitInterval * 60 * 1000
+                )
+                canRespond = now >= nextAllowedResponseTime
+                if (!canRespond) {
+                  waitTime = Math.ceil(
+                    (nextAllowedResponseTime.getTime() - now.getTime()) / 60000
+                  ) // Tiempo en minutos
+                }
+              }
+
+              return {
+                ...task,
+                canRespond,
+                waitTime: waitTime ? `${waitTime} minutes` : null
+              }
+            })
+          }))
+        }))
+      }))
+    } catch (error) {
+      throw new Error(`Failed to fetch campaigns: ${error.message}`)
+    }
   }
 
   @withPrismaDisconnect
@@ -47,8 +106,7 @@ export default class CampaignControllerCommon {
               where: { isDisabled: false },
               include: {
                 tasks: {
-                  where: { isDisabled: false },
-                  select: { id: true }
+                  where: { isDisabled: false }
                 }
               }
             }
@@ -144,47 +202,99 @@ export default class CampaignControllerCommon {
   @withPrismaDisconnect
   static async getAllCampaignsAllowedByUserId(userId: string) {
     try {
-      const user = await prisma.user.findUnique({
-        where: { sub: userId },
-        select: { id: true }
-      })
-
-      if (!user) {
-        throw new Error(`User with ID ${userId} not found.`)
-      }
-
-      return await prisma.campaign.findMany({
+      const campaigns = await prisma.campaign.findMany({
         where: {
           AND: [
             { isDisabled: false },
             {
               allowedUsers: {
-                some: { userId: user.id }
+                some: { user: { sub: userId } }
               }
             }
           ]
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
           areas: {
             where: { isDisabled: false },
-            include: {
+            select: {
+              id: true,
+              name: true,
               pointOfInterests: {
                 where: { isDisabled: false },
-                include: {
+                select: {
+                  id: true,
+                  name: true,
                   tasks: {
                     where: { isDisabled: false },
-                    select: { id: true }
+                    select: {
+                      id: true,
+                      title: true,
+                      description: true,
+                      responseLimit: true,
+                      responseLimitInterval: true,
+                      availableFrom: true,
+                      availableTo: true,
+                      UserTaskResponses: {
+                        where: { user: { sub: userId } },
+                        select: { createdAt: true }
+                      }
+                    }
                   }
                 }
               }
             }
-          },
-          allowedUsers: true
+          }
         }
       })
+
+      // Agregar lógica para calcular si puede responder
+      return campaigns.map(campaign => ({
+        ...campaign,
+        areas: campaign.areas.map(area => ({
+          ...area,
+          pointOfInterests: area.pointOfInterests.map(poi => ({
+            ...poi,
+            tasks: poi.tasks.map(task => {
+              const now = new Date()
+              const lastResponse = task.UserTaskResponses.length
+                ? new Date(
+                    Math.max(
+                      ...task.UserTaskResponses.map(response =>
+                        new Date(response.createdAt).getTime()
+                      )
+                    )
+                  )
+                : null
+
+              let canRespond = true
+              let waitTime = null
+
+              if (task.responseLimitInterval && lastResponse) {
+                const nextAllowedResponseTime = new Date(
+                  lastResponse.getTime() +
+                    task.responseLimitInterval * 60 * 1000
+                )
+                canRespond = now >= nextAllowedResponseTime
+                if (!canRespond) {
+                  waitTime = Math.ceil(
+                    (nextAllowedResponseTime.getTime() - now.getTime()) / 60000
+                  ) // Tiempo en minutos
+                }
+              }
+
+              return {
+                ...task,
+                canRespond,
+                waitTime: waitTime ? `${waitTime} minutes` : null
+              }
+            })
+          }))
+        }))
+      }))
     } catch (error) {
-      console.error("Error fetching campaigns by user ID:", error)
-      throw error
+      throw new Error(`Failed to fetch campaigns: ${error.message}`)
     }
   }
 

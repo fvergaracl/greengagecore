@@ -10,6 +10,11 @@ export default async function handler(
       try {
         const { id } = req.query
         const data = await CampaignController.getCampaignById(String(id))
+        console.log("***************!23123123123123")
+        console.log("***************!23123123123123")
+        console.log("***************!23123123123123")
+        console.log("***************!23123123123123")
+        console.log(data)
         if (!data) {
           res.status(404).json({ error: "Campaign not found" })
         } else {

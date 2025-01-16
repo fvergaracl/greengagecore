@@ -121,6 +121,12 @@ export default function Map({
       if (!selectedCampaign) return
       const res = await fetch(`/api/campaigns/${selectedCampaign?.id}`)
       const resJson = await res.json()
+      console.log("------------------- resJson")
+      console.log("------------------- resJson")
+      console.log("------------------- resJson")
+      console.log("------------------- resJson")
+      console.log("------------------- resJson")
+      console.log(resJson)
       setCampaignData(resJson)
     }
 
@@ -160,7 +166,29 @@ export default function Map({
     modeView === "contribuitor-view"
       ? `${selectedPoi ? "h-[70%]" : "h-full"} transition-all duration-300`
       : "h-full"
+  console.log({ selectedPoi })
 
+  /*
+  {
+    "selectedPoi": {
+        "id": "162b3f36-7187-4748-a326-0b0de6ae7fac",
+        "name": "test",
+        "description": "",
+        "radius": 20,
+        "areaId": "d82d77a2-edaa-4319-8fda-2ccaf23883f2",
+        "latitude": 43.34074929895169,
+        "longitude": -3.004855556435073,
+        "isDisabled": false,
+        "createdAt": "2025-01-15T10:37:25.272Z",
+        "updatedAt": "2025-01-16T10:01:12.253Z",
+        "tasks": [
+            {
+                "id": "f26d3065-4a62-41f3-abcd-80cbcb7959d4"
+            }
+        ]
+    }
+}
+  */
   return (
     <>
       <div className={firstDivClassName} data-cy='map-container-for-dashboard'>
@@ -317,7 +345,10 @@ export default function Map({
             <p className='text-sm text-slate-600'>{selectedPoi.description}</p>
             {selectedPoi.tasks.length > 0 && (
               <div className='mt-4'>
-                <h4 className='text-md font-semibold text-white-800 mb-2'>
+                <h4
+                  data-cy='poi-tasks-title'
+                  className='text-md font-semibold text-slate-100 mb-2'
+                >
                   Tasks
                 </h4>
                 <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'>
@@ -326,7 +357,7 @@ export default function Map({
                       key={task.id}
                       className='p-3 border rounded-lg shadow bg-white dark:bg-gray-800 dark:border-gray-700'
                     >
-                      <h5 className='text-md font-semibold text-blue-600'>
+                      <h5 className='text-md font-semibold text-slate-100'>
                         <a
                           href={`/dashboard/task/${task.id}`}
                           className='hover:underline'
@@ -334,7 +365,7 @@ export default function Map({
                           {task.title}
                         </a>
                       </h5>
-                      <p className='text-sm text-slate-500 mt-1'>
+                      <p className='text-sm text-slate-100 mt-1'>
                         {task.description || "No description available"}
                       </p>
                     </div>
