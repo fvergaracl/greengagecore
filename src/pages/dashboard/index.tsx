@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
-import DashboardLayout from "../../components/DashboardLayout"
+import DashboardLayout from "@/components/DashboardLayout"
 import dynamic from "next/dynamic"
-import { useDashboard } from "../../context/DashboardContext"
-import CampaignsScreen from "../../screens/CampaignsScreen"
+import { useDashboard } from "@/context/DashboardContext"
+import CampaignsScreen from "@/screens/CampaignsScreen"
 import { useRouter } from "next/router"
 
-const Map = dynamic(() => import("../../components/Common/Map"), {
+const Map = dynamic(() => import("@/components/Common/Map"), {
   ssr: false
 })
 

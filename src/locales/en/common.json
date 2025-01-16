@@ -242,5 +242,10 @@
   "Response Interval": "Response Interval",
   "minutes": "minutes",
   "Not defined": "Not defined",
-  "Not set": "Not set"
+  "Not set": "Not set",
+  "POI": "POI",
+  "Task deleted": "Task deleted",
+  "Failed to delete task": "Failed to delete task",
+  "Search by title or description": "Search by title or description",
+  "Users tasks responses": "Users tasks responses"
 }

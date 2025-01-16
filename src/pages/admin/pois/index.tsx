@@ -248,15 +248,17 @@ export default function AdminPOIs() {
               {visibleColumns.tasks && (
                 <th className='border px-4 py-2'>{t("Tasks")}</th>
               )}
-              {visibleColumns.details && (
-                <th className='border px-4 py-2'>{t("Details")}</th>
-              )}
-              {<th className='border px-4 py-2'>{t("Actions")}</th>}
               {visibleColumns.createdAt && (
                 <th className='border px-4 py-2'>{t("Created At")}</th>
               )}
               {visibleColumns.updatedAt && (
                 <th className='border px-4 py-2'>{t("Updated At")}</th>
+              )}
+              {visibleColumns.details && (
+                <th className='border px-4 py-2'>{t("Details")}</th>
+              )}
+              {visibleColumns.actions && (
+                <th className='border px-4 py-2'>{t("Actions")}</th>
               )}
             </tr>
           </thead>
@@ -324,7 +326,16 @@ export default function AdminPOIs() {
                     </div>
                   </td>
                 )}
-
+                {visibleColumns.createdAt && (
+                  <td className='border px-4 py-2'>
+                    {new Date(poi.createdAt).toLocaleString()}
+                  </td>
+                )}
+                {visibleColumns.updatedAt && (
+                  <td className='border px-4 py-2'>
+                    {new Date(poi.updatedAt).toLocaleString()}
+                  </td>
+                )}
                 {visibleColumns.details && (
                   <td className='border px-4 py-2'>
                     <div className='flex gap-2'>
@@ -350,16 +361,6 @@ export default function AdminPOIs() {
                         <FontAwesomeIcon icon={faTrash} />
                       </button>
                     </div>
-                  </td>
-                )}
-                {visibleColumns.createdAt && (
-                  <td className='border px-4 py-2'>
-                    {new Date(poi.createdAt).toLocaleString()}
-                  </td>
-                )}
-                {visibleColumns.updatedAt && (
-                  <td className='border px-4 py-2'>
-                    {new Date(poi.updatedAt).toLocaleString()}
                   </td>
                 )}
               </tr>

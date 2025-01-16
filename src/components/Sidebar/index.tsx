@@ -149,7 +149,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       icon: <RxActivityLog size={20} />,
       submenu: [
         {
-          title: t("Users"),
+          title: t("Users tasks responses"),
           route: "/admin/activity-logs/users",
           icon: <FaUser size={16} />,
           dataCy: "sidebar-activity-log-users"
