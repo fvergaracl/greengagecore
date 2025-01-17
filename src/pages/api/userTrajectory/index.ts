@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import UserTrajectoryController from "@/controllers/UserTrajectoryController"
 import { validateKeycloakToken } from "@/utils/validateToken" // Token validator
-import { getUserBySub } from "@/controllers/UserController"
+import UserController from "@/controllers/UserController"
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,8 +15,7 @@ export default async function handler(
         if (!userId) {
           return res.status(401).json({ error: "Unauthorized" })
         }
-        const user = await getUserBySub(userId)
-        console.log({ user })
+        const user = await UserController.getUserBySub(userId)
         const trajectory = {
           userId: user.id,
           latitude: lat,
@@ -35,6 +34,6 @@ export default async function handler(
     }
   } catch (err: any) {
     console.error("API Error:", err.message)
-    res.status(500).json({ error: err.message })
+    return res.status(500).json({ error: err.message })
   }
 }

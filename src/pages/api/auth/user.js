@@ -54,12 +54,12 @@ export default async function handler(req, res) {
     const userInfo = await getUserInfo(token)
 
     console.log("> User info retrieved successfully")
-    res.status(200).json(userInfo)
+    return res.status(200).json(userInfo)
   } catch (error) {
     console.error(
       "Error validating token:",
       error.response?.data || error.message
     )
-    res.status(401).json({ error: "Invalid token or expired" })
+    return res.status(401).json({ error: "Invalid token or expired" })
   }
 }

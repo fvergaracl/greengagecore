@@ -79,8 +79,7 @@ async function updatePhotoKeycloak(userId, photoUrl) {
 export default async function handler(req, res) {
   if (req.method !== "PUT") {
     res.setHeader("Allow", ["PUT"])
-    res.status(405).end(`Method ${req.method} Not Allowed`)
-    return
+    return res.status(405).end(`Method ${req.method} Not Allowed`)
   }
 
   singleUpload(req, res, async function (err) {
@@ -155,9 +154,9 @@ export default async function handler(req, res) {
       }
       setAuthCookies(res, newTokenData)
 
-      res.status(200).json({ success: true, url: photoUrl })
+      return res.status(200).json({ success: true, url: photoUrl })
     } catch (error) {
-      res.status(500).json({ error: "Unexpected error during photo update" })
+      return res.status(500).json({ error: "Unexpected error during photo update" })
     }
   })
 }

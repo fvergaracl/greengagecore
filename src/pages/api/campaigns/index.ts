@@ -31,6 +31,6 @@ export default async function handler(
     }
   } catch (err: any) {
     console.error("API Error:", err.message)
-    res.status(500).json({ error: err.message })
+    return res.status(500).json({ error: err.message })
   }
 }
