@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import { getAllTask, createTask } from "../../../controllers/TaskController"
+import TaskController from "@/controllers/TaskController"
 
 export default async function handler(
   req: NextApiRequest,
@@ -8,15 +8,8 @@ export default async function handler(
   switch (req.method) {
     case "GET":
       try {
-        const data = await getAllTask()
+        const data = await TaskController.getAllTasks()
         return res.status(200).json(data)
-      } catch (err: any) {
-        return res.status(500).json({ error: err.message })
-      }
-    case "POST":
-      try {
-        const data = await createTask(req.body)
-        return res.status(201).json(data)
       } catch (err: any) {
         return res.status(500).json({ error: err.message })
       }

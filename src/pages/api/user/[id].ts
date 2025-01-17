@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next"
-import UserController from "../../../controllers/UserController"
+import UserController from "@/controllers/UserController"
 // ***************************************************************************** WIP
 
 export default async function handler(

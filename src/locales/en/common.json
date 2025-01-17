@@ -249,5 +249,14 @@
   "Search by title or description": "Search by title or description",
   "Users tasks responses": "Users tasks responses",
   "We need your location to continue. Please enable location": "We need your location to continue. Please enable location",
-  "If you are using a desktop computer, please use a mobile device": "If you are using a desktop computer, please use a mobile device"
+  "If you are using a desktop computer, please use a mobile device": "If you are using a desktop computer, please use a mobile device",
+  "Loading task data...": "Loading task data...",
+  "You want to submit the response?": "You want to submit the response?",
+  "Task completed successfully!": "Task completed successfully!",
+  "An error occurred while completing the task.": "An error occurred while completing the task.",
+  "This task type is not supported": "This task type is not supported",
+  "Submit": "Submit",
+  "This task type is not supported. Please contact the administrator.": "This task type is not supported. Please contact the administrator.",
+  "Task not found. Please contact the administrator.": "Task not found. Please contact the administrator.",
+  "Thank you for completing the task!": "Thank you for completing the task!"
 }
