@@ -47,10 +47,13 @@ export default class POIController {
       },
       include: {
         area: {
-          select: {
-            id: true,
-            name: true,
-            polygon: true
+          include: {
+            campaign: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
         tasks: {
@@ -59,6 +62,7 @@ export default class POIController {
       }
     })
   }
+
   @withPrismaDisconnect
   static async createPOI(data: any) {
     try {

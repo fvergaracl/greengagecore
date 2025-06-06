@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import TasksController from "@/controllers/admin/TasksController"
-
+import axios from "axios"
 
 export default async function handler(
   req: NextApiRequest,
@@ -71,6 +71,54 @@ export default async function handler(
             })
           }
           const newTask = await TasksController.createTask(newTaskBody)
+
+          const campaignData = await TasksController.getCampaignDataByTaskId(
+            newTask.id
+          )
+          const campaignId = campaignData?.id
+          const gameId = campaignData?.gameId
+
+          if (gameId) {
+            try {
+              const gameTasksRes = await axios.get(
+                `${process.env.API_GAME_BASE_URL}/games/${gameId}/tasks/${newTask.id}`,
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-API-Key": process.env.API_GAME_APIKEY!
+                  }
+                }
+              )
+              if (gameTasksRes.status === 200) {
+                return res.status(200).json(newTask)
+              }
+            } catch (error) {
+              console.error("Error checking game tasks:", error)
+            }
+
+            const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_TASK_${newTask.id}`
+
+            await axios.post(
+              `${process.env.API_GAME_BASE_URL}/games/${gameId}/tasks`,
+              {
+                externalTaskId,
+                params: [
+                  {
+                    key: "variable_bonus_points",
+                    value: 10
+                  }
+                ]
+              },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-API-Key": process.env.API_GAME_APIKEY!
+                }
+              }
+            )
+            newTask.message = `Task created successfully in the ID ${externalTaskId}.`
+          }
+
           return res.status(201).json(newTask)
         } catch (error) {
           console.error("Error creating task:", error)

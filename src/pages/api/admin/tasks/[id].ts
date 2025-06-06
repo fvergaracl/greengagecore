@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import TasksController from "@/controllers/admin/TasksController"
 import { PrismaClient } from "@prisma/client"
+import axios from "axios"
 
 const prisma = new PrismaClient()
 
@@ -25,6 +26,7 @@ export default async function handler(
         if (!id) {
           return res.status(400).json({ error: "Task ID is required" })
         }
+
         const updatedTaskBody = {
           title: req?.body?.title,
           description: req?.body?.description,
@@ -86,6 +88,41 @@ export default async function handler(
           id as string,
           updatedTaskBody
         )
+
+        try {
+          const campaignData = await TasksController.getCampaignDataByTaskId(
+            id as string
+          )
+          const campaignId = campaignData?.id
+          const gameId = campaignData?.gameId
+
+          if (gameId) {
+            const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_TASK_${id}`
+            const response = await axios.post(
+              `${process.env.API_GAME_BASE_URL}/games/${gameId}/tasks`,
+              {
+                externalTaskId,
+                strategyId: "default",
+                params: [
+                  {
+                    key: "variable_bonus_points",
+                    value: 10
+                  }
+                ]
+              },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-API-Key": process.env.API_GAME_APIKEY!
+                }
+              }
+            )
+            task.message = `Task gamified successfully with ID: ${externalTaskId}`
+          }
+        } catch (error) {
+          console.error("Error gamifying updated task:", error)
+        }
+
         return res.status(200).json(task)
       }
 

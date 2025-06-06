@@ -58,6 +58,7 @@ export default function TaskForm({
   const { t } = useTranslation()
   const [title, setTitle] = useState(initialData?.title || "")
   const [description, setDescription] = useState(initialData?.description || "")
+  const [campaignGameId, setCampaignGameId] = useState<string | null>(null)
   const [type, setType] = useState<"Form" | "Instruction" | "Data collection">(
     initialData?.type || "Form"
   )
@@ -79,6 +80,25 @@ export default function TaskForm({
     const newCreator = new SurveyCreator(creatorOptions)
     return newCreator
   })
+
+  useEffect(() => {
+    const fetchCampaignGameId = async () => {
+      try {
+        const poiRes = await axios.get(`${getApiBaseUrl()}/admin/pois/${poiId}`)
+        const campaignId = poiRes.data.area.campaignId
+
+        const campaignRes = await axios.get(
+          `${getApiBaseUrl()}/admin/campaigns/${campaignId}`
+        )
+        setCampaignGameId(campaignRes.data.gameId || null)
+      } catch (err) {
+        console.error("Error fetching campaign info:", err)
+      }
+    }
+    if (poiId && !campaignGameId) {
+      fetchCampaignGameId()
+    }
+  }, [poiId])
 
   useEffect(() => {
     if (initialData?.surveyJSON) {
@@ -336,6 +356,14 @@ export default function TaskForm({
             className='mt-1 block w-full border border-gray-300 rounded-md p-2 shadow-sm focus:ring focus:ring-blue-200 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white'
           />
         </div>
+
+        {campaignGameId && (
+          <div className='p-3 my-4 bg-yellow-100 text-yellow-800 rounded'>
+            {t(
+              "This campaign is gamified. This task will be linked to a game."
+            )}
+          </div>
+        )}
         <SurveyCreatorComponent creator={creator} />
 
         <div className='flex justify-end mt-6'>

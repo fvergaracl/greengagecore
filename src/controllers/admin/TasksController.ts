@@ -135,4 +135,44 @@ export default class TaskController {
       where: { id }
     })
   }
+  @withPrismaDisconnect
+  static async getCampaignDataByTaskId(taskId: string): Promise<{
+    id: string
+    gameId: string | null
+  } | null> {
+    const task = await prisma.task.findUnique({
+      where: {
+        id: taskId,
+        isDisabled: false,
+        pointOfInterest: {
+          isDisabled: false,
+          area: {
+            isDisabled: false,
+            campaign: {
+              isDisabled: false
+            }
+          }
+        }
+      },
+      select: {
+        pointOfInterest: {
+          select: {
+            area: {
+              select: {
+                campaign: {
+                  select: {
+                    id: true,
+                    gameId: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    const campaign = task?.pointOfInterest?.area?.campaign
+    return campaign ? { id: campaign.id, gameId: campaign.gameId } : null
+  }
 }
