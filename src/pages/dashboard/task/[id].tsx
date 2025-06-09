@@ -399,7 +399,8 @@ export default function Task() {
         // WIP CAMPAIGN + TASK ID
         //             const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_TASK_${id}`
 
-        const externalTaskId = `GREENCROWD_CAMPAIGNID_${task.campaignId}_TASK_${task.id}`
+        const poiId = task?.pointOfInterest?.id
+        const externalTaskId = `GREENCROWD_CAMPAIGNID_${task.campaignId}_POI_${poiId}_TASK_${id}`
         if (task?.pointOfInterest?.area?.campaign?.gameId) {
           await axios
             .post(

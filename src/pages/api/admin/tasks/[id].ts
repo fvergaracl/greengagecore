@@ -95,14 +95,14 @@ export default async function handler(
           )
           const campaignId = campaignData?.id
           const gameId = campaignData?.gameId
-
+          const poiId = campaignData?.poiId
           if (gameId) {
-            const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_TASK_${id}`
+            const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_POI_${poiId}_TASK_${id}`
             const response = await axios.post(
               `${process.env.API_GAME_BASE_URL}/games/${gameId}/tasks`,
               {
                 externalTaskId,
-                strategyId: "default",
+                strategyId: "greencrowdStrategy",
                 params: [
                   {
                     key: "variable_bonus_points",
@@ -120,7 +120,7 @@ export default async function handler(
             task.message = `Task gamified successfully with ID: ${externalTaskId}`
           }
         } catch (error) {
-          console.error("Error gamifying updated task:", error)
+          console.error("🔴 Error gamifying updated task:", error?.response)
         }
 
         return res.status(200).json(task)
@@ -139,7 +139,7 @@ export default async function handler(
         return res.status(405).end()
     }
   } catch (error) {
-    console.error(error)
+    console.error("🔴 Error in tasks handler:", error)
     return res.status(500).json({ error: "Internal server error" })
   }
 }

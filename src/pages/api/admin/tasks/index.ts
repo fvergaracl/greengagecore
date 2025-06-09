@@ -77,7 +77,7 @@ export default async function handler(
           )
           const campaignId = campaignData?.id
           const gameId = campaignData?.gameId
-
+          const pointOfInterestId = campaignData?.poiId
           if (gameId) {
             try {
               const gameTasksRes = await axios.get(
@@ -93,10 +93,10 @@ export default async function handler(
                 return res.status(200).json(newTask)
               }
             } catch (error) {
-              console.error("Error checking game tasks:", error)
+              console.error("Error checking game tasks:", error?.data)
             }
 
-            const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_TASK_${newTask.id}`
+            const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_POI_${pointOfInterestId}_TASK_${newTask.id}` 
 
             await axios.post(
               `${process.env.API_GAME_BASE_URL}/games/${gameId}/tasks`,

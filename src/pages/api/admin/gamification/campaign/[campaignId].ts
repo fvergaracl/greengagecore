@@ -121,19 +121,19 @@ export default async function handler(
           (t: any) => t.externalTaskId
         )
 
-        // Handle normal tasks
         const tasks = await CampaignController.getAllTasksByCampaignId(
           campaignId as string
         )
+        const poiId = campaign.poiId || null
         const newTasks = tasks.filter(
           task =>
             !existingExternalTaskIds.includes(
-              `GREENCROWD_CAMPAIGNID_${campaignId}_TASK_${task.id}`
+              `GREENCROWD_CAMPAIGNID_${campaignId}_POI_${poiId}_TASK_${task.id}`
             )
         )
         const allCreatedTaskIds = []
         for (const task of newTasks) {
-          const extId = `GREENCROWD_CAMPAIGNID_${campaignId}_TASK_${task.id}`
+          const extId = `GREENCROWD_CAMPAIGNID_${campaignId}_POI_${poiId}_TASK_${task.id}`
           await createTaskInGame(extId, gameId, strategyId)
           allCreatedTaskIds.push(extId)
         }

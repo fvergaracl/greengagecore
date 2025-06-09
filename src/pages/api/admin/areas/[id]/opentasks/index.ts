@@ -80,7 +80,6 @@ export default async function handler(
             await OpenTaskController.getCampaignDataByOpenTaskId(newTask.id)
           const campaignId = campaignData?.id
           const gameId = campaignData?.gameId
-
           if (gameId) {
             const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_OPENTASK_${newTask.id}`
 

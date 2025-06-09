@@ -156,16 +156,18 @@ const AreaForm: React.FC<AreaFormProps> = ({ areaId, onSuccess }) => {
 
   const handleGeolocation = () => {
     setFocusInPolygon(false)
+    console.log("🔵 Geolocation triggered")
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         position => {
+          console.log("🟢 Position acquired:", position)
           const { latitude, longitude } = position.coords
           const newLocation: [number, number] = [latitude, longitude]
           setUserLocation(newLocation)
           setMapCenter(newLocation)
         },
         error => {
-          console.warn("Geolocation not enabled or denied.", error)
+          console.warn("🔴 Geolocation error:", error)
           Swal.fire({
             title: t("Geolocation Error"),
             text: t(

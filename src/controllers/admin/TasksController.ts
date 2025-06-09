@@ -140,6 +140,7 @@ export default class TaskController {
   static async getCampaignDataByTaskId(taskId: string): Promise<{
     id: string
     gameId: string | null
+    poiId: string
   } | null> {
     const task = await prisma.task.findUnique({
       where: {
@@ -158,6 +159,7 @@ export default class TaskController {
       select: {
         pointOfInterest: {
           select: {
+            id: true,
             area: {
               select: {
                 campaign: {
@@ -174,6 +176,10 @@ export default class TaskController {
     })
 
     const campaign = task?.pointOfInterest?.area?.campaign
-    return campaign ? { id: campaign.id, gameId: campaign.gameId } : null
+    const poiId = task?.pointOfInterest?.id
+
+    return campaign && poiId
+      ? { id: campaign.id, gameId: campaign.gameId, poiId }
+      : null
   }
 }

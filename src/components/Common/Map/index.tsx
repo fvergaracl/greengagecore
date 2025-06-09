@@ -67,49 +67,7 @@ type ProcessedPOI = {
   normalizedScore: number
 }
 
-const processTasks = (data: { tasks: TaskPreProccess[] }) => {
-  const poiMap: Record<string, { total: number; count: number }> = {}
 
-  data?.tasks?.forEach(task => {
-    const match = task.externalTaskId.match(/POI_([^_]+)_Task/)
-    if (match) {
-      const poiId = match[1]
-
-      let pointsToCount = 0
-
-      pointsToCount = task.totalSimulatedPoints
-
-      if (!poiMap[poiId]) {
-        poiMap[poiId] = { total: 0, count: 0 }
-      }
-      poiMap[poiId].total += pointsToCount
-      poiMap[poiId].count += 1
-    }
-  })
-
-  const poiList: ProcessedPOI[] = Object.entries(poiMap)?.map(
-    ([poiId, values]) => ({
-      poiId,
-      averagePoints: values.total / values.count,
-      normalizedScore: 0
-    })
-  )
-
-  const minPoints = Math.min(...poiList?.map(poi => poi.averagePoints))
-  const maxPoints = Math.max(...poiList?.map(poi => poi.averagePoints))
-
-  poiList?.forEach(poi => {
-    if (maxPoints !== minPoints) {
-      poi.normalizedScore = Math.round(
-        1 + (poi.averagePoints - minPoints) * (9 / (maxPoints - minPoints))
-      )
-    } else {
-      poi.normalizedScore = 1
-    }
-  })
-
-  return poiList
-}
 
 const decodeToken = (token: string): { roles?: string[] } | null => {
   try {
@@ -243,6 +201,7 @@ export default function Map({
   const tokenCookie = cookies.find(cookie => cookie.startsWith("access_token="))
   tokenCookie ? tokenCookie.split("=")[1] : null
 
+  
   const fetchGamificationData = async () => {
     const now = new Date().getTime()
     try {
@@ -396,7 +355,7 @@ export default function Map({
         for (const area of campaignData.areas) {
           for (const poi of area.pointOfInterests) {
             for (const task of poi.tasks) {
-              const id = `POI_${poi.id}_Task_${task.id}`
+              const id = `GREENCROWD_CAMPAIGNID_${selectedCampaign?.id}_POI_${poi.id}_TASK_${task.id}`
               expectedTaskIds.push(id)
             }
           }
@@ -523,6 +482,50 @@ export default function Map({
       )
     }
     setShowRoute(true)
+  }
+
+  const processTasks = (data: { tasks: TaskPreProccess[] }) => {
+    const poiMap: Record<string, { total: number; count: number }> = {}
+    data?.tasks?.forEach(task => {
+      const match = task.externalTaskId.match(
+        /GREENCROWD_CAMPAIGNID_[^_]+_POI_([^_]+)_TASK_/
+      )
+      if (match) {
+        const poiId = match[1]
+  
+        let pointsToCount = task.totalSimulatedPoints || 0
+  
+        if (!poiMap[poiId]) {
+          poiMap[poiId] = { total: 0, count: 0 }
+        }
+  
+        poiMap[poiId].total += pointsToCount
+        poiMap[poiId].count += 1
+      }
+    })
+  
+    const poiList: ProcessedPOI[] = Object.entries(poiMap)?.map(
+      ([poiId, values]) => ({
+        poiId,
+        averagePoints: values.total / values.count,
+        normalizedScore: 0
+      })
+    )
+  
+    const minPoints = Math.min(...poiList?.map(poi => poi.averagePoints))
+    const maxPoints = Math.max(...poiList?.map(poi => poi.averagePoints))
+  
+    poiList?.forEach(poi => {
+      if (maxPoints !== minPoints) {
+        poi.normalizedScore = Math.round(
+          1 + (poi.averagePoints - minPoints) * (9 / (maxPoints - minPoints))
+        )
+      } else {
+        poi.normalizedScore = 1
+      }
+    })
+  
+    return poiList
   }
 
   const createCustomIcon = (color: string, size: number) => {
