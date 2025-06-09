@@ -74,11 +74,33 @@ export default function OpenTaskForm({
     initialData?.availableTo || null
   )
   const [saving, setSaving] = useState(false)
-
+  const [campaignGameId, setCampaignGameId] = useState<string | null>(null)
   const [creator] = useState(() => {
     const newCreator = new SurveyCreator(creatorOptions)
     return newCreator
   })
+
+  useEffect(() => {
+    const fetchCampaignGameId = async () => {
+      try {
+        const poiRes = await axios.get(
+          `${getApiBaseUrl()}/admin/areas/${areaId}/pois/${openTaskId}`
+        )
+
+        const campaignId = poiRes.data.area.campaignId
+
+        const campaignRes = await axios.get(
+          `${getApiBaseUrl()}/admin/campaigns/${campaignId}`
+        )
+        setCampaignGameId(campaignRes.data.gameId || null)
+      } catch (err) {
+        console.error("Error fetching campaign info:", err)
+      }
+    }
+    if (areaId && openTaskId && !campaignGameId) {
+      fetchCampaignGameId()
+    }
+  }, [areaId])
 
   useEffect(() => {
     if (initialData?.surveyJSON) {
@@ -174,7 +196,7 @@ export default function OpenTaskForm({
         responseLimitInterval,
         availableFrom,
         availableTo,
-        taskData: creator.JSON,
+        taskData: creator.JSON
       }
       const response =
         mode === "create"

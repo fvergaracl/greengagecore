@@ -13,9 +13,16 @@ export default async function handler(
 
         if (!data) {
           return res.status(404).json({ error: "Task not found" })
-        } else {
-          return res.status(200).json(data)
         }
+
+        const campaignId = data.pointOfInterest?.area?.campaign?.id
+        const gameId = data.pointOfInterest?.area?.campaign?.gameId
+
+        return res.status(200).json({
+          ...data,
+          campaignId,
+          gameId
+        })
       } catch (err: any) {
         return res.status(500).json({ error: err.message })
       }

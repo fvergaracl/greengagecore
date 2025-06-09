@@ -22,7 +22,7 @@ import loading_6 from "@/lotties/loading_6.json"
 import sent_without_gamification from "@/lotties/sent_without_gamification.json"
 import downloading_task from "@/lotties/downloading_task.json"
 import points_reward from "@/lotties/points_reward.json"
-
+// wip acá
 const decodeToken = (token: string): { roles?: string[] } | null => {
   try {
     const payload = JSON.parse(
@@ -396,11 +396,14 @@ export default function Task() {
           position
         })
         const decodedToken = decodeToken(accessToken)
-        const externalTaskId = `POI_${task.pointOfInterest.id}_Task_${id}`
+        // WIP CAMPAIGN + TASK ID
+        //             const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_TASK_${id}`
+
+        const externalTaskId = `GREENCROWD_CAMPAIGNID_${task.campaignId}_TASK_${task.id}`
         if (task?.pointOfInterest?.area?.campaign?.gameId) {
           await axios
             .post(
-              `${getApiGameBaseUrl()}/games/${task.pointOfInterest.area.campaign.gameId}/tasks/${externalTaskId}/points`,
+              `${getApiGameBaseUrl()}/games/${task?.gameId}/tasks/${externalTaskId}/points`,
               {
                 externalUserId: decodedToken?.sub,
                 data: gamificationData,

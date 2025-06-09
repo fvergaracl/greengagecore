@@ -93,6 +93,7 @@ export default class TaskController {
       }
     })
   }
+
   @withPrismaDisconnect
   static async getAllTasksByPOI(pointOfInterestId: string) {
     return await prisma.task.findMany({

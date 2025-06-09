@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import OpenTaskController from "@/controllers/admin/OpenTasksController"
-
+import axios from "axios"
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -49,25 +49,19 @@ export default async function handler(
           }
 
           if (newTaskBody?.availableFrom) {
-            if (isNaN(Date.parse(newTaskBody?.availableFrom)))
+            if (isNaN(Date.parse(newTaskBody?.availableFrom))) {
               return res
                 .status(400)
                 .json({ error: "Available from should be a valid date" })
-
-            newTaskBody.availableFrom = new Date(
-              newTaskBody.availableFrom
-            ).toISOString()
+            }
           }
 
           if (newTaskBody?.availableTo) {
-            if (isNaN(Date.parse(newTaskBody?.availableTo)))
+            if (isNaN(Date.parse(newTaskBody?.availableTo))) {
               return res
                 .status(400)
                 .json({ error: "Available to should be a valid date" })
-
-            newTaskBody.availableTo = new Date(
-              newTaskBody.availableTo
-            ).toISOString()
+            }
           }
 
           if (
@@ -81,6 +75,54 @@ export default async function handler(
           }
 
           const newTask = await OpenTaskController.createOpenTask(newTaskBody)
+
+          const campaignData =
+            await OpenTaskController.getCampaignDataByOpenTaskId(newTask.id)
+          const campaignId = campaignData?.id
+          const gameId = campaignData?.gameId
+
+          if (gameId) {
+            const externalTaskId = `GREENCROWD_CAMPAIGNID_${campaignId}_OPENTASK_${newTask.id}`
+
+            try {
+              const gameTaskRes = await axios.get(
+                `${process.env.API_GAME_BASE_URL}/games/${gameId}/tasks/${newTask.id}`,
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-API-Key": process.env.API_GAME_APIKEY!
+                  }
+                }
+              )
+              if (gameTaskRes.status === 200) {
+                return res.status(200).json(newTask)
+              }
+            } catch (err) {
+              console.warn("No existing gamified task found. Proceeding...")
+            }
+
+            await axios.post(
+              `${process.env.API_GAME_BASE_URL}/games/${gameId}/tasks`,
+              {
+                externalTaskId,
+                params: [
+                  {
+                    key: "variable_bonus_points",
+                    value: 10
+                  }
+                ]
+              },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-API-Key": process.env.API_GAME_APIKEY!
+                }
+              }
+            )
+
+            newTask.message = `OpenTask created and gamified with ID ${externalTaskId}`
+          }
+
           return res.status(201).json(newTask)
         } catch (error) {
           console.error("Error creating open task:", error)

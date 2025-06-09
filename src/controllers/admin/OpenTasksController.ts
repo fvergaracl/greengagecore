@@ -110,4 +110,39 @@ export default class OpenTaskController {
       where: { id }
     })
   }
+
+  @withPrismaDisconnect
+  static async getCampaignDataByOpenTaskId(openTaskId: string) {
+    const task = await prisma.openTask.findFirst({
+      where: {
+        id: openTaskId,
+        isDisabled: false,
+        area: {
+          isDisabled: false,
+          campaign: {
+            isDisabled: false
+          }
+        }
+      },
+      select: {
+        area: {
+          select: {
+            campaign: {
+              select: {
+                id: true,
+                gameId: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!task?.area?.campaign) return null
+
+    return {
+      id: task.area.campaign.id,
+      gameId: task.area.campaign.gameId
+    }
+  }
 }
