@@ -25,7 +25,6 @@ export default function QuestionnairesPage() {
     selectedCampaign?.id
   )
 
-  // 🧭 Sin campaña seleccionada
   if (!selectedCampaign) {
     return (
       <DashboardLayout>
@@ -46,21 +45,18 @@ export default function QuestionnairesPage() {
           )}
         </Typography>
 
-        {/* 🚧 Estado de carga */}
         {loading && (
           <Box display='flex' justifyContent='center' mt={6}>
             <CircularProgress size={48} />
           </Box>
         )}
 
-        {/* ❌ Error */}
         {error && (
           <Alert severity='error' sx={{ mb: 3 }}>
             {error}
           </Alert>
         )}
 
-        {/* ✅ No hay cuestionarios pendientes */}
         {!loading && !error && pending.length === 0 && (
           <Box mt={6} textAlign='center'>
             <Typography variant='h5' gutterBottom>
@@ -72,7 +68,6 @@ export default function QuestionnairesPage() {
           </Box>
         )}
 
-        {/* 📋 Lista de cuestionarios pendientes */}
         {!loading &&
           !error &&
           pending.map((q, index) => (
@@ -88,13 +83,13 @@ export default function QuestionnairesPage() {
                     {q.title}
                   </Typography>
                   <Typography variant='body2' color='text.secondary' mb={1}>
-                    {t("Condition")}: {q.condition}
+                    {t("Condition")}: {t(q.condition)}
                     {q.frequencyInDays
                       ? ` (${q.frequencyInDays} ${t("days")})`
                       : ""}
                   </Typography>
                   <Chip
-                    label={q.reason}
+                    label={t(q.reason)}
                     color='warning'
                     size='small'
                     sx={{ mb: 2 }}
