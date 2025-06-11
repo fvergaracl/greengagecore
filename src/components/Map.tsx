@@ -94,7 +94,7 @@ export default function Map({ puntos, poligonos }: MapProps) {
         <Polygon
           key={index}
           positions={poligono.coordinates}
-          pathOptions={{ color: "blue", weight: 2 }}
+          pathOptions={{ color: "blue", weight: 0.5 }}
         />
       ))}
       {puntos.map((punto, index) => (

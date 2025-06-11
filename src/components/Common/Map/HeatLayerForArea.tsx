@@ -50,7 +50,8 @@ export const HeatLayerForArea = ({
           const minutesAgo = (now.getTime() - createdAt.getTime()) / 60000 // ms to minutes
 
           const cappedMinutes = Math.min(minutesAgo, 60)
-          const weight = 1 - cappedMinutes / 60 // GAMIFICATION weight in 1 hour
+          // const weight = 1 - cappedMinutes / 60 // GAMIFICATION weight in 1 hour
+          const weight = Math.max(0.2, 1 - cappedMinutes / 60) // valor mínimo 0.2
 
           result.push([response.latitude, response.longitude, weight])
         }
@@ -90,16 +91,18 @@ export const HeatLayerForArea = ({
 
     const newHeatLayer = (L as any).heatLayer(responsePoints, {
       radius,
-      blur: 10,
+      blur: 5,
       maxZoom: 18,
       max: 5,
+      maxOpacity: 0.95,
+      minOpacity: 0.4,
       gradient: {
-        0.0: "#000000",
-        0.2: "#0000ff",
-        0.4: "#00ffff",
-        0.6: "#ffff00",
-        0.8: "#ff8000",
-        1.0: "#ff0000"
+        0.0: "#ffffff",
+        0.2: "#ffcccb",
+        0.4: "#ff9966",
+        0.6: "#ff6600",
+        0.8: "#ff3300",
+        1.0: "#b30000"
       }
     })
 
@@ -115,16 +118,18 @@ export const HeatLayerForArea = ({
         heatLayerRef.current = (L as any)
           .heatLayer(responsePoints, {
             radius: newRadius,
-            blur: 10,
-            maxZoom: 17,
+            blur: 5,
+            maxZoom: 18,
             max: 5,
+            maxOpacity: 0.95,
+            minOpacity: 0.4,
             gradient: {
-              0.0: "#000000",
-              0.2: "#0000ff",
-              0.4: "#00ffff",
-              0.6: "#ffff00",
-              0.8: "#ff8000",
-              1.0: "#ff0000"
+              0.0: "#ffffff",
+              0.2: "#ffcccb",
+              0.4: "#ff9966",
+              0.6: "#ff6600",
+              0.8: "#ff3300",
+              1.0: "#b30000"
             }
           })
           .addTo(map)
