@@ -61,6 +61,7 @@ export default async function handler(
     const campaign = await CampaignController.getCampaignById(
       campaignId as string
     )
+    console.dir(campaign, { depth: null })
     if (!campaign) return res.status(404).json({ error: "Campaign not found" })
 
     switch (req.method) {
@@ -125,6 +126,7 @@ export default async function handler(
           campaignId as string
         )
         const poiId = campaign.poiId || null
+        // WIP
         const newTasks = tasks.filter(
           task =>
             !existingExternalTaskIds.includes(
