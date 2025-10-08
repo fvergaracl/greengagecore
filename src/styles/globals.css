@@ -1,17 +1,51 @@
-@import url('https://fonts.cdnfonts.com/css/satoshi');
-@import url('https://fonts.cdnfonts.com/css/google-sans');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 html, body {
   margin: 0;
   padding: 0;
-  min-height: 100dvh;
-  height: 100dvh;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  min-height: 100%;
   box-sizing: border-box;
   background-color: transparent;
+
+  /* Safe areas globales como variables */
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+  --safe-right: env(safe-area-inset-right);
+}
+
+
+
+.app-shell {
+  min-height: 100vh;               /* fallback muy viejo */
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  overflow: hidden;                /* evita scroll de body */
+  display: flex;
+  flex-direction: column;
+}
+
+/* iOS modernos – usa svh/dvh dinámicos */
+@supports (height: 100svh) {
+  .app-shell {
+    min-height: 100svh;            /* área visible sin barras superpuestas */
+  }
+}
+@supports (height: 100dvh) {
+  .app-shell {
+    min-height: 100dvh;            /* Safari 16+/iOS 15.4+ maneja bien dvh */
+  }
+}
+
+/* Si tu UI tiene una navbar/botones fijos abajo,
+   reserva sitio para ellos sin provocar scroll. 
+   Ejemplo: 56px de alto. Ajusta al tuyo real. */
+.app-shell.has-bottom-nav {
+  padding-bottom: calc(var(--safe-bottom) + 56px);
+}
+
+/* Si tienes header fijo arriba, idem (ej. 48px) */
+.app-shell.has-topbar {
+  padding-top: calc(var(--safe-top) + 48px);
 }

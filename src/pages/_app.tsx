@@ -53,6 +53,22 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         .catch(err => console.error("SW Error", err))
     }
   }, [])
+  
+useEffect(() => {
+  const setVH = () => {
+    const vh = (window.visualViewport?.height ?? window.innerHeight) * 0.01;
+    document.documentElement.style.setProperty("--app-vh", `${vh}px`);
+  };
+  setVH();
+  window.addEventListener("resize", setVH);
+  window.visualViewport?.addEventListener("resize", setVH);
+  window.addEventListener("orientationchange", setVH);
+  return () => {
+    window.removeEventListener("resize", setVH);
+    window.visualViewport?.removeEventListener("resize", setVH);
+    window.removeEventListener("orientationchange", setVH);
+  };
+}, []);
 
   if (!configLoaded) {
     return <></>
@@ -76,7 +92,9 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <StrictMode>
+      <div id="app-shell" className="app-shell">
       <WrappedComponent {...pageProps} />
+      </div>
     </StrictMode>
   )
 }
