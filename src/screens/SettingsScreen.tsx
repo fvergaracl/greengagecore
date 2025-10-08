@@ -43,7 +43,13 @@ const SettingsScreen = ({ DashboardContext }) => {
 
       try {
         const response = await axios.get(`${getApiBaseUrl()}/auth/user`);
-        const userData = response.data;
+        if (response.status !== 200) {
+          setUser(null);
+          logout();
+          throw new Error("Failed to fetch user data");
+
+        }
+        const userData = response?.data;
 
         setUser({
           id: userData.sub,
