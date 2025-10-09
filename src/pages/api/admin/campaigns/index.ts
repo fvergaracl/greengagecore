@@ -1,60 +1,64 @@
-import type { NextApiRequest, NextApiResponse } from "next"
-import CampaignController from "@/controllers/admin/CampaignController"
-import { formatToISO } from "@/utils/dateTimeUtils"
-import { isUUID } from "@/utils/isUUID"
+import type { NextApiRequest, NextApiResponse } from "next";
+import CampaignController from "@/controllers/admin/CampaignController";
+import { formatToISO } from "@/utils/dateTimeUtils";
+import { isUUID } from "@/utils/isUUID";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   try {
     switch (req.method) {
       case "GET": {
-        const campaigns = await CampaignController.getAllCampaigns()
-        return res.status(200).json(campaigns)
+        const campaigns = await CampaignController.getAllCampaigns();
+        return res.status(200).json(campaigns);
       }
 
       case "POST": {
-        let formattedStartDatetime = undefined
+        let formattedStartDatetime = undefined;
         if (req?.body?.startDatetime) {
-          formattedStartDatetime = formatToISO(req.body.startDatetime)
+          formattedStartDatetime = formatToISO(req.body.startDatetime);
         }
-        let formattedEndDatetime = undefined
+        let formattedEndDatetime = undefined;
         if (req?.body?.endDatetime) {
-          formattedEndDatetime = formatToISO(req.body.endDatetime)
+          formattedEndDatetime = formatToISO(req.body.endDatetime);
         }
         const newCampaignData = {
           ...req.body,
           startDatetime: formattedStartDatetime,
-          endDatetime: formattedEndDatetime
-        }
+          endDatetime: formattedEndDatetime,
+        };
         const haveBothStartAndEndDatetime =
-          formattedStartDatetime && formattedEndDatetime
+          formattedStartDatetime && formattedEndDatetime;
         if (
           haveBothStartAndEndDatetime &&
           formattedStartDatetime > formattedEndDatetime
         ) {
           return res.status(400).json({
-            error: "Start datetime cannot be greater than end datetime"
-          })
+            error: "Start datetime cannot be greater than end datetime",
+          });
         }
         if (req?.body?.gameId && !isUUID(req?.body?.gameId)) {
-          return res.status(400).json({ error: "Invalid game ID" })
+          return res.status(400).json({ error: "Invalid game ID" });
+        }
+        // if newCampaignData have createWithGamification (true or false) delete it (createWithGamification)
+        if ("createWithGamification" in newCampaignData) {
+          delete newCampaignData.createWithGamification;
         }
         const newCampaign =
-          await CampaignController.createCampaign(newCampaignData)
-        return res.status(201).json(newCampaign)
+          await CampaignController.createCampaign(newCampaignData);
+        return res.status(201).json(newCampaign);
       }
 
       default: {
-        res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"])
+        res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
         return res
           .status(405)
-          .json({ error: `Method ${req.method} Not Allowed` })
+          .json({ error: `Method ${req.method} Not Allowed` });
       }
     }
   } catch (error) {
-    console.error("API Error:", error)
-    return res.status(500).json({ error: "Internal Server Error" })
+    console.error("API Error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 }
