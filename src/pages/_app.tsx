@@ -102,17 +102,16 @@ useEffect(() => {
 /**
  * Higher Order Component para envolver un componente en un Provider
  */
-const withProvider = (
-  Component: AppProps["Component"],
-  Provider: ({ children }: { children: ReactNode }) => JSX.Element
+
+const withProvider = <P extends object>(
+  Comp: React.ComponentType<P>,
+  Provider: ({ children }: { children: React.ReactNode }) => JSX.Element
 ) => {
-  const WrappedComponent = (props: AppProps) => (
+  const Wrapped = (props: P) => (
     <Provider>
-      <Component {...props.pageProps} />
+      <Comp {...props} />
     </Provider>
   )
-
-  WrappedComponent.displayName = `WithProvider(${Component.displayName || Component.name || "Anonymous"})`
-
-  return WrappedComponent
+  Wrapped.displayName = `WithProvider(${Comp.displayName || Comp.name || "Anonymous"})`
+  return Wrapped
 }
