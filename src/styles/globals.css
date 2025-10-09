@@ -24,51 +24,53 @@ html, body {
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
 
-  --app-height: 100vh;
+  /* Fallback para navegadores sin dvh (lo completamos con JS) */
+  --app-vh: 1vh;
 }
 
+
 .app-shell {
-  height: 100dvh; 
-  padding: env(safe-area-inset-*);
+
+  height: 100vh;
+
+
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+
+
+  display: flex;
+  flex-direction: column;
 }
+
 
 @supports (height: 100dvh) {
   .app-shell { height: 100dvh; }
 }
 @supports (height: 100svh) {
-  .app-shell { height: 100svh; } 
+  .app-shell { height: 100svh; }
 }
+
 
 @supports not (height: 100dvh) {
-  .app-shell { height: calc(var(--app-vh, 1vh) * 100); }
+  .app-shell { height: calc(var(--app-vh) * 100); }
 }
+
 
 .app-shell.has-bottom-nav {
-  padding-bottom: calc(var(--safe-bottom) + 56px); 
+  padding-bottom: calc(var(--safe-bottom) + 56px);
 }
 .app-shell.has-topbar {
-  padding-top: calc(var(--safe-top) + 48px); 
+  padding-top: calc(var(--safe-top) + 48px);
 }
-
-
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.app-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-}
-
 
 .app-main {
-  flex:1; 
-  min-height:0; 
-  overflow:auto; 
-  -webkit-overflow-scrolling:touch
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .fixed-top-safe {

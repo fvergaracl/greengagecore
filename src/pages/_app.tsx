@@ -53,22 +53,23 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         .catch(err => console.error("SW Error", err))
     }
   }, [])
-  
+ 
+    
 useEffect(() => {
   const setVH = () => {
-    const vh = (window.visualViewport?.height ?? window.innerHeight) * 0.01;
-    document.documentElement.style.setProperty("--app-vh", `${vh}px`);
-  };
-  setVH();
-  window.addEventListener("resize", setVH);
-  window.visualViewport?.addEventListener("resize", setVH);
-  window.addEventListener("orientationchange", setVH);
+    const h = (window.visualViewport?.height ?? window.innerHeight) / 100
+    document.documentElement.style.setProperty("--app-vh", `${h}px`)
+  }
+  setVH()
+  window.addEventListener("resize", setVH)
+  window.visualViewport?.addEventListener("resize", setVH)
+  window.addEventListener("orientationchange", setVH)
   return () => {
-    window.removeEventListener("resize", setVH);
-    window.visualViewport?.removeEventListener("resize", setVH);
-    window.removeEventListener("orientationchange", setVH);
-  };
-}, []);
+    window.removeEventListener("resize", setVH)
+    window.visualViewport?.removeEventListener("resize", setVH)
+    window.removeEventListener("orientationchange", setVH)
+  }
+}, [])
 
   if (!configLoaded) {
     return <></>
@@ -91,11 +92,13 @@ useEffect(() => {
     : Component
 
   return (
-    <StrictMode>
-      <div id="app-shell" className="app-shell">
-      <WrappedComponent {...pageProps} />
-      </div>
-    </StrictMode>
+  <StrictMode>
+    <div id="app-shell" className="app-shell">
+      <main className="app-main">
+        <WrappedComponent {...pageProps} />
+      </main>
+    </div>
+  </StrictMode>
   )
 }
 
