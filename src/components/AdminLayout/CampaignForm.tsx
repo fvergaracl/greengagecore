@@ -302,7 +302,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       if (formValuesCleaned.selectedStrategyId === "") {
         delete formValuesCleaned.selectedStrategyId;
       }
-      if (createWithGamification === false) {
+      if (formValuesCleaned?.createWithGamification === false) {
         delete formValuesCleaned.createWithGamification;
       }
       if (campaignId) {
@@ -315,8 +315,8 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
         );
       } else {
         if (
-          formValues.createWithGamification &&
-          formValues.selectedStrategyId
+          formValues?.createWithGamification &&
+          formValues?.selectedStrategyId
         ) {
           await axios.post(
             `${getApiBaseUrl()}/admin/campaigns/createGameWithStrategy`,
