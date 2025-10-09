@@ -302,6 +302,9 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
       if (formValuesCleaned.selectedStrategyId === "") {
         delete formValuesCleaned.selectedStrategyId;
       }
+      if (createWithGamification === false) {
+        delete formValuesCleaned.createWithGamification;
+      }
       if (campaignId) {
         // delete selectedStrategyId
         delete formValuesCleaned.selectedStrategyId;
