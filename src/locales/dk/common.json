@@ -482,5 +482,8 @@
   "Failed to submit questionnaire": "Kunne ikke indsende spørgeskemaet",
   "Unknown error": "Ukendt fejl",
   "Loading questionnaire...": "Indlæser spørgeskema...",
-  "Invalid questionnaire data.": "Ugyldige spørgeskemadata."
+  "Invalid questionnaire data.": "Ugyldige spørgeskemadata.",
+  "No area defined": "Intet område defineret",
+  "This campaign does not have a defined area.": "Denne kampagne har ikke et defineret område."
 }
+

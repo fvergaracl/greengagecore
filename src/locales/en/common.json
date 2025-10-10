@@ -482,5 +482,8 @@
   "Failed to submit questionnaire": "Failed to submit questionnaire",
   "Unknown error": "Unknown error",
   "Loading questionnaire...": "Loading questionnaire...",
-  "Invalid questionnaire data.": "Invalid questionnaire data."
+  "Invalid questionnaire data.": "Invalid questionnaire data.",
+  "No area defined": "No area defined",
+  "This campaign does not have a defined area.": "This campaign does not have a defined area."
 }
+

@@ -482,5 +482,8 @@
   "Failed to submit questionnaire": "Kon vragenlijst niet indienen",
   "Unknown error": "Onbekende fout",
   "Loading questionnaire...": "Vragenlijst wordt geladen...",
-  "Invalid questionnaire data.": "Ongeldige vragenlijstgegevens."
+  "Invalid questionnaire data.": "Ongeldige vragenlijstgegevens.",
+  "No area defined": "Geen gebied gedefinieerd",
+  "This campaign does not have a defined area.": "Deze campagne heeft geen gedefinieerd gebied."
 }
+

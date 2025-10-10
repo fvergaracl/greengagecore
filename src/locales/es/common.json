@@ -482,5 +482,8 @@
   "Failed to submit questionnaire": "Error al enviar el cuestionario",
   "Unknown error": "Error desconocido",
   "Loading questionnaire...": "Cargando cuestionario...",
-  "Invalid questionnaire data.": "Datos de cuestionario inválidos."
+  "Invalid questionnaire data.": "Datos de cuestionario inválidos.",
+  "No area defined": "No hay área definida",
+  "This campaign does not have a defined area.": "Esta campaña no tiene un área definida."
 }
+
