@@ -49,7 +49,7 @@ const TaskList = ({
   const getTaskActivitySummary = (myActivityInCampaign) => {
     const summary = {};
 
-    myActivityInCampaign.forEach(({ createdAt, task }) => {
+    myActivityInCampaign?.forEach(({ createdAt, task }) => {
       const key = `${task.id}|${task.pointOfInterestId}`;
       const timestamp = new Date(createdAt).getTime();
 
@@ -62,7 +62,7 @@ const TaskList = ({
         summary[key].count += 1;
         summary[key].lastResponse = Math.max(
           summary[key].lastResponse,
-          timestamp
+          timestamp,
         );
       }
     });
@@ -253,13 +253,13 @@ const TaskList = ({
                             logEvent(
                               "USER_CLICKED_ENTER_TASK_ERROR",
                               "User clicked on the enter task button but there was an error",
-                              { poi: selectedPoi, task }
+                              { poi: selectedPoi, task },
                             );
                           } else {
                             logEvent(
                               "USER_CLICKED_ENTER_TASK",
                               "User clicked on the enter task button",
-                              { poi: selectedPoi, task }
+                              { poi: selectedPoi, task },
                             );
                             window.location.href = `/dashboard/task/${task.id}`;
                           }
