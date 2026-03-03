@@ -1,0 +1,551 @@
+// GreenCrowd V2 — Prisma Schema
+// PostgreSQL 16 + PostGIS 3.4
+// Note: GEOGRAPHY/GEOMETRY fields are handled as Unsupported("geometry")
+// and operated via raw SQL with PostGIS. GIST indexes are created in manual migrations.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis, uuid_ossp(map: "uuid-ossp"), pg_trgm]
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum CampaignStatus {
+  draft
+  published
+  archived
+}
+
+enum TaskType {
+  photo
+  survey
+  mixed
+  instruction
+}
+
+enum ClosureMode {
+  single
+  threshold
+  unlimited
+}
+
+enum ContributionStatus {
+  draft
+  submitted
+  validated
+  rejected
+  flagged
+}
+
+enum AttachmentType {
+  photo
+  audio
+  video
+}
+
+enum QuestionnaireCondition {
+  before
+  after
+  daily
+  every_x_days
+}
+
+enum RewardStatus {
+  pending
+  applied
+  failed
+}
+
+enum CampaignRole {
+  owner
+  editor
+  viewer
+  contributor
+}
+
+enum NotificationPlatform {
+  fcm
+  apns
+  webpush
+}
+
+enum TelemetryEventType {
+  app_open
+  map_open
+  campaign_view
+  task_open
+  task_start
+  contribution_submitted
+  contribution_synced
+  position_update
+  geofence_enter
+  geofence_exit
+  notification_received
+  notification_tapped
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+  publish
+  archive
+  export
+  login
+  logout
+}
+
+// ─────────────────────────────────────────────────────────────
+// IDENTITY DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  sub        String  @unique // Keycloak subject
+  alias      String?
+  isDisabled Boolean @default(false) @map("is_disabled")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  settings           UserSetting?
+  ownedCampaigns     Campaign[]
+  campaignAccess     UserCampaignAccess[]
+  contributions      Contribution[]
+  questResponses     QuestionnaireResponse[]
+  rewardEvents       RewardEvent[]
+  wallet             UserWallet[]
+  pushSubscriptions  PushSubscription[]
+  telemetryEvents    TelemetryEvent[]
+  trajectories       UserTrajectory[]
+  auditLogs          AuditLog[]             @relation("AuditActor")
+
+  @@map("users")
+}
+
+model UserSetting {
+  userId               String  @id @map("user_id") @db.Uuid
+  language             String  @default("en")
+  theme                String  @default("light")
+  timezone             String  @default("UTC")
+  notificationsEnabled Boolean @default(true) @map("notifications_enabled")
+  notifLimitPerDay     Int     @default(10) @map("notif_limit_per_day")
+  notifQuietStart      String? @map("notif_quiet_start") // "22:00"
+  notifQuietEnd        String? @map("notif_quiet_end")   // "07:00"
+  lastLogin            DateTime? @map("last_login") @db.Timestamptz
+  metadata             Json?   @db.JsonB
+
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CAMPAIGN DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model Campaign {
+  id           String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  researcherId String         @map("researcher_id") @db.Uuid
+  name         String
+  description  String?
+  status       CampaignStatus @default(draft)
+  startDatetime DateTime?     @map("start_datetime") @db.Timestamptz
+  endDatetime   DateTime?     @map("end_datetime") @db.Timestamptz
+  category     String
+  groupName    String?        @map("group_name")
+  isDisabled   Boolean        @default(false) @map("is_disabled")
+
+  // GAME integration
+  gameId       String?        @map("game_id")
+  gameStrategy String?        @map("game_strategy") @default("greencrowdStrategy")
+  gameEnabled  Boolean        @default(false) @map("game_enabled")
+
+  // Extra config (anti-spoofing thresholds, etc.)
+  metadata     Json?          @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  researcher       User                  @relation(fields: [researcherId], references: [id])
+  areas            Area[]
+  questionnaires   Questionnaire[]
+  accessList       UserCampaignAccess[]
+  contributions    Contribution[]
+  rewardEvents     RewardEvent[]
+  wallets          UserWallet[]
+  telemetryEvents  TelemetryEvent[]
+
+  @@index([researcherId])
+  @@index([status])
+  @@map("campaigns")
+}
+
+// Campaign version audit table
+model CampaignVersion {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  campaignId  String   @map("campaign_id") @db.Uuid
+  version     Int
+  snapshot    Json     @db.JsonB // Full snapshot of the configuration
+  changedBy   String   @map("changed_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([campaignId])
+  @@map("campaign_versions")
+}
+
+model UserCampaignAccess {
+  id         String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId     String       @map("user_id") @db.Uuid
+  campaignId String       @map("campaign_id") @db.Uuid
+  role       CampaignRole
+  consentAcceptedAt DateTime? @map("consent_accepted_at") @db.Timestamptz
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, campaignId])
+  @@index([campaignId])
+  @@map("user_campaign_access")
+}
+
+// ─────────────────────────────────────────────────────────────
+// GEO DOMAIN
+// Areas and POIs — geometries stored as Unsupported (PostGIS)
+// Raw queries are used for spatial operations
+// ─────────────────────────────────────────────────────────────
+
+model Area {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  campaignId  String   @map("campaign_id") @db.Uuid
+  name        String
+  description String?
+  // polygon: GEOGRAPHY(POLYGON, 4326) — created via manual SQL migration
+  // WKT/GeoJSON stored in polygonGeojson for app reference
+  polygonGeojson Json  @map("polygon_geojson") @db.JsonB
+  isDisabled  Boolean  @default(false) @map("is_disabled")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  campaign         Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  pointsOfInterest PointOfInterest[]
+  tasks            Task[]            @relation("AreaTasks")
+
+  @@index([campaignId])
+  @@map("areas")
+}
+
+model PointOfInterest {
+  id           String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  areaId       String  @map("area_id") @db.Uuid
+  name         String
+  description  String?
+  latitude     Float
+  longitude    Float
+  // location: GEOGRAPHY(POINT, 4326) — extra column created via manual migration
+  radiusMeters Float   @default(15) @map("radius_meters")
+  isDisabled   Boolean @default(false) @map("is_disabled")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  area  Area   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  tasks Task[] @relation("PoiTasks")
+
+  @@index([areaId])
+  @@map("points_of_interest")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TASKING DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model Task {
+  id          String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  // XOR: poiId XOR areaId (enforced via DB check constraint in migration)
+  poiId       String?     @map("poi_id") @db.Uuid
+  areaId      String?     @map("area_id") @db.Uuid
+
+  title       String
+  description String?
+  type        TaskType
+  taskData    Json        @map("task_data") @db.JsonB // SurveyJS schema + config
+
+  responseLimit         Int?  @map("response_limit")          // null = unlimited
+  responseLimitInterval Int?  @map("response_limit_interval") // minutes
+  requiresPhoto         Boolean @default(false) @map("requires_photo")
+  requiresSurvey        Boolean @default(false) @map("requires_survey")
+  closureMode           ClosureMode @default(unlimited) @map("closure_mode")
+  closureThreshold      Int?  @map("closure_threshold")
+
+  availableFrom DateTime? @map("available_from") @db.Timestamptz
+  availableTo   DateTime? @map("available_to") @db.Timestamptz
+  isDisabled    Boolean   @default(false) @map("is_disabled")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  poi           PointOfInterest? @relation("PoiTasks", fields: [poiId], references: [id])
+  area          Area?            @relation("AreaTasks", fields: [areaId], references: [id])
+  contributions Contribution[]
+  rewardEvents  RewardEvent[]
+
+  @@index([poiId])
+  @@index([areaId])
+  @@map("tasks")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONTRIBUTION DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model Contribution {
+  id              String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId          String             @map("user_id") @db.Uuid
+  taskId          String             @map("task_id") @db.Uuid
+  campaignId      String             @map("campaign_id") @db.Uuid // denormalized for RLS/analytics
+  status          ContributionStatus @default(submitted)
+
+  data            Json               @db.JsonB // Survey response
+  latitude        Float
+  longitude       Float
+  accuracyMeters  Float?             @map("accuracy_meters")
+  submittedAt     DateTime           @default(now()) @map("submitted_at") @db.Timestamptz
+  deviceInfo      Json?              @map("device_info") @db.JsonB // anti-fraud
+
+  // Idempotency: local UUID from mobile
+  localId         String?            @unique @map("local_id")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user        User         @relation(fields: [userId], references: [id])
+  task        Task         @relation(fields: [taskId], references: [id])
+  campaign    Campaign     @relation(fields: [campaignId], references: [id])
+  attachments Attachment[]
+  rewardEvent RewardEvent?
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([campaignId])
+  @@index([status])
+  @@map("contributions")
+}
+
+model Attachment {
+  id             String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contributionId String         @map("contribution_id") @db.Uuid
+  type           AttachmentType
+  storageKey     String         @map("storage_key") // MinIO object key
+  mimeType       String         @map("mime_type")
+  sizeBytes      BigInt         @map("size_bytes")
+  checksumSha256 String?        @map("checksum_sha256")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  contribution Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+
+  @@index([contributionId])
+  @@map("attachments")
+}
+
+// ─────────────────────────────────────────────────────────────
+// QUESTIONNAIRE DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model Questionnaire {
+  id             String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  campaignId     String                 @map("campaign_id") @db.Uuid
+  title          String
+  condition      QuestionnaireCondition
+  frequencyInDays Int?                  @map("frequency_in_days")
+  schema         Json                   @db.JsonB // SurveyJS JSON schema
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  campaign  Campaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  responses QuestionnaireResponse[]
+
+  @@index([campaignId])
+  @@map("questionnaires")
+}
+
+model QuestionnaireResponse {
+  id               String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId           String                 @map("user_id") @db.Uuid
+  questionnaireId  String                 @map("questionnaire_id") @db.Uuid
+  condition        QuestionnaireCondition
+  schemaSnapshot   Json                   @map("schema_snapshot") @db.JsonB
+  responseData     Json                   @map("response_data") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user          User          @relation(fields: [userId], references: [id])
+  questionnaire Questionnaire @relation(fields: [questionnaireId], references: [id])
+
+  @@index([userId])
+  @@index([questionnaireId])
+  @@map("questionnaire_responses")
+}
+
+// ─────────────────────────────────────────────────────────────
+// REWARDS / WALLET DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model RewardEvent {
+  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  campaignId     String       @map("campaign_id") @db.Uuid
+  contributionId String?      @unique @map("contribution_id") @db.Uuid
+  taskId         String       @map("task_id") @db.Uuid
+  points         Int          @default(0)
+  dimBp          Int          @default(0) @map("dim_bp")
+  dimLbe         Int          @default(0) @map("dim_lbe")
+  dimTd          Int          @default(0) @map("dim_td")
+  dimPp          Int          @default(0) @map("dim_pp")
+  dimS           Int          @default(0) @map("dim_s")
+  strategy       String?
+  gameResponse   Json?        @map("game_response") @db.JsonB
+  status         RewardStatus @default(pending)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user         User          @relation(fields: [userId], references: [id])
+  campaign     Campaign      @relation(fields: [campaignId], references: [id])
+  contribution Contribution? @relation(fields: [contributionId], references: [id])
+  task         Task          @relation(fields: [taskId], references: [id])
+
+  @@index([userId, campaignId])
+  @@index([status])
+  @@map("reward_events")
+}
+
+model UserWallet {
+  userId        String   @map("user_id") @db.Uuid
+  campaignId    String   @map("campaign_id") @db.Uuid
+  totalPoints   Int      @default(0) @map("total_points")
+  lastSyncedAt  DateTime? @map("last_synced_at") @db.Timestamptz
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@id([userId, campaignId])
+  @@map("user_wallets")
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATION DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model PushSubscription {
+  id        String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String               @map("user_id") @db.Uuid
+  platform  NotificationPlatform
+  token     String?              // FCM/APNs device token
+  endpoint  String?              @unique // WebPush endpoint
+  keys      Json?                @db.JsonB // WebPush {auth, p256dh}
+  isActive  Boolean              @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ANALYTICS / TELEMETRY DOMAIN
+// Partitioned by month in production (via manual migration)
+// ─────────────────────────────────────────────────────────────
+
+model TelemetryEvent {
+  id         String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId     String?            @map("user_id") @db.Uuid
+  campaignId String?            @map("campaign_id") @db.Uuid
+  eventType  TelemetryEventType @map("event_type")
+  payload    Json?              @db.JsonB
+  latitude   Float?
+  longitude  Float?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user     User?     @relation(fields: [userId], references: [id])
+  campaign Campaign? @relation(fields: [campaignId], references: [id])
+
+  @@index([userId])
+  @@index([campaignId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("telemetry_events")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TRAJECTORY DOMAIN
+// Raw GPS track from mobile (Flutter/geolocator).
+// Note: location GEOGRAPHY(POINT,4326) column is created via manual migration.
+// ─────────────────────────────────────────────────────────────
+
+model UserTrajectory {
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  latitude         Float
+  longitude        Float
+  // location: GEOGRAPHY(POINT, 4326) — created via manual SQL migration
+  accuracy         Float?
+  altitude         Float?
+  altitudeAccuracy Float?   @map("altitude_accuracy")
+  heading          Float?
+  speed            Float?
+
+  timestamp DateTime @default(now()) @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@map("user_trajectories")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUDIT DOMAIN
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  actorId    String?     @map("actor_id") @db.Uuid
+  actorRole  String?     @map("actor_role")
+  entityType String      @map("entity_type")
+  entityId   String?     @map("entity_id") @db.Uuid
+  action     AuditAction
+  oldValue   Json?       @map("old_value") @db.JsonB
+  newValue   Json?       @map("new_value") @db.JsonB
+  ipAddress  String?     @map("ip_address")
+  userAgent  String?     @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

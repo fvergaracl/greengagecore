@@ -1,0 +1,102 @@
+version: "3.9"
+
+# Local development: infrastructure only, Next.js runs with `npm run dev`
+services:
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: greencrowd_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: greencrowd
+      POSTGRES_PASSWORD: greencrowd_secret
+      POSTGRES_DB: greencrowd
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U greencrowd"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - greencrowd_dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: greencrowd_redis
+    restart: unless-stopped
+    command: redis-server --requirepass redis_secret --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - greencrowd_dev
+
+  minio:
+    image: minio/minio:latest
+    container_name: greencrowd_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: greencrowd_minio
+      MINIO_ROOT_PASSWORD: minio_secret_key
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_dev_data:/data
+    networks:
+      - greencrowd_dev
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5;
+        mc alias set local http://minio:9000 greencrowd_minio minio_secret_key;
+        mc mb --ignore-existing local/greencrowd-attachments;
+        exit 0;
+      "
+    networks:
+      - greencrowd_dev
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: greencrowd_keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/greencrowd
+      KC_DB_USERNAME: greencrowd
+      KC_DB_PASSWORD: greencrowd_secret
+      KC_DB_SCHEMA: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin_secret
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - greencrowd_dev
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  minio_dev_data:
+
+networks:
+  greencrowd_dev:
+    driver: bridge

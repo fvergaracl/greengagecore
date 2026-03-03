@@ -1,0 +1,105 @@
+{
+  "realm": "greencrowd",
+  "enabled": true,
+  "displayName": "GreenCrowd",
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 3600,
+  "refreshTokenMaxReuse": 0,
+  "ssoSessionMaxLifespan": 86400,
+  "roles": {
+    "realm": [
+      {
+        "name": "superadmin",
+        "description": "Full system access"
+      },
+      {
+        "name": "researcher",
+        "description": "Can create and manage campaigns, view analytics"
+      },
+      {
+        "name": "contributor",
+        "description": "Can view campaigns and submit contributions"
+      }
+    ]
+  },
+  "defaultRoles": ["contributor"],
+  "clients": [
+    {
+      "clientId": "greencrowd-web",
+      "name": "GreenCrowd Web",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "CHANGE_ME_WEB_SECRET",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "https://${DOMAIN}/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "https://${DOMAIN}"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "greencrowd-mobile",
+      "name": "GreenCrowd Mobile",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "greencrowd://callback",
+        "com.greencrowd.app://callback"
+      ],
+      "webOrigins": [],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "greencrowd-roles",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "defaultClientScopes": [
+    "email",
+    "profile",
+    "roles",
+    "web-origins",
+    "greencrowd-roles"
+  ]
+}
