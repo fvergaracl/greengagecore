@@ -20,6 +20,20 @@ function getJWKS() {
   return jwks
 }
 
+function getAllowedAudiences(): string[] {
+  const raw = process.env.KEYCLOAK_ALLOWED_AUDIENCES
+  const audiences = raw
+    ?.split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  if (audiences && audiences.length > 0) {
+    return audiences
+  }
+
+  return [process.env.KEYCLOAK_CLIENT_ID!]
+}
+
 export type AuthenticatedUser = {
   sub: string
   userId: string // GreenCrowd internal ID (resolved to UUID in each handler)
@@ -35,7 +49,7 @@ export type AuthenticatedUser = {
 export async function verifyToken(token: string): Promise<JWTPayload & { roles?: string[] }> {
   const { payload } = await jwtVerify(token, getJWKS(), {
     issuer: process.env.KEYCLOAK_ISSUER!,
-    audience: process.env.KEYCLOAK_CLIENT_ID,
+    audience: getAllowedAudiences(),
   })
   return payload as JWTPayload & { roles?: string[] }
 }

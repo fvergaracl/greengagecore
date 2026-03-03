@@ -19,6 +19,7 @@ const ContributionSchema = z.object({
   deviceInfo: z.record(z.unknown()).optional(),
   simulationHash: z.string().optional(),
   simulatedTasks: z.array(z.unknown()).optional(),
+  attachmentKeys: z.array(z.string()).optional(), // MinIO keys de fotos pre-subidas vía /api/uploads
 })
 
 export const POST = withAuth(async (req, user) => {
@@ -98,6 +99,23 @@ export const POST = withAuth(async (req, user) => {
         submittedAt: new Date(),
       },
     })
+
+    // Registrar attachments en DB (fotos subidas previamente a MinIO)
+    if (data.attachmentKeys?.length) {
+      await tx.attachment.createMany({
+        data: data.attachmentKeys.map((key) => {
+          const ext = key.split(".").pop()?.toLowerCase() ?? "jpg"
+          const mimeType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg"
+          return {
+            contributionId: contribution.id,
+            type: "photo" as const,
+            storageKey: key,
+            mimeType,
+            sizeBytes: BigInt(0), // actualizable en background si se necesita
+          }
+        }),
+      })
+    }
 
     // Telemetría
     await tx.telemetryEvent.create({

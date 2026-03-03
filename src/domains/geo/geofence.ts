@@ -3,7 +3,6 @@
 // Shared logic (also used in anti-spoofing validation)
 
 import { prisma } from "@/lib/db"
-import { Sql } from "@prisma/client/runtime/library"
 
 export type LatLng = {
   latitude: number
@@ -16,6 +15,8 @@ export type NearbyTask = {
   taskType: string
   poiId: string
   poiName: string
+  poiLatitude: number
+  poiLongitude: number
   distanceMeters: number
   campaignId: string
   campaignName: string
@@ -45,6 +46,8 @@ export async function getNearbyTasks(
       t.type AS "taskType",
       p.id AS "poiId",
       p.name AS "poiName",
+      ST_Y(p.location::geometry) AS "poiLatitude",
+      ST_X(p.location::geometry) AS "poiLongitude",
       ST_Distance(
         p.location,
         ST_SetSRID(ST_MakePoint(${position.longitude}, ${position.latitude}), 4326)::geography

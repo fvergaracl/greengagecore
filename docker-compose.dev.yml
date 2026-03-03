@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Local development: infrastructure only, Next.js runs with `npm run dev`
 services:
   postgres:
