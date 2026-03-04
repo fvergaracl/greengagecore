@@ -67,7 +67,15 @@ export async function processExport(job: ExportJob): Promise<void> {
   )
 
   console.info(`[Export] Export ready: ${url}`)
-  // TODO: notificar al usuario por email que el export está listo
+
+  // Notificar al researcher por push que el export está disponible
+  const { pushQueue } = await import("@/workers/index")
+  await pushQueue.add("push", {
+    userId: job.requestedBy,
+    title: "📤 Export ready",
+    body: `Your ${format.toUpperCase()} export for campaign ${campaignId} is ready to download.`,
+    data: { exportUrl: url, campaignId, format },
+  })
 }
 
 type ContributionRow = {

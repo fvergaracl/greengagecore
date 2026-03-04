@@ -1,0 +1,7 @@
+// Admin root — redirige a /admin/users
+
+import { redirect } from "next/navigation"
+
+export default function AdminRoot() {
+  redirect("/admin/users")
+}

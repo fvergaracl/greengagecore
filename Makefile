@@ -9,6 +9,10 @@
 # Development
 # ─────────────────────────────────────────────────────────────
 
+## Setup and start development environment (first-time wizard)
+setup:
+	@./gc dev
+
 ## Start infrastructure (postgres, redis, minio, keycloak) and Next.js in dev mode
 dev: infra-up
 	@echo "⏳ Waiting for services to be ready..."

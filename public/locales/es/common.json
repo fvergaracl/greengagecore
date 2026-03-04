@@ -1,0 +1,149 @@
+{
+  "nav": {
+    "overview": "Resumen",
+    "campaigns": "Campañas",
+    "moderation": "Moderación",
+    "exports": "Exportar",
+    "admin": "Panel Admin",
+    "signOut": "Cerrar sesión"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signInWith": "Continuar con Keycloak",
+    "welcomeBack": "Bienvenido",
+    "description": "Inicia sesión con tu cuenta institucional para acceder al panel de investigación.",
+    "restricted": "El acceso está restringido a investigadores y administradores autorizados.",
+    "authError": "Error de autenticación",
+    "tryAgain": "Intentar iniciar sesión de nuevo"
+  },
+  "campaigns": {
+    "title": "Campañas",
+    "newCampaign": "+ Nueva campaña",
+    "noCampaigns": "Aún no hay campañas.",
+    "createFirst": "Crea tu primera campaña.",
+    "areas": "zonas",
+    "contributions": "contribuciones",
+    "status": {
+      "draft": "borrador",
+      "published": "publicada",
+      "archived": "archivada"
+    }
+  },
+  "areas": {
+    "title": "Zonas",
+    "newArea": "+ Nueva zona",
+    "noAreas": "Aún no hay zonas.",
+    "drawFirst": "Dibuja tu primera zona en el mapa",
+    "pois": "POIs",
+    "tasks": "tareas",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "disabled": "desactivada",
+    "deleteConfirm": "¿Eliminar esta zona? También se eliminarán sus tareas."
+  },
+  "pois": {
+    "title": "Puntos de Interés",
+    "clickToAdd": "Haz clic en el mapa para añadir un POI. Haz clic en un marcador para editarlo.",
+    "noPois": "Aún no hay POIs. Haz clic en el mapa para añadir uno.",
+    "newPoi": "Nuevo POI",
+    "name": "Nombre",
+    "description": "Descripción",
+    "latitude": "Latitud",
+    "longitude": "Longitud",
+    "radius": "Radio de activación (metros)",
+    "addPoi": "Añadir POI",
+    "save": "Guardar",
+    "enable": "Activar",
+    "disable": "Desactivar",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar este POI? También se eliminarán sus tareas."
+  },
+  "analytics": {
+    "title": "Analítica",
+    "total": "Total",
+    "pending": "Pendiente",
+    "validated": "Validada",
+    "rejected": "Rechazada",
+    "flagged": "Marcada",
+    "contributors": "Participantes",
+    "validationRate": "Tasa de validación",
+    "contributionsOverTime": "Contribuciones en el tiempo (últimos {{days}} días)",
+    "cumulative": "Total acumulado",
+    "byTask": "Contribuciones por tarea (top {{count}})"
+  },
+  "moderation": {
+    "title": "Moderación",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "flag": "Marcar",
+    "pending": "pendiente",
+    "noItems": "No hay contribuciones pendientes."
+  },
+  "exports": {
+    "title": "Exportar",
+    "request": "Solicitar exportación",
+    "format": "Formato",
+    "dateRange": "Rango de fechas"
+  },
+  "questionnaires": {
+    "title": "Cuestionarios",
+    "new": "Nuevo cuestionario",
+    "noItems": "Aún no hay cuestionarios.",
+    "buildFirst": "Crea tu primer cuestionario",
+    "condition": {
+      "before": "Antes de la campaña",
+      "after": "Después de la campaña",
+      "daily": "Diario",
+      "every_x_days": "Cada N días"
+    },
+    "responses": "respuestas"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando…",
+    "error": "Se ha producido un error",
+    "notFound": "No encontrado",
+    "required": "obligatorio",
+    "optional": "opcional",
+    "back": "Volver",
+    "search": "Buscar",
+    "noResults": "No se encontraron resultados."
+  },
+  "admin": {
+    "users": {
+      "title": "Usuarios",
+      "total": "{{count}} usuarios en total",
+      "searchPlaceholder": "Buscar por alias o sub…",
+      "alias": "Usuario",
+      "sub": "Sub (Keycloak)",
+      "contributions": "Contribuciones",
+      "campaigns": "Campañas",
+      "points": "Puntos",
+      "status": "Estado",
+      "joined": "Alta",
+      "active": "Activo",
+      "disabled": "Desactivado",
+      "enable": "Activar",
+      "disable": "Desactivar",
+      "disableSelf": "No puedes desactivar tu propia cuenta"
+    },
+    "audit": {
+      "title": "Registro de Auditoría",
+      "events": "{{count}} eventos",
+      "time": "Hora",
+      "actor": "Actor",
+      "action": "Acción",
+      "entity": "Entidad",
+      "ip": "IP",
+      "before": "Antes",
+      "after": "Después",
+      "noEvents": "No se encontraron eventos.",
+      "clearFilters": "Limpiar filtros",
+      "allEntities": "Todas las entidades",
+      "allActions": "Todas las acciones"
+    }
+  }
+}

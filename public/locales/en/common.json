@@ -1,0 +1,149 @@
+{
+  "nav": {
+    "overview": "Overview",
+    "campaigns": "Campaigns",
+    "moderation": "Moderation",
+    "exports": "Exports",
+    "admin": "Admin Panel",
+    "signOut": "Sign out"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signInWith": "Continue with Keycloak",
+    "welcomeBack": "Welcome back",
+    "description": "Sign in with your institutional account to access the research dashboard.",
+    "restricted": "Access is restricted to authorized researchers and administrators.",
+    "authError": "Authentication Error",
+    "tryAgain": "Try signing in again"
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "newCampaign": "+ New campaign",
+    "noCampaigns": "No campaigns yet.",
+    "createFirst": "Create your first one.",
+    "areas": "areas",
+    "contributions": "contributions",
+    "status": {
+      "draft": "draft",
+      "published": "published",
+      "archived": "archived"
+    }
+  },
+  "areas": {
+    "title": "Areas",
+    "newArea": "+ New area",
+    "noAreas": "No areas yet.",
+    "drawFirst": "Draw your first area on the map",
+    "pois": "POIs",
+    "tasks": "tasks",
+    "edit": "Edit",
+    "delete": "Delete",
+    "disabled": "disabled",
+    "deleteConfirm": "Delete this area? This will also delete its tasks."
+  },
+  "pois": {
+    "title": "Points of Interest",
+    "clickToAdd": "Click on the map to add a POI. Click an existing marker to edit it.",
+    "noPois": "No POIs yet. Click on the map to add one.",
+    "newPoi": "New POI",
+    "name": "Name",
+    "description": "Description",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "radius": "Activation radius (meters)",
+    "addPoi": "Add POI",
+    "save": "Save",
+    "enable": "Enable",
+    "disable": "Disable",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this POI? This will also delete its tasks."
+  },
+  "analytics": {
+    "title": "Analytics",
+    "total": "Total",
+    "pending": "Pending",
+    "validated": "Validated",
+    "rejected": "Rejected",
+    "flagged": "Flagged",
+    "contributors": "Contributors",
+    "validationRate": "Validation rate",
+    "contributionsOverTime": "Contributions over time (last {{days}} days)",
+    "cumulative": "Cumulative total",
+    "byTask": "Contributions by task (top {{count}})"
+  },
+  "moderation": {
+    "title": "Moderation",
+    "approve": "Approve",
+    "reject": "Reject",
+    "flag": "Flag",
+    "pending": "pending",
+    "noItems": "No pending contributions."
+  },
+  "exports": {
+    "title": "Exports",
+    "request": "Request export",
+    "format": "Format",
+    "dateRange": "Date range"
+  },
+  "questionnaires": {
+    "title": "Questionnaires",
+    "new": "New questionnaire",
+    "noItems": "No questionnaires yet.",
+    "buildFirst": "Build your first questionnaire",
+    "condition": {
+      "before": "Before campaign",
+      "after": "After campaign",
+      "daily": "Daily check-in",
+      "every_x_days": "Every N days"
+    },
+    "responses": "responses"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "error": "An error occurred",
+    "notFound": "Not found",
+    "required": "required",
+    "optional": "optional",
+    "back": "Back",
+    "search": "Search",
+    "noResults": "No results found."
+  },
+  "admin": {
+    "users": {
+      "title": "Users",
+      "total": "{{count}} users total",
+      "searchPlaceholder": "Search by alias or sub…",
+      "alias": "User",
+      "sub": "Sub (Keycloak)",
+      "contributions": "Contributions",
+      "campaigns": "Campaigns",
+      "points": "Points",
+      "status": "Status",
+      "joined": "Joined",
+      "active": "Active",
+      "disabled": "Disabled",
+      "enable": "Enable",
+      "disable": "Disable",
+      "disableSelf": "Cannot disable your own account"
+    },
+    "audit": {
+      "title": "Audit Log",
+      "events": "{{count}} events",
+      "time": "Time",
+      "actor": "Actor",
+      "action": "Action",
+      "entity": "Entity",
+      "ip": "IP",
+      "before": "Before",
+      "after": "After",
+      "noEvents": "No events found.",
+      "clearFilters": "Clear filters",
+      "allEntities": "All entities",
+      "allActions": "All actions"
+    }
+  }
+}

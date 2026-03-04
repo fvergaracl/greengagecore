@@ -143,6 +143,21 @@ class ApiClient {
     }
   }
 
+  /// Registra el token FCM/APNs en el backend para recibir push notifications.
+  Future<void> registerPushToken({
+    required String token,
+    required String platform,
+  }) async {
+    try {
+      await _dio.post<void>(
+        '/api/push/fcm',
+        data: {'token': token, 'platform': platform},
+      );
+    } on DioException catch (err) {
+      throw _mapDioException(err);
+    }
+  }
+
   ApiException _mapDioException(DioException err) {
     final statusCode = err.response?.statusCode;
     String? message;

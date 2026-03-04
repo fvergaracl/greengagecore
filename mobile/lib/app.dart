@@ -7,6 +7,7 @@ import 'package:greencrowd_mobile/features/map/data/nearby_tasks_repository.dart
 import 'package:greencrowd_mobile/features/map/presentation/map_page.dart';
 import 'package:greencrowd_mobile/services/auth/auth_controller.dart';
 import 'package:greencrowd_mobile/services/location/location_service.dart';
+import 'package:greencrowd_mobile/services/notifications/notification_service.dart';
 import 'package:greencrowd_mobile/services/offline/contribution_queue_service.dart';
 
 class GreenCrowdApp extends StatelessWidget {
@@ -16,6 +17,7 @@ class GreenCrowdApp extends StatelessWidget {
     required this.locationService,
     required this.contributionQueueService,
     required this.contributionSyncService,
+    required this.notificationService,
     super.key,
   });
 
@@ -24,6 +26,7 @@ class GreenCrowdApp extends StatelessWidget {
   final LocationService locationService;
   final ContributionQueueService contributionQueueService;
   final ContributionSyncService contributionSyncService;
+  final NotificationService notificationService;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +44,7 @@ class GreenCrowdApp extends StatelessWidget {
                   locationService: locationService,
                   contributionQueueService: contributionQueueService,
                   contributionSyncService: contributionSyncService,
+                  notificationService: notificationService,
                 )
               : SignInPage(authController: authController),
         );

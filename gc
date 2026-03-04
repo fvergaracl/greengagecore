@@ -1,0 +1,803 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# gc — GreenCrowd V2 central script
+# Usage: ./gc <command> [options]
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+# ── Constants ─────────────────────────────────────────────────────────────────
+COMPOSE_DEV="docker-compose.dev.yml"
+COMPOSE_PROD="docker-compose.yml"
+ENV_FILE=".env.local"
+STATE_FILE=".gc_state"
+
+KC_BASE="http://localhost:8080"
+KC_REALM="greencrowd"
+KC_ADMIN_USER="admin"
+KC_ADMIN_PASS="admin_secret"
+
+# ── Colors ────────────────────────────────────────────────────────────────────
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+# ── Output helpers ────────────────────────────────────────────────────────────
+log()         { echo -e "${GREEN}✅${RESET} $*"; }
+log_step()    { echo -e "\n${BOLD}${BLUE}$*${RESET}"; }
+log_info()    { echo -e "${CYAN}   $*${RESET}"; }
+warn()        { echo -e "${YELLOW}⚠️  $*${RESET}"; }
+die()         { echo -e "${RED}❌ $*${RESET}" >&2; exit 1; }
+progress()    { echo -ne "${CYAN}   $*${RESET}"; }
+
+# ── State helpers ─────────────────────────────────────────────────────────────
+state_get() {
+  grep -q "^${1}=true" "$STATE_FILE" 2>/dev/null
+}
+
+state_set() {
+  local key="$1" val="$2"
+  if grep -q "^${key}=" "$STATE_FILE" 2>/dev/null; then
+    perl -pi -e "s|^${key}=.*|${key}=${val}|" "$STATE_FILE"
+  else
+    echo "${key}=${val}" >> "$STATE_FILE"
+  fi
+}
+
+# ── Env helpers ───────────────────────────────────────────────────────────────
+env_set() {
+  local key="$1" val="$2"
+  if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
+    perl -pi -e "s|^${key}=.*|${key}=${val}|" "$ENV_FILE"
+  else
+    echo "${key}=${val}" >> "$ENV_FILE"
+  fi
+}
+
+env_get() {
+  grep "^${1}=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"'
+}
+
+# ── JSON parsing via python3 ──────────────────────────────────────────────────
+kc_json() {
+  # Usage: echo '{"foo":"bar"}' | kc_json 'd["foo"]'
+  python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    print(${1})
+except (KeyError, IndexError, json.JSONDecodeError, TypeError):
+    print('')
+"
+}
+
+kc_json_list() {
+  # Usage: echo '[{"id":"x"}]' | kc_json_list 'd[0]["id"]'
+  python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    print(${1})
+except (KeyError, IndexError, json.JSONDecodeError, TypeError):
+    print('')
+"
+}
+
+# ── Keycloak Admin API ────────────────────────────────────────────────────────
+KC_TOKEN=""
+
+kc_get_token() {
+  local attempts=5 delay=5 resp
+  for ((i=1; i<=attempts; i++)); do
+    resp=$(curl -s -X POST \
+      "${KC_BASE}/realms/master/protocol/openid-connect/token" \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "grant_type=password" \
+      -d "client_id=admin-cli" \
+      -d "username=${KC_ADMIN_USER}" \
+      -d "password=${KC_ADMIN_PASS}" 2>&1)
+    KC_TOKEN=$(echo "$resp" | kc_json 'd["access_token"]')
+    if [[ -n "$KC_TOKEN" && "$KC_TOKEN" != "None" ]]; then
+      return 0
+    fi
+    warn "Intento ${i}/${attempts} fallido. Respuesta KC: ${resp}"
+    [[ $i -lt $attempts ]] && sleep $delay
+  done
+  die "No se pudo obtener token de Keycloak admin (${KC_ADMIN_USER} @ ${KC_BASE})"
+}
+
+kc_get() {
+  curl -s -X GET "${KC_BASE}${1}" \
+    -H "Authorization: Bearer ${KC_TOKEN}" \
+    -H "Content-Type: application/json"
+}
+
+kc_post() {
+  local body="${2:- }"
+  curl -s -X POST "${KC_BASE}${1}" \
+    -H "Authorization: Bearer ${KC_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "$body"
+}
+
+kc_put() {
+  curl -s -X PUT "${KC_BASE}${1}" \
+    -H "Authorization: Bearer ${KC_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "${2:-}"
+}
+
+# ── Wait helpers ──────────────────────────────────────────────────────────────
+wait_for_postgres() {
+  local timeout="${1:-60}" interval=3 elapsed=0
+  progress "PostgreSQL "
+  while ! docker exec greencrowd_postgres pg_isready -U greencrowd -q 2>/dev/null; do
+    [[ $elapsed -ge $timeout ]] && echo "" && die "PostgreSQL no respondió en ${timeout}s"
+    sleep $interval
+    elapsed=$((elapsed + interval))
+    echo -n "."
+  done
+  echo -e " ${GREEN}✅${RESET}"
+}
+
+wait_for_keycloak() {
+  local timeout="${1:-120}" interval=5 elapsed=0
+  progress "Keycloak   "
+  while ! curl -s --fail "${KC_BASE}/realms/greencrowd" >/dev/null 2>&1; do
+    [[ $elapsed -ge $timeout ]] && echo "" && die "Keycloak no respondió en ${timeout}s"
+    sleep $interval
+    elapsed=$((elapsed + interval))
+    echo -n "."
+  done
+  echo -e " ${GREEN}✅${RESET}"
+}
+
+wait_for_minio() {
+  local timeout="${1:-60}" interval=3 elapsed=0
+  progress "MinIO      "
+  while ! curl -s --fail "http://localhost:9000/minio/health/live" >/dev/null 2>&1; do
+    [[ $elapsed -ge $timeout ]] && echo "" && die "MinIO no respondió en ${timeout}s"
+    sleep $interval
+    elapsed=$((elapsed + interval))
+    echo -n "."
+  done
+  echo -e " ${GREEN}✅${RESET}"
+}
+
+# ── Dependency check ──────────────────────────────────────────────────────────
+check_deps() {
+  log_step "[1/8] Checking dependencies"
+  local missing=()
+
+  command -v docker    >/dev/null 2>&1 || missing+=("docker")
+  command -v node      >/dev/null 2>&1 || missing+=("node")
+  command -v npm       >/dev/null 2>&1 || missing+=("npm")
+  command -v python3   >/dev/null 2>&1 || missing+=("python3")
+  command -v curl      >/dev/null 2>&1 || missing+=("curl")
+  command -v perl      >/dev/null 2>&1 || missing+=("perl")
+
+  # docker compose v2 plugin check
+  if ! docker compose version >/dev/null 2>&1; then
+    missing+=("docker-compose-plugin")
+  fi
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    die "Dependencias faltantes: ${missing[*]}"
+  fi
+
+  log "Dependencies OK (docker, node $(node --version), npm $(npm --version), python3, curl)"
+}
+
+# ── Init .env.local ───────────────────────────────────────────────────────────
+init_env() {
+  log_step "[2/8] Initializing .env.local"
+
+  if [[ -f "$ENV_FILE" ]]; then
+    log_info "Ya existe $ENV_FILE — se actualizarán sólo los valores vacíos"
+  else
+    cp .env.example "$ENV_FILE"
+    log_info "Creado $ENV_FILE desde .env.example"
+  fi
+
+  # Generate AUTH_SECRET if not set or is placeholder
+  local current_auth
+  current_auth=$(env_get "AUTH_SECRET" || true)
+  if [[ -z "$current_auth" || "$current_auth" == "CHANGE_ME_AUTH_SECRET_32_CHARS_MIN" ]]; then
+    local auth_secret
+    auth_secret=$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64'))")
+    env_set "AUTH_SECRET" "\"${auth_secret}\""
+    log_info "AUTH_SECRET generado"
+  else
+    log_info "AUTH_SECRET ya configurado"
+  fi
+
+  # Generate VAPID keys if not set
+  local current_vapid_pub
+  current_vapid_pub=$(env_get "VAPID_PUBLIC_KEY" || true)
+  if [[ -z "$current_vapid_pub" ]]; then
+    log_info "Generando VAPID keys..."
+    local vapid_output
+    vapid_output=$(npx --yes web-push generate-vapid-keys 2>/dev/null)
+
+    local vapid_pub vapid_priv
+    vapid_pub=$(echo "$vapid_output"  | grep -A1 "Public Key"  | tail -1 | tr -d ' \r')
+    vapid_priv=$(echo "$vapid_output" | grep -A1 "Private Key" | tail -1 | tr -d ' \r')
+
+    if [[ -n "$vapid_pub" && -n "$vapid_priv" ]]; then
+      env_set "VAPID_PUBLIC_KEY"              "$vapid_pub"
+      env_set "VAPID_PRIVATE_KEY"             "$vapid_priv"
+      env_set "NEXT_PUBLIC_VAPID_PUBLIC_KEY"  "$vapid_pub"
+      log_info "VAPID keys generadas"
+    else
+      warn "No se pudieron parsear VAPID keys — configúralas manualmente en $ENV_FILE"
+    fi
+  else
+    log_info "VAPID keys ya configuradas"
+  fi
+}
+
+# ── npm install ───────────────────────────────────────────────────────────────
+npm_install() {
+  log_step "[3/8] Installing npm dependencies"
+  if [[ ! -d node_modules ]]; then
+    npm install
+    log "Dependencies installed"
+  else
+    log_info "node_modules ya existe — saltando"
+  fi
+}
+
+# ── Start infrastructure ──────────────────────────────────────────────────────
+start_infra() {
+  log_step "[4/8] Starting infrastructure"
+  docker compose -f "$COMPOSE_DEV" up -d
+  log "PostgreSQL · Redis · MinIO · Keycloak started"
+}
+
+# ── Wait for services ─────────────────────────────────────────────────────────
+wait_for_services() {
+  log_step "[5/8] Waiting for services..."
+  wait_for_postgres
+  wait_for_minio
+  wait_for_keycloak
+}
+
+# ── Create Keycloak user ──────────────────────────────────────────────────────
+create_kc_user() {
+  local username="$1" password="$2" role="$3"
+
+  # Check if user exists
+  local existing
+  existing=$(kc_get "/admin/realms/${KC_REALM}/users?username=${username}&exact=true")
+  local count
+  count=$(echo "$existing" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d))")
+
+  if [[ "$count" -gt 0 ]]; then
+    log_info "Usuario '${username}' ya existe"
+    return
+  fi
+
+  # Create user
+  local user_payload
+  user_payload=$(python3 -c "
+import json
+print(json.dumps({
+  'username': '${username}',
+  'enabled': True,
+  'emailVerified': True,
+  'email': '${username}@greencrowd.local',
+  'credentials': [{'type': 'password', 'value': '${password}', 'temporary': False}]
+}))
+")
+  kc_post "/admin/realms/${KC_REALM}/users" "$user_payload" >/dev/null
+
+  # Get user ID
+  local user_id
+  user_id=$(kc_get "/admin/realms/${KC_REALM}/users?username=${username}&exact=true" \
+    | kc_json_list 'd[0]["id"]')
+
+  # Get realm role
+  local role_info
+  role_info=$(kc_get "/admin/realms/${KC_REALM}/roles/${role}")
+  local role_id role_name
+  role_id=$(echo "$role_info"   | kc_json 'd["id"]')
+  role_name=$(echo "$role_info" | kc_json 'd["name"]')
+
+  # Assign role
+  local role_payload
+  role_payload=$(python3 -c "import json; print(json.dumps([{'id': '${role_id}', 'name': '${role_name}'}]))")
+  kc_post "/admin/realms/${KC_REALM}/users/${user_id}/role-mappings/realm" "$role_payload" >/dev/null
+
+  log_info "  ${username} / ${password}  [role: ${role}]"
+}
+
+# ── Configure Keycloak ────────────────────────────────────────────────────────
+configure_keycloak() {
+  log_step "[6/8] Configuring Keycloak"
+
+  if state_get "KEYCLOAK_CONFIGURED"; then
+    log_info "Keycloak ya configurado (usa ./gc reset para reinicializar)"
+    return
+  fi
+
+  log_info "Obteniendo token admin..."
+  kc_get_token
+
+  # Get client UUID
+  local client_id="greencrowd-web"
+  local clients
+  clients=$(kc_get "/admin/realms/${KC_REALM}/clients?clientId=${client_id}")
+  local client_uuid
+  client_uuid=$(echo "$clients" | kc_json_list 'd[0]["id"]')
+  [[ -z "$client_uuid" || "$client_uuid" == "None" ]] && die "Cliente '${client_id}' no encontrado en realm ${KC_REALM}"
+
+  # Regenerate client secret
+  kc_post "/admin/realms/${KC_REALM}/clients/${client_uuid}/client-secret" "" >/dev/null
+  local secret_resp
+  secret_resp=$(kc_get "/admin/realms/${KC_REALM}/clients/${client_uuid}/client-secret")
+  local kc_secret
+  kc_secret=$(echo "$secret_resp" | kc_json 'd["value"]')
+  [[ -z "$kc_secret" || "$kc_secret" == "None" ]] && die "No se pudo obtener el client secret"
+
+  env_set "KEYCLOAK_CLIENT_SECRET" "\"${kc_secret}\""
+  log_info "Client secret → $ENV_FILE"
+
+  # Create default users
+  log_info "Creando usuarios por defecto:"
+  create_kc_user "researcher"  "researcher123"  "researcher"
+  create_kc_user "superadmin"  "superadmin123"  "superadmin"
+
+  state_set "KEYCLOAK_CONFIGURED" "true"
+  log "Keycloak configurado"
+}
+
+# ── Run DB migrations ─────────────────────────────────────────────────────────
+run_migrations() {
+  log_step "[7/8] Running database migrations"
+
+  if state_get "DB_MIGRATED"; then
+    log_info "Migraciones ya aplicadas (usa ./gc db migrate para forzar)"
+    # Always generate Prisma client in case schema changed
+    npx prisma generate --silent 2>/dev/null || npx prisma generate
+    return
+  fi
+
+  # Load DATABASE_URL from .env.local
+  local db_url
+  db_url=$(env_get "DATABASE_URL")
+  [[ -z "$db_url" ]] && die "DATABASE_URL no encontrado en $ENV_FILE"
+
+  # Run Prisma migrations
+  log_info "Aplicando migraciones Prisma..."
+  DATABASE_URL="$db_url" npx prisma migrate deploy 2>&1 | tail -5 || \
+    DATABASE_URL="$db_url" npx prisma migrate dev --name init 2>&1 | tail -5
+
+  # Apply PostGIS migration via docker exec (no psql required on host)
+  local postgis_file="prisma/migrations/0001_initial_postgis/migration.sql"
+  if [[ -f "$postgis_file" ]]; then
+    log_info "Aplicando extensiones PostGIS..."
+    docker exec -i greencrowd_postgres \
+      psql -U greencrowd -d greencrowd < "$postgis_file" 2>&1 | tail -3 || true
+  fi
+
+  # Generate Prisma client
+  log_info "Generando cliente Prisma..."
+  DATABASE_URL="$db_url" npx prisma generate --silent 2>/dev/null || \
+    DATABASE_URL="$db_url" npx prisma generate
+
+  state_set "DB_MIGRATED" "true"
+  log "Migraciones aplicadas"
+}
+
+# ── Start app + worker ────────────────────────────────────────────────────────
+start_dev() {
+  log_step "[8/8] Starting dev server"
+  echo ""
+  echo -e "  ${BOLD}App:    ${CYAN}http://localhost:3000${RESET}"
+  echo -e "  ${BOLD}MinIO:  ${CYAN}http://localhost:9001${RESET}  (admin / minio_secret_key)"
+  echo -e "  ${BOLD}KC:     ${CYAN}http://localhost:8080${RESET}  (admin / admin_secret)"
+  echo -e "  ${BOLD}Studio: ${CYAN}http://localhost:5555${RESET}  (npx prisma studio)"
+  echo ""
+  echo -e "  ${YELLOW}Press Ctrl+C to stop.${RESET}"
+  echo ""
+
+  # Export env vars from .env.local
+  set -o allexport
+  # shellcheck disable=SC1090
+  source "$ENV_FILE" 2>/dev/null || true
+  set +o allexport
+
+  # Start app and worker in background
+  npm run dev &
+  APP_PID=$!
+
+  # Worker (if script exists)
+  if [[ -f "src/workers/index.ts" ]]; then
+    npx tsx watch src/workers/index.ts &
+    WORKER_PID=$!
+  else
+    WORKER_PID=""
+  fi
+
+  # Trap Ctrl+C — clean shutdown
+  trap_handler() {
+    echo ""
+    echo -e "\n${YELLOW}Shutting down...${RESET}"
+    kill "$APP_PID" 2>/dev/null || true
+    [[ -n "$WORKER_PID" ]] && kill "$WORKER_PID" 2>/dev/null || true
+    exit 0
+  }
+  trap trap_handler INT TERM
+
+  wait "$APP_PID" 2>/dev/null || true
+}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Commands
+# ═════════════════════════════════════════════════════════════════════════════
+
+cmd_dev() {
+  echo ""
+  echo -e "${BOLD}${GREEN}🌿 GreenCrowd V2 — Setup wizard${RESET}"
+  echo ""
+
+  check_deps
+  init_env
+  npm_install
+  start_infra
+  wait_for_services
+  configure_keycloak
+  run_migrations
+  start_dev
+}
+
+cmd_start() {
+  echo -e "${BOLD}${GREEN}🌿 GreenCrowd V2 — Starting${RESET}"
+  echo ""
+  log_step "Starting infrastructure"
+  docker compose -f "$COMPOSE_DEV" up -d
+  log "Infrastructure started"
+
+  log_step "Waiting for services"
+  wait_for_postgres
+  wait_for_minio
+
+  start_dev
+}
+
+cmd_stop() {
+  log_step "Stopping infrastructure"
+  docker compose -f "$COMPOSE_DEV" down
+  log "Infrastructure stopped"
+}
+
+cmd_prod() {
+  log_step "Starting production stack"
+  [[ ! -f "$COMPOSE_PROD" ]] && die "docker-compose.yml not found"
+  docker compose -f "$COMPOSE_PROD" up -d --build
+  log "Production stack started"
+}
+
+cmd_prod_stop() {
+  log_step "Stopping production stack"
+  docker compose -f "$COMPOSE_PROD" down
+  log "Production stack stopped"
+}
+
+cmd_reset() {
+  echo -e "${BOLD}${RED}⚠️  Reset — this will delete all containers, volumes and state.${RESET}"
+
+  local hard=false
+  [[ "${1:-}" == "--hard" ]] && hard=true
+
+  if $hard; then
+    warn "Modo --hard: también se borrará $ENV_FILE"
+  fi
+
+  read -rp "Escribe RESET para confirmar: " confirm
+  [[ "$confirm" != "RESET" ]] && die "Cancelado."
+
+  docker compose -f "$COMPOSE_DEV" down -v 2>/dev/null || true
+  rm -f "$STATE_FILE"
+
+  if $hard; then
+    rm -f "$ENV_FILE"
+    log "Estado y .env.local borrados"
+  else
+    log "Estado borrado (.env.local conservado)"
+  fi
+
+  echo ""
+  log_info "Ejecuta ${BOLD}./gc dev${RESET} para reinicializar desde cero."
+}
+
+cmd_status() {
+  echo ""
+  echo -e "${BOLD}GreenCrowd V2 — Service Status${RESET}"
+  echo ""
+
+  # PostgreSQL
+  if docker ps --filter "name=greencrowd_postgres" --filter "status=running" -q 2>/dev/null | grep -q .; then
+    echo -e "  🐘 PostgreSQL    ${GREEN}✅ Running${RESET}  (localhost:5432)"
+  else
+    echo -e "  🐘 PostgreSQL    ${RED}❌ Not running${RESET}"
+  fi
+
+  # Redis
+  if docker ps --filter "name=greencrowd_redis" --filter "status=running" -q 2>/dev/null | grep -q .; then
+    echo -e "  🔴 Redis         ${GREEN}✅ Running${RESET}  (localhost:6379)"
+  else
+    echo -e "  🔴 Redis         ${RED}❌ Not running${RESET}"
+  fi
+
+  # MinIO
+  if docker ps --filter "name=greencrowd_minio" --filter "status=running" -q 2>/dev/null | grep -q .; then
+    echo -e "  🗄️  MinIO         ${GREEN}✅ Running${RESET}  (localhost:9000)"
+  else
+    echo -e "  🗄️  MinIO         ${RED}❌ Not running${RESET}"
+  fi
+
+  # Keycloak
+  if docker ps --filter "name=greencrowd_keycloak" --filter "status=running" -q 2>/dev/null | grep -q .; then
+    if curl -s --fail "${KC_BASE}/realms/greencrowd" >/dev/null 2>&1; then
+      echo -e "  🔐 Keycloak      ${GREEN}✅ Running${RESET}  (localhost:8080)"
+    else
+      echo -e "  🔐 Keycloak      ${YELLOW}⏳ Starting${RESET} (localhost:8080)"
+    fi
+  else
+    echo -e "  🔐 Keycloak      ${RED}❌ Not running${RESET}"
+  fi
+
+  # Next.js app (port 3000)
+  if curl -s --fail "http://localhost:3000" >/dev/null 2>&1; then
+    echo -e "  🌍 Next.js App   ${GREEN}✅ Running${RESET}  (http://localhost:3000)"
+  else
+    echo -e "  🌍 Next.js App   ${YELLOW}⚠️  Not started${RESET} (run ./gc dev)"
+  fi
+
+  echo ""
+
+  # State file
+  if [[ -f "$STATE_FILE" ]]; then
+    echo -e "  ${BOLD}State (.gc_state):${RESET}"
+    while IFS= read -r line; do
+      [[ -z "$line" ]] && continue
+      echo -e "    ${CYAN}${line}${RESET}"
+    done < "$STATE_FILE"
+    echo ""
+  fi
+}
+
+cmd_logs() {
+  local svc="${1:-all}"
+  case "$svc" in
+    app)      docker compose logs -f app 2>/dev/null || warn "Servicio 'app' no disponible en dev mode" ;;
+    worker)   docker compose logs -f worker 2>/dev/null || warn "Servicio 'worker' no disponible en dev mode" ;;
+    postgres) docker compose -f "$COMPOSE_DEV" logs -f postgres ;;
+    redis)    docker compose -f "$COMPOSE_DEV" logs -f redis ;;
+    minio)    docker compose -f "$COMPOSE_DEV" logs -f minio ;;
+    keycloak) docker compose -f "$COMPOSE_DEV" logs -f keycloak ;;
+    all)      docker compose -f "$COMPOSE_DEV" logs -f ;;
+    *)        die "Servicios válidos: app, worker, postgres, redis, minio, keycloak, all" ;;
+  esac
+}
+
+cmd_db() {
+  local subcmd="${1:-help}"
+  local db_url
+  db_url=$(env_get "DATABASE_URL" 2>/dev/null || echo "")
+  [[ -z "$db_url" && "$subcmd" != "help" ]] && die "DATABASE_URL no encontrado en $ENV_FILE"
+
+  case "$subcmd" in
+    migrate)
+      log_step "Running Prisma migrate dev"
+      DATABASE_URL="$db_url" npx prisma migrate dev
+      DATABASE_URL="$db_url" npx prisma generate
+      ;;
+    deploy)
+      log_step "Running Prisma migrate deploy"
+      DATABASE_URL="$db_url" npx prisma migrate deploy
+      DATABASE_URL="$db_url" npx prisma generate
+      ;;
+    postgis)
+      local postgis_file="prisma/migrations/0001_initial_postgis/migration.sql"
+      [[ ! -f "$postgis_file" ]] && die "No encontrado: $postgis_file"
+      log_step "Applying PostGIS migration"
+      docker exec -i greencrowd_postgres psql -U greencrowd -d greencrowd < "$postgis_file"
+      log "PostGIS migration applied"
+      ;;
+    seed)
+      log_step "Running database seed"
+      DATABASE_URL="$db_url" npx tsx prisma/seed.ts
+      ;;
+    studio)
+      log_step "Opening Prisma Studio"
+      DATABASE_URL="$db_url" npx prisma studio
+      ;;
+    generate)
+      log_step "Generating Prisma client"
+      DATABASE_URL="$db_url" npx prisma generate
+      ;;
+    refresh)
+      log_step "Refreshing materialized views"
+      docker exec -i greencrowd_postgres psql -U greencrowd -d greencrowd \
+        -c "REFRESH MATERIALIZED VIEW CONCURRENTLY v_campaign_stats;" 2>/dev/null || \
+      docker exec -i greencrowd_postgres psql -U greencrowd -d greencrowd \
+        -c "REFRESH MATERIALIZED VIEW v_campaign_stats;" 2>/dev/null || \
+        warn "Vista materializada no encontrada o no soportada"
+      ;;
+    reset)
+      warn "Esto borrará todos los datos de la base de datos."
+      read -rp "¿Confirmar? (escribe RESET): " confirm
+      [[ "$confirm" != "RESET" ]] && die "Cancelado."
+      DATABASE_URL="$db_url" npx prisma migrate reset --force
+      state_set "DB_MIGRATED" "false"
+      log "Base de datos reseteada"
+      ;;
+    help|*)
+      echo ""
+      echo -e "  ${BOLD}./gc db <subcommand>${RESET}"
+      echo ""
+      echo "    migrate    Crea y aplica nuevas migraciones (dev)"
+      echo "    deploy     Aplica migraciones pendientes (prod)"
+      echo "    postgis    Aplica migración PostGIS manualmente"
+      echo "    seed       Seed de datos iniciales"
+      echo "    studio     Abre Prisma Studio"
+      echo "    generate   Regenera el cliente Prisma"
+      echo "    refresh    Refresca vistas materializadas"
+      echo "    reset      Borra todos los datos y re-migra"
+      echo ""
+      ;;
+  esac
+}
+
+cmd_kc() {
+  local subcmd="${1:-help}"
+
+  case "$subcmd" in
+    add-user)
+      # Usage: ./gc kc add-user [username] [password] [role]
+      local username="${2:-}" password="${3:-}" role="${4:-}"
+
+      if [[ -z "$username" ]]; then
+        read -rp "Username: " username
+      fi
+      if [[ -z "$password" ]]; then
+        read -rsp "Password: " password
+        echo ""
+      fi
+      if [[ -z "$role" ]]; then
+        echo "Roles disponibles: contributor, researcher, superadmin"
+        read -rp "Role [contributor]: " role
+        role="${role:-contributor}"
+      fi
+
+      log_info "Obteniendo token admin..."
+      kc_get_token
+      create_kc_user "$username" "$password" "$role"
+      log "Usuario '${username}' creado con role '${role}'"
+      ;;
+
+    list-users)
+      log_info "Obteniendo token admin..."
+      kc_get_token
+      local users
+      users=$(kc_get "/admin/realms/${KC_REALM}/users?max=100")
+      echo ""
+      echo -e "${BOLD}Usuarios en realm '${KC_REALM}':${RESET}"
+      echo "$users" | python3 -c "
+import json, sys
+users = json.load(sys.stdin)
+if not users:
+    print('  (ningún usuario)')
+else:
+    print(f'  {'USERNAME':<20} {'EMAIL':<30} {'ENABLED':<8}')
+    print('  ' + '-'*60)
+    for u in users:
+        print(f'  {u.get(\"username\", \"\"):<20} {u.get(\"email\", \"\"):<30} {str(u.get(\"enabled\", \"\")):<8}')
+print()
+"
+      ;;
+
+    get-secret)
+      # Get current client secret
+      log_info "Obteniendo token admin..."
+      kc_get_token
+      local client_id="${2:-greencrowd-web}"
+      local clients
+      clients=$(kc_get "/admin/realms/${KC_REALM}/clients?clientId=${client_id}")
+      local client_uuid
+      client_uuid=$(echo "$clients" | kc_json_list 'd[0]["id"]')
+      local secret_resp
+      secret_resp=$(kc_get "/admin/realms/${KC_REALM}/clients/${client_uuid}/client-secret")
+      local secret
+      secret=$(echo "$secret_resp" | kc_json 'd["value"]')
+      echo ""
+      echo -e "  Client: ${BOLD}${client_id}${RESET}"
+      echo -e "  Secret: ${CYAN}${secret}${RESET}"
+      echo ""
+      ;;
+
+    help|*)
+      echo ""
+      echo -e "  ${BOLD}./gc kc <subcommand>${RESET}"
+      echo ""
+      echo "    add-user [username] [password] [role]   Crea usuario en Keycloak"
+      echo "    list-users                              Lista usuarios del realm"
+      echo "    get-secret [client_id]                  Muestra el client secret actual"
+      echo ""
+      ;;
+  esac
+}
+
+cmd_worker() {
+  log_step "Starting BullMQ worker"
+  set -o allexport
+  # shellcheck disable=SC1090
+  source "$ENV_FILE" 2>/dev/null || true
+  set +o allexport
+  npx tsx watch src/workers/index.ts
+}
+
+cmd_help() {
+  echo ""
+  echo -e "${BOLD}${GREEN}🌿 GreenCrowd V2 — gc script${RESET}"
+  echo ""
+  echo -e "  ${BOLD}USAGE:${RESET}  ./gc <command> [options]"
+  echo ""
+  echo -e "  ${BOLD}COMMANDS:${RESET}"
+  echo ""
+  echo "    dev              Setup completo (1ª vez) + inicia dev (app + worker)"
+  echo "    start            Levanta infra + app, sin reinicializar"
+  echo "    stop             Para toda la infraestructura docker"
+  echo "    prod             Stack completo de producción (docker compose up --build)"
+  echo "    prod-stop        Para el stack de producción"
+  echo "    reset [--hard]   Para todo, borra estado (--hard borra también .env.local)"
+  echo "    status           Health check de todos los servicios"
+  echo "    logs [svc]       Sigue los logs (app|worker|postgres|keycloak|redis|minio|all)"
+  echo "    db <sub>         Operaciones de base de datos (migrate|deploy|postgis|seed|studio|generate|refresh|reset)"
+  echo "    kc <sub>         Operaciones de Keycloak (add-user|list-users|get-secret)"
+  echo "    worker           Inicia sólo el worker BullMQ"
+  echo "    help             Muestra esta ayuda"
+  echo ""
+  echo -e "  ${BOLD}FIRST RUN:${RESET}"
+  echo ""
+  echo "    ./gc dev         # configura todo automáticamente"
+  echo ""
+  echo -e "  ${BOLD}CREDENTIALS (default):${RESET}"
+  echo ""
+  echo "    Keycloak admin:   admin / admin_secret      (http://localhost:8080)"
+  echo "    App researcher:   researcher / researcher123 (http://localhost:3000)"
+  echo "    App superadmin:   superadmin / superadmin123 (http://localhost:3000)"
+  echo "    MinIO console:    greencrowd_minio / minio_secret_key (http://localhost:9001)"
+  echo ""
+}
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Main dispatcher
+# ═════════════════════════════════════════════════════════════════════════════
+
+# Ensure we run from the repo root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+CMD="${1:-help}"
+
+case "$CMD" in
+  dev)        cmd_dev ;;
+  start)      cmd_start ;;
+  stop)       cmd_stop ;;
+  prod)       cmd_prod ;;
+  prod-stop)  cmd_prod_stop ;;
+  reset)      cmd_reset "${2:-}" ;;
+  status)     cmd_status ;;
+  logs)       cmd_logs "${2:-all}" ;;
+  db)         cmd_db "${2:-help}" "${3:-}" ;;
+  kc)         cmd_kc "${2:-help}" "${3:-}" "${4:-}" "${5:-}" ;;
+  worker)     cmd_worker ;;
+  help|--help|-h)  cmd_help ;;
+  *)          die "Comando desconocido: '$CMD'. Ejecuta './gc help' para ver los comandos disponibles." ;;
+esac

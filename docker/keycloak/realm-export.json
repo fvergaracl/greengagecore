@@ -28,7 +28,9 @@
       }
     ]
   },
-  "defaultRoles": ["contributor"],
+  "defaultRoles": [
+    "contributor"
+  ],
   "clients": [
     {
       "clientId": "greencrowd-web",
@@ -41,12 +43,10 @@
       "serviceAccountsEnabled": false,
       "authorizationServicesEnabled": false,
       "redirectUris": [
-        "http://localhost:3000/*",
-        "https://${DOMAIN}/*"
+        "http://localhost:3000/*"
       ],
       "webOrigins": [
-        "http://localhost:3000",
-        "https://${DOMAIN}"
+        "http://localhost:3000"
       ],
       "protocol": "openid-connect",
       "attributes": {
@@ -95,11 +95,17 @@
       ]
     }
   ],
-  "defaultClientScopes": [
+  "defaultDefaultClientScopes": [
     "email",
     "profile",
     "roles",
     "web-origins",
     "greencrowd-roles"
+  ],
+  "defaultOptionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access",
+    "microprofile-jwt"
   ]
 }
