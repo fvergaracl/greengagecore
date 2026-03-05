@@ -4,6 +4,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import ConfirmSubmitButton from "./ConfirmSubmitButton"
 
 export const metadata = { title: "Areas — GreenCrowd" }
 
@@ -139,17 +140,12 @@ function DeleteAreaButton({
 
   return (
     <form action={deleteArea}>
-      <button
-        type='submit'
+      <ConfirmSubmitButton
         className='rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20'
-        onClick={e => {
-          if (!confirm("Delete this area? This will also delete its tasks.")) {
-            e.preventDefault()
-          }
-        }}
+        confirmMessage='Delete this area? This will also delete its tasks.'
       >
         Delete
-      </button>
+      </ConfirmSubmitButton>
     </form>
   )
 }
