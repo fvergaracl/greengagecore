@@ -28,7 +28,7 @@ async function getAreaWithOwnership(areaId: string, researcherSub: string) {
 export function GET(_req: NextRequest, { params }: Params) {
   return withResearcher(async (_req2, user) => {
     const { id } = await params
-    const area = await getAreaWithOwnership(id, user.sub)
+    const area = await getAreaWithOwnership(id, user.userId)
     if (!area) return NextResponse.json({ error: "Area not found" }, { status: 404 })
     return NextResponse.json(area)
   })(_req)
@@ -49,7 +49,7 @@ const PatchAreaSchema = z.object({
 export function PATCH(req: NextRequest, { params }: Params) {
   return withResearcher(async (req2, user) => {
     const { id } = await params
-    const area = await getAreaWithOwnership(id, user.sub)
+    const area = await getAreaWithOwnership(id, user.userId)
     if (!area) return NextResponse.json({ error: "Area not found" }, { status: 404 })
 
     const body = await req2.json()
@@ -86,7 +86,7 @@ export function PATCH(req: NextRequest, { params }: Params) {
 export function DELETE(req: NextRequest, { params }: Params) {
   return withResearcher(async (_req2, user) => {
     const { id } = await params
-    const area = await getAreaWithOwnership(id, user.sub)
+    const area = await getAreaWithOwnership(id, user.userId)
     if (!area) return NextResponse.json({ error: "Area not found" }, { status: 404 })
 
     await prisma.area.delete({ where: { id } })

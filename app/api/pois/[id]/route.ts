@@ -33,7 +33,7 @@ const PatchPoiSchema = z.object({
 export function PATCH(req: NextRequest, { params }: Params) {
   return withResearcher(async (req2, user) => {
     const { id } = await params
-    const poi = await getPoiWithOwnership(id, user.sub)
+    const poi = await getPoiWithOwnership(id, user.userId)
     if (!poi) return NextResponse.json({ error: "POI not found" }, { status: 404 })
 
     const body = await req2.json()
@@ -75,7 +75,7 @@ export function PATCH(req: NextRequest, { params }: Params) {
 export function DELETE(req: NextRequest, { params }: Params) {
   return withResearcher(async (_req2, user) => {
     const { id } = await params
-    const poi = await getPoiWithOwnership(id, user.sub)
+    const poi = await getPoiWithOwnership(id, user.userId)
     if (!poi) return NextResponse.json({ error: "POI not found" }, { status: 404 })
 
     await prisma.pointOfInterest.delete({ where: { id } })

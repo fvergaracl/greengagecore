@@ -17,7 +17,7 @@ async function getQuestionnaire(id: string, researcherSub: string) {
 export function GET(req: NextRequest, { params }: Params) {
   return withResearcher(async (_req2, user) => {
     const { id } = await params
-    const q = await getQuestionnaire(id, user.sub)
+    const q = await getQuestionnaire(id, user.userId)
     if (!q) return NextResponse.json({ error: "Not found" }, { status: 404 })
     return NextResponse.json(q)
   })(req)
@@ -32,7 +32,7 @@ const PatchSchema = z.object({
 export function PATCH(req: NextRequest, { params }: Params) {
   return withResearcher(async (req2, user) => {
     const { id } = await params
-    const q = await getQuestionnaire(id, user.sub)
+    const q = await getQuestionnaire(id, user.userId)
     if (!q) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     const body = await req2.json()
@@ -49,7 +49,7 @@ export function PATCH(req: NextRequest, { params }: Params) {
 export function DELETE(req: NextRequest, { params }: Params) {
   return withResearcher(async (_req2, user) => {
     const { id } = await params
-    const q = await getQuestionnaire(id, user.sub)
+    const q = await getQuestionnaire(id, user.userId)
     if (!q) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     await prisma.questionnaire.delete({ where: { id } })

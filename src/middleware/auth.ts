@@ -5,7 +5,8 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose"
 import { NextRequest, NextResponse } from "next/server"
 import { checkRateLimit } from "@/lib/redis"
-import { ROLES, type UserRole } from "@/lib/auth"
+import { auth as nextAuthSession, ROLES, type UserRole } from "@/lib/auth"
+import { prisma } from "@/lib/db"
 
 // JWKS cached in memory (auto-refreshed by jose)
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null
@@ -86,37 +87,56 @@ export function withAuth(
       return apiError("Too many requests", 429)
     }
 
-    // Validate token
-    const token = extractBearerToken(req)
-    if (!token) {
-      return apiError("Authorization required", 401)
+    // Auth: Bearer token (mobile) o NextAuth session cookie (web dashboard)
+    const bearerToken = extractBearerToken(req)
+    let user: AuthenticatedUser | null = null
+
+    if (bearerToken) {
+      // ── Mobile: Keycloak Bearer token via JWKS ──────────────────────────────
+      let payload: JWTPayload & { roles?: string[] }
+      try {
+        payload = await verifyToken(bearerToken)
+      } catch {
+        return apiError("Invalid or expired token", 401)
+      }
+      // Upsert user en DB para garantizar que existe y obtener el UUID interno
+      const dbUser = await prisma.user.upsert({
+        where: { sub: payload.sub! },
+        create: { sub: payload.sub! },
+        update: {},
+        select: { id: true },
+      })
+      const roles = (payload.roles ?? []) as UserRole[]
+      user = {
+        sub: payload.sub!,
+        userId: dbUser.id,          // DB UUID — mismo campo que usa la session cookie
+        roles,
+        email: payload.email as string | undefined,
+        name: payload.name as string | undefined,
+      }
+    } else {
+      // ── Web dashboard: NextAuth session cookie ─────────────────────────────
+      const session = await nextAuthSession()
+      if (session?.user?.sub) {
+        user = {
+          sub: session.user.sub,
+          userId: session.user.id ?? session.user.sub, // ya es DB UUID (auth.ts fix)
+          roles: (session.user.roles ?? []) as UserRole[],
+        }
+      }
     }
 
-    let payload: JWTPayload & { roles?: string[] }
-    try {
-      payload = await verifyToken(token)
-    } catch {
-      return apiError("Invalid or expired token", 401)
-    }
-
-    const roles = (payload.roles ?? []) as UserRole[]
-    const user: AuthenticatedUser = {
-      sub: payload.sub!,
-      userId: payload.sub!, // Resolved to internal UUID in each handler
-      roles,
-      email: payload.email as string | undefined,
-      name: payload.name as string | undefined,
-    }
+    if (!user) return apiError("Authorization required", 401)
 
     // Verify required roles
     if (options.requiredRoles && options.requiredRoles.length > 0) {
-      const hasRequired = options.requiredRoles.some((role) => roles.includes(role))
+      const hasRequired = options.requiredRoles.some((role) => user!.roles.includes(role))
       if (!hasRequired) {
         return apiError("Insufficient permissions", 403)
       }
     }
 
-    return handler(req, user)
+    return handler(req, user!)
   }
 }
 

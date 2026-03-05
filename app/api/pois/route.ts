@@ -26,7 +26,7 @@ export const POST = withResearcher(async (req: NextRequest, user) => {
 
   // Verificar ownership: área → campaña → researcher
   const area = await prisma.area.findFirst({
-    where: { id: areaId, campaign: { researcherId: user.sub } },
+    where: { id: areaId, campaign: { researcherId: user.userId } },
     select: { id: true },
   })
   if (!area) {

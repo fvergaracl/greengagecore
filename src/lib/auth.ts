@@ -1,6 +1,7 @@
 // GreenCrowd V2 — NextAuth v5 + Keycloak configuration
 import NextAuth, { type DefaultSession } from "next-auth"
 import KeycloakProvider from "next-auth/providers/keycloak"
+import { prisma } from "@/lib/db"
 
 // Extend session types to include Keycloak roles and sub
 declare module "next-auth" {
@@ -13,6 +14,7 @@ declare module "next-auth" {
   }
   interface JWT {
     sub: string
+    dbUserId: string
     roles: string[]
     accessToken: string
     refreshToken: string
@@ -36,7 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     async jwt({ token, account, profile }) {
-      // Primera vez (login): guardar tokens y roles desde el perfil Keycloak
+      // Primera vez (login): guardar tokens, roles y crear/recuperar usuario en DB
       if (account && profile) {
         token.accessToken = account.access_token as string
         token.refreshToken = account.refresh_token as string
@@ -45,6 +47,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const p = profile as Record<string, unknown>
         token.roles = (p.roles as string[]) ?? []
         token.sub = profile.sub as string
+        // Upsert user en DB para obtener el UUID interno (distinto del Keycloak sub)
+        const dbUser = await prisma.user.upsert({
+          where: { sub: profile.sub as string },
+          create: { sub: profile.sub as string },
+          update: {},
+          select: { id: true },
+        })
+        token.dbUserId = dbUser.id
       }
 
       // Refresh token si el access token expiró
@@ -56,6 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
 
     async session({ session, token }) {
+      session.user.id = token.dbUserId as string   // DB UUID (no el Keycloak sub)
       session.user.sub = token.sub as string
       session.user.roles = (token.roles as string[]) ?? []
       session.user.accessToken = token.accessToken as string

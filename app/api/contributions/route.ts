@@ -156,7 +156,7 @@ export const POST = withAuth(async (req, user) => {
         "process-reward",
         {
           contributionId: contribution.id,
-          userId: user.sub,
+          userId: user.userId,
           campaignId,
           taskId: data.taskId,
           simulationHash: data.simulationHash,

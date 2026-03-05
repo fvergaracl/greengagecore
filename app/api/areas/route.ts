@@ -29,7 +29,7 @@ export const POST = withResearcher(async (req: NextRequest, user) => {
 
   // Verificar ownership
   const campaign = await prisma.campaign.findFirst({
-    where: { id: campaignId, researcherId: user.sub },
+    where: { id: campaignId, researcherId: user.userId },
     select: { id: true },
   })
   if (!campaign) {
