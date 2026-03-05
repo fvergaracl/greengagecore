@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { type User } from "next-auth"
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher"
@@ -19,6 +20,18 @@ interface DashboardUser extends User {
 export function DashboardSidebar({ user }: { user: DashboardUser }) {
   const pathname = usePathname()
   const isSuperAdmin = user.roles?.includes("superadmin") ?? false
+  const [gameOnline, setGameOnline] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/game/health", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { online: boolean }) => {
+        if (!cancelled) setGameOnline(d.online === true)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   const displayName = user.name ?? "Researcher"
   const displaySub = user.email ?? ""
@@ -52,6 +65,27 @@ export function DashboardSidebar({ user }: { user: DashboardUser }) {
             </Link>
           )
         })}
+
+        {/* Gamification — solo si GAME engine está activo */}
+        {gameOnline && (
+          <>
+            <div className="my-3 border-t border-gray-100 dark:border-gray-800" />
+            <Link
+              href="/dashboard/gamification"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                pathname.startsWith("/dashboard/gamification")
+                  ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+              }`}
+            >
+              <span>🎮</span>
+              <span className="flex-1">Gamification</span>
+              <span className="flex h-2 w-2 rounded-full bg-green-400" title="GAME online" />
+            </Link>
+          </>
+        )}
 
         {/* Admin link — solo superadmin */}
         {isSuperAdmin && (

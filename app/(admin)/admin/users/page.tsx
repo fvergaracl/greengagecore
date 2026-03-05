@@ -30,6 +30,7 @@ function UsersTable() {
   const [users, setUsers] = useState<UserRow[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState(searchParams.get("search") ?? "")
   const [toggling, setToggling] = useState<string | null>(null)
 
@@ -38,14 +39,20 @@ function UsersTable() {
   const fetchUsers = useCallback(
     async (q: string, p: number) => {
       setLoading(true)
+      setError(null)
       try {
         const res = await fetch(
           `/api/admin/users?search=${encodeURIComponent(q)}&page=${p}&limit=20`
         )
-        if (!res.ok) throw new Error("Failed to load users")
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}))
+          throw new Error(d.error ?? `Error ${res.status}`)
+        }
         const data = await res.json()
         setUsers(data.users)
         setPagination(data.pagination)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load users")
       } finally {
         setLoading(false)
       }
@@ -148,6 +155,12 @@ function UsersTable() {
               <tr>
                 <td colSpan={8} className="py-12 text-center text-sm text-gray-400">
                   Loading…
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={8} className="py-12 text-center text-sm text-red-500">
+                  {error}
                 </td>
               </tr>
             ) : users.length === 0 ? (

@@ -4,6 +4,13 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import dynamic from "next/dynamic"
+import type { AuditStats } from "@/components/audit/AuditCharts"
+
+const AuditCharts = dynamic(
+  () => import("@/components/audit/AuditCharts").then((m) => m.AuditCharts),
+  { ssr: false }
+)
 
 type AuditAction =
   | "create" | "update" | "delete" | "publish"
@@ -53,6 +60,7 @@ function AuditLogTable() {
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [stats, setStats] = useState<AuditStats | null>(null)
 
   // Filters state (synced from URL)
   const page = parseInt(searchParams.get("page") ?? "1")
@@ -84,6 +92,24 @@ function AuditLogTable() {
 
   useEffect(() => { fetchLogs() }, [fetchLogs])
 
+  const fetchStats = useCallback(async () => {
+    try {
+      const params = new URLSearchParams()
+      if (entityType) params.set("entityType", entityType)
+      if (action) params.set("action", action)
+      if (from) params.set("from", from)
+      if (to) params.set("to", to)
+      const res = await fetch(`/api/audit/stats?${params}`)
+      if (!res.ok) return
+      const data = await res.json()
+      setStats(data)
+    } catch {
+      // non-critical — charts just won't show
+    }
+  }, [entityType, action, from, to])
+
+  useEffect(() => { fetchStats() }, [fetchStats])
+
   function updateFilter(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
     if (value) params.set(key, value)
@@ -108,6 +134,20 @@ function AuditLogTable() {
           )}
         </div>
       </div>
+
+      {/* Charts */}
+      {stats ? (
+        <AuditCharts stats={stats} />
+      ) : (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="h-24 animate-pulse rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800"
+            />
+          ))}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
