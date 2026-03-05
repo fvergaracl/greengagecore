@@ -21,15 +21,31 @@ interface Props {
   onMapClick: (lat: number, lng: number) => void
   onPoiClick: (poi: PoiMarker) => void
   selectedPoiId?: string | null
+  editingPoiId?: string | null
+  livePoi?: {
+    latitude: number
+    longitude: number
+    radiusMeters: number
+    name: string
+  } | null
 }
 
-export default function PoiMapEditor({ pois, areaPolygon, onMapClick, onPoiClick, selectedPoiId }: Props) {
+export default function PoiMapEditor({
+  pois,
+  areaPolygon,
+  onMapClick,
+  onPoiClick,
+  selectedPoiId,
+  editingPoiId,
+  livePoi,
+}: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletRef = useRef<{
     map: L.Map
     poiLayers: Map<string, L.CircleMarker>
     polygonLayer: L.Polygon | null
     circleLayer: L.Circle | null
+    draftMarkerLayer: L.CircleMarker | null
   } | null>(null)
 
   useEffect(() => {
@@ -76,7 +92,13 @@ export default function PoiMapEditor({ pois, areaPolygon, onMapClick, onPoiClick
         }).addTo(map)
       }
 
-      leafletRef.current = { map, poiLayers: new Map(), polygonLayer, circleLayer: null }
+      leafletRef.current = {
+        map,
+        poiLayers: new Map(),
+        polygonLayer,
+        circleLayer: null,
+        draftMarkerLayer: null,
+      }
 
       map.on("click", (e: L.LeafletMouseEvent) => {
         onMapClick(e.latlng.lat, e.latlng.lng)
@@ -105,7 +127,9 @@ export default function PoiMapEditor({ pois, areaPolygon, onMapClick, onPoiClick
 
       // Actualizar / añadir marcadores
       for (const poi of pois) {
-        const isSelected = poi.id === selectedPoiId
+        const isSelected = poi.id === selectedPoiId || poi.id === editingPoiId
+        const lat = poi.id === editingPoiId && livePoi ? livePoi.latitude : poi.latitude
+        const lng = poi.id === editingPoiId && livePoi ? livePoi.longitude : poi.longitude
         const color = poi.isDisabled
           ? "#9ca3af"
           : isSelected
@@ -114,10 +138,10 @@ export default function PoiMapEditor({ pois, areaPolygon, onMapClick, onPoiClick
 
         if (poiLayers.has(poi.id)) {
           const m = poiLayers.get(poi.id)!
-          m.setLatLng([poi.latitude, poi.longitude])
+          m.setLatLng([lat, lng])
           m.setStyle({ color, fillColor: color })
         } else {
-          const marker = L.circleMarker([poi.latitude, poi.longitude], {
+          const marker = L.circleMarker([lat, lng], {
             radius: 8,
             color,
             fillColor: color,
@@ -135,10 +159,45 @@ export default function PoiMapEditor({ pois, areaPolygon, onMapClick, onPoiClick
         }
       }
 
-      // Mostrar radio del POI seleccionado
+      // Limpiar capas de preview anteriores
+      if (leafletRef.current!.draftMarkerLayer) {
+        leafletRef.current!.draftMarkerLayer.remove()
+        leafletRef.current!.draftMarkerLayer = null
+      }
       if (leafletRef.current!.circleLayer) {
         leafletRef.current!.circleLayer.remove()
         leafletRef.current!.circleLayer = null
+      }
+
+      // En modo creación: mostrar marker + radio en vivo
+      if (livePoi && !editingPoiId) {
+        leafletRef.current!.draftMarkerLayer = L.circleMarker(
+          [livePoi.latitude, livePoi.longitude],
+          {
+            radius: 8,
+            color: "#f59e0b",
+            fillColor: "#f59e0b",
+            fillOpacity: 0.7,
+            weight: 2,
+          }
+        )
+          .addTo(map)
+          .bindTooltip(livePoi.name, { permanent: false, direction: "top" })
+      }
+
+      // Mostrar radio del POI seleccionado o en edición/creación en vivo
+      if (livePoi) {
+        leafletRef.current!.circleLayer = L.circle(
+          [livePoi.latitude, livePoi.longitude],
+          {
+            radius: livePoi.radiusMeters,
+            color: "#f59e0b",
+            fillColor: "#fef3c7",
+            fillOpacity: 0.3,
+            weight: 1.5,
+          }
+        ).addTo(map)
+        return
       }
 
       const selected = pois.find((p) => p.id === selectedPoiId)
@@ -155,7 +214,7 @@ export default function PoiMapEditor({ pois, areaPolygon, onMapClick, onPoiClick
         ).addTo(map)
       }
     })
-  }, [pois, selectedPoiId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pois, selectedPoiId, editingPoiId, livePoi, onPoiClick])
 
   return (
     <div

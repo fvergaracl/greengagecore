@@ -6,6 +6,7 @@ import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 const AreaMapDrawer = dynamic(() => import("@/components/areas/AreaMapDrawer"), {
   ssr: false,
@@ -22,6 +23,10 @@ interface AreaData {
   description: string | null
   polygonGeojson: GeoJSON.Polygon
   isDisabled: boolean
+  campaign: {
+    id: string
+    name: string
+  }
 }
 
 export default function EditAreaPage() {
@@ -98,14 +103,22 @@ export default function EditAreaPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <Link
-          href={`/dashboard/campaigns/${params.id}/areas`}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Areas
-        </Link>
+        <Breadcrumbs
+          items={[
+            { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+            { href: "/dashboard/campaigns", label: "Campaigns", emoji: "📢" },
+            {
+              href: `/dashboard/campaigns/${params.id}`,
+              label: area.campaign?.name ?? "Campaign",
+              emoji: "📢",
+            },
+            { href: `/dashboard/campaigns/${params.id}/areas`, label: "Areas", emoji: "🗺️" },
+            { label: area.name, emoji: "📍" },
+            { label: "Edit", emoji: "✏️" },
+          ]}
+        />
         <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Edit Area
+          ✏️ Edit Area
         </h1>
         <p className="text-sm text-gray-500">
           Update the boundary polygon or metadata for this area.
@@ -164,7 +177,7 @@ export default function EditAreaPage() {
               className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              Disable this area (contributors won't see it)
+              Disable this area (contributors won&apos;t see it)
             </span>
           </label>
         </div>

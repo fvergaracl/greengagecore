@@ -6,6 +6,7 @@ import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 // Leaflet sólo en cliente (no SSR)
 const AreaMapDrawer = dynamic(() => import("@/components/areas/AreaMapDrawer"), {
@@ -70,14 +71,17 @@ export default function NewAreaPage() {
     <div className="max-w-3xl space-y-6">
       {/* Header */}
       <div>
-        <Link
-          href={`/dashboard/campaigns/${params.id}/areas`}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Areas
-        </Link>
+        <Breadcrumbs
+          items={[
+            { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+            { href: "/dashboard/campaigns", label: "Campaigns", emoji: "📢" },
+            { href: `/dashboard/campaigns/${params.id}`, label: "Campaign", emoji: "📢" },
+            { href: `/dashboard/campaigns/${params.id}/areas`, label: "Areas", emoji: "🗺️" },
+            { label: "New area", emoji: "🆕" },
+          ]}
+        />
         <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-          New Area
+          🆕 New Area
         </h1>
         <p className="text-sm text-gray-500">
           Draw a polygon on the map to define the geographic boundary for this area.

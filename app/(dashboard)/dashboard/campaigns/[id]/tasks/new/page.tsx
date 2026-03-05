@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 export const metadata = { title: "New Task — GreenCrowd" }
 
@@ -68,14 +69,16 @@ export default async function NewTaskPage({
 
   return (
     <div className="max-w-2xl">
-      <Link
-        href={`/dashboard/campaigns/${id}`}
-        className="text-sm text-gray-500 hover:text-gray-700"
-      >
-        ← {campaign.name}
-      </Link>
+      <Breadcrumbs
+        items={[
+          { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+          { href: "/dashboard/campaigns", label: "Campaigns", emoji: "📢" },
+          { href: `/dashboard/campaigns/${id}`, label: campaign.name, emoji: "📢" },
+          { label: "New task", emoji: "🧩" },
+        ]}
+      />
       <h1 className="mb-6 mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-        New Task
+        🧩 New Task
       </h1>
 
       {campaign.areas.length === 0 ? (

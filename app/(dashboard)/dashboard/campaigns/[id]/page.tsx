@@ -4,6 +4,7 @@ import Link from "next/link"
 import { notFound, redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 export const metadata = { title: "Campaign — GreenCrowd" }
 
@@ -80,14 +81,15 @@ export default async function CampaignDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <Link
-            href="/dashboard/campaigns"
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← Campaigns
-          </Link>
+          <Breadcrumbs
+            items={[
+              { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+              { href: "/dashboard/campaigns", label: "Campaigns", emoji: "📢" },
+              { label: campaign.name, emoji: "📢" },
+            ]}
+          />
           <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {campaign.name}
+            📢 {campaign.name}
           </h1>
           <p className="text-sm text-gray-500">
             {campaign.category} · Status: <strong>{campaign.status}</strong>

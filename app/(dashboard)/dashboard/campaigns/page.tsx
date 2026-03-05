@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 export const metadata = { title: "Campaigns — GreenCrowd" }
 
@@ -29,9 +30,17 @@ export default async function CampaignsPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Campaigns
-        </h1>
+        <div>
+          <Breadcrumbs
+            items={[
+              { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+              { label: "Campaigns", emoji: "📢" },
+            ]}
+          />
+          <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            📢 Campaigns
+          </h1>
+        </div>
         <Link
           href="/dashboard/campaigns/new"
           className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
@@ -58,7 +67,7 @@ export default async function CampaignsPage() {
               <div>
                 <div className="flex items-center gap-3">
                   <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {c.name}
+                    📢 {c.name}
                   </span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${

@@ -4,24 +4,28 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import type { PoiMarker } from "@/components/areas/PoiMapEditor"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 const PoiMapEditor = dynamic(() => import("@/components/areas/PoiMapEditor"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-80 items-center justify-center rounded-xl border border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800">
-      <span className="text-sm text-gray-400">Loading map…</span>
+    <div className='flex h-80 items-center justify-center rounded-xl border border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800'>
+      <span className='text-sm text-gray-400'>Loading map…</span>
     </div>
-  ),
+  )
 })
 
 interface AreaWithPois {
   id: string
   name: string
   campaignId: string
+  campaign: {
+    id: string
+    name: string
+  }
   polygonGeojson: GeoJSON.Polygon
   pointsOfInterest: PoiMarker[]
 }
@@ -36,7 +40,13 @@ interface PoiForm {
   radiusMeters: number
 }
 
-const EMPTY_FORM: PoiForm = { name: "", description: "", latitude: "", longitude: "", radiusMeters: 15 }
+const EMPTY_FORM: PoiForm = {
+  name: "",
+  description: "",
+  latitude: "",
+  longitude: "",
+  radiusMeters: 100
+}
 
 export default function PoisPage() {
   const params = useParams<{ id: string; areaId: string }>()
@@ -63,7 +73,11 @@ export default function PoisPage() {
   function handleMapClick(lat: number, lng: number) {
     if (formMode === "edit") return // No crear si estamos editando
     setSelectedPoi(null)
-    setForm({ ...EMPTY_FORM, latitude: Math.round(lat * 1e6) / 1e6, longitude: Math.round(lng * 1e6) / 1e6 })
+    setForm({
+      ...EMPTY_FORM,
+      latitude: Math.round(lat * 1e6) / 1e6,
+      longitude: Math.round(lng * 1e6) / 1e6
+    })
     setFormMode("create")
     setError(null)
   }
@@ -75,7 +89,7 @@ export default function PoisPage() {
       description: "",
       latitude: poi.latitude,
       longitude: poi.longitude,
-      radiusMeters: poi.radiusMeters,
+      radiusMeters: poi.radiusMeters
     })
     setFormMode("edit")
     setError(null)
@@ -102,8 +116,8 @@ export default function PoisPage() {
             description: form.description.trim() || undefined,
             latitude: Number(form.latitude),
             longitude: Number(form.longitude),
-            radiusMeters: form.radiusMeters,
-          }),
+            radiusMeters: form.radiusMeters
+          })
         })
       } else {
         res = await fetch(`/api/pois/${selectedPoi!.id}`, {
@@ -114,8 +128,8 @@ export default function PoisPage() {
             description: form.description.trim() || null,
             latitude: Number(form.latitude),
             longitude: Number(form.longitude),
-            radiusMeters: form.radiusMeters,
-          }),
+            radiusMeters: form.radiusMeters
+          })
         })
       }
 
@@ -137,7 +151,12 @@ export default function PoisPage() {
 
   async function handleDelete() {
     if (!selectedPoi) return
-    if (!confirm(`Delete POI "${selectedPoi.name}"? This will also delete its tasks.`)) return
+    if (
+      !confirm(
+        `Delete POI "${selectedPoi.name}"? This will also delete its tasks.`
+      )
+    )
+      return
 
     setSaving(true)
     try {
@@ -158,7 +177,7 @@ export default function PoisPage() {
       await fetch(`/api/pois/${selectedPoi.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isDisabled: !selectedPoi.isDisabled }),
+        body: JSON.stringify({ isDisabled: !selectedPoi.isDisabled })
       })
       await fetchArea()
       setFormMode("idle")
@@ -169,73 +188,102 @@ export default function PoisPage() {
   }
 
   const pois: PoiMarker[] = area?.pointsOfInterest ?? []
+  const livePoi =
+    formMode !== "idle" && form.latitude !== "" && form.longitude !== ""
+      ? {
+          latitude: Number(form.latitude),
+          longitude: Number(form.longitude),
+          radiusMeters: form.radiusMeters,
+          name:
+            form.name.trim() ||
+            (formMode === "create" ? "New POI" : (selectedPoi?.name ?? "POI"))
+        }
+      : null
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className='flex items-center justify-between'>
         <div>
-          <Link
-            href={`/dashboard/campaigns/${params.id}/areas`}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← {area?.name ?? "Areas"}
-          </Link>
-          <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Points of Interest ({pois.length})
+          <Breadcrumbs
+            items={[
+              { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+              { href: "/dashboard/campaigns", label: "Campaigns", emoji: "📢" },
+              {
+                href: `/dashboard/campaigns/${params.id}`,
+                label: area?.campaign?.name ?? "Campaign",
+                emoji: "📢"
+              },
+              {
+                href: `/dashboard/campaigns/${params.id}/areas`,
+                label: "Areas",
+                emoji: "🗺️"
+              },
+              { label: area?.name ?? "Area", emoji: "📍" },
+              { label: "POIs", emoji: "📌" }
+            ]}
+          />
+          <h1 className='mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100'>
+            📌 Points of Interest ({pois.length})
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className='text-sm text-gray-500'>
             Click on the map to add a POI. Click an existing marker to edit it.
           </p>
         </div>
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-sm text-gray-400">Loading…</div>
+        <div className='py-12 text-center text-sm text-gray-400'>Loading…</div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
           {/* Map */}
-          <div className="lg:col-span-2">
+          <div className='lg:col-span-2'>
             <PoiMapEditor
               pois={pois}
               areaPolygon={area?.polygonGeojson}
               onMapClick={handleMapClick}
               onPoiClick={handlePoiClick}
               selectedPoiId={selectedPoi?.id}
+              editingPoiId={
+                formMode === "edit" ? (selectedPoi?.id ?? null) : null
+              }
+              livePoi={livePoi}
             />
-            <p className="mt-2 text-xs text-gray-400">
-              🟢 Click on the map to place a new POI · 🔵 Blue = active · ⚫ Gray = disabled · 🟡 Selected
+            <p className='mt-2 text-xs text-gray-400'>
+              🟢 Click on the map to place a new POI · 🔵 Blue = active · ⚫
+              Gray = disabled · 🟡 Selected
             </p>
           </div>
 
           {/* Panel lateral: form o lista */}
-          <div className="space-y-4">
+          <div className='space-y-4'>
             {formMode === "idle" ? (
               /* POI list */
-              <div className="space-y-2">
+              <div className='space-y-2'>
                 {pois.length === 0 ? (
-                  <div className="rounded-xl border-2 border-dashed border-gray-200 py-8 text-center text-sm text-gray-400 dark:border-gray-700">
+                  <div className='rounded-xl border-2 border-dashed border-gray-200 py-8 text-center text-sm text-gray-400 dark:border-gray-700'>
                     No POIs yet. Click on the map to add one.
                   </div>
                 ) : (
-                  pois.map((poi) => (
+                  pois.map(poi => (
                     <button
                       key={poi.id}
                       onClick={() => handlePoiClick(poi)}
-                      className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-left hover:border-blue-300 hover:shadow-sm transition-all dark:border-gray-700 dark:bg-gray-800"
+                      className='w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-left hover:border-blue-300 hover:shadow-sm transition-all dark:border-gray-700 dark:bg-gray-800'
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <div className='flex items-center gap-2'>
+                        <span className='text-sm font-medium text-gray-900 dark:text-gray-100'>
                           📌 {poi.name}
                         </span>
                         {poi.isDisabled && (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-600">
+                          <span className='rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-600'>
                             disabled
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 text-xs text-gray-400">
-                        {poi.latitude.toFixed(5)}, {poi.longitude.toFixed(5)} · r={poi.radiusMeters}m
+                      <p className='mt-0.5 text-xs text-gray-400'>
+                        {poi.latitude.toFixed(5)}, {poi.longitude.toFixed(5)} ·
+                        r={poi.radiusMeters}m
                       </p>
                     </button>
                   ))
@@ -243,98 +291,124 @@ export default function PoisPage() {
               </div>
             ) : (
               /* Form */
-              <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {formMode === "create" ? "New POI" : `Edit: ${selectedPoi?.name}`}
+              <div className='rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 space-y-4'>
+                <div className='flex items-center justify-between'>
+                  <h3 className='text-sm font-semibold text-gray-900 dark:text-gray-100'>
+                    {formMode === "create"
+                      ? "New POI"
+                      : `Edit: ${selectedPoi?.name}`}
                   </h3>
                   <button
-                    onClick={() => { setFormMode("idle"); setSelectedPoi(null); setError(null) }}
-                    className="text-xs text-gray-400 hover:text-gray-600"
+                    onClick={() => {
+                      setFormMode("idle")
+                      setSelectedPoi(null)
+                      setError(null)
+                    }}
+                    className='text-xs text-gray-400 hover:text-gray-600'
                   >
                     ✕
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                  <label className='block text-xs font-medium text-gray-600 dark:text-gray-400'>
                     Name *
                   </label>
                   <input
                     value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    onChange={e =>
+                      setForm(f => ({ ...f, name: e.target.value }))
+                    }
                     maxLength={120}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    className='mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                  <label className='block text-xs font-medium text-gray-600 dark:text-gray-400'>
                     Description
                   </label>
                   <textarea
                     value={form.description}
-                    onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    onChange={e =>
+                      setForm(f => ({ ...f, description: e.target.value }))
+                    }
                     rows={2}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                    className='mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className='grid grid-cols-2 gap-2'>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <label className='block text-xs font-medium text-gray-600 dark:text-gray-400'>
                       Latitude *
                     </label>
                     <input
-                      type="number"
-                      step="0.000001"
+                      type='number'
+                      step='0.000001'
                       value={form.latitude}
-                      onChange={(e) => setForm((f) => ({ ...f, latitude: parseFloat(e.target.value) || "" }))}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                      onChange={e =>
+                        setForm(f => ({
+                          ...f,
+                          latitude: parseFloat(e.target.value) || ""
+                        }))
+                      }
+                      className='mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    <label className='block text-xs font-medium text-gray-600 dark:text-gray-400'>
                       Longitude *
                     </label>
                     <input
-                      type="number"
-                      step="0.000001"
+                      type='number'
+                      step='0.000001'
                       value={form.longitude}
-                      onChange={(e) => setForm((f) => ({ ...f, longitude: parseFloat(e.target.value) || "" }))}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                      onChange={e =>
+                        setForm(f => ({
+                          ...f,
+                          longitude: parseFloat(e.target.value) || ""
+                        }))
+                      }
+                      className='mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                  <label className='block text-xs font-medium text-gray-600 dark:text-gray-400'>
                     Activation radius (meters): {form.radiusMeters}m
                   </label>
                   <input
-                    type="range"
+                    type='range'
                     min={1}
                     max={200}
                     value={form.radiusMeters}
-                    onChange={(e) => setForm((f) => ({ ...f, radiusMeters: parseInt(e.target.value) }))}
-                    className="mt-1 w-full accent-green-600"
+                    onChange={e =>
+                      setForm(f => ({
+                        ...f,
+                        radiusMeters: parseInt(e.target.value)
+                      }))
+                    }
+                    className='mt-1 w-full accent-green-600'
                   />
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>1m</span><span>200m</span>
+                  <div className='flex justify-between text-xs text-gray-400'>
+                    <span>1m</span>
+                    <span>200m</span>
                   </div>
                 </div>
 
                 {error && (
-                  <p className="rounded bg-red-50 px-2 py-1.5 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                  <p className='rounded bg-red-50 px-2 py-1.5 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-400'>
                     {error}
                   </p>
                 )}
 
-                <div className="flex gap-2">
+                <div className='flex gap-2'>
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex-1 rounded-lg bg-green-600 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                    className='flex-1 rounded-lg bg-green-600 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50'
                   >
                     {saving ? "…" : formMode === "create" ? "Add POI" : "Save"}
                   </button>
@@ -343,14 +417,14 @@ export default function PoisPage() {
                       <button
                         onClick={handleToggleDisable}
                         disabled={saving}
-                        className="rounded-lg border border-amber-300 px-3 py-1.5 text-xs text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400"
+                        className='rounded-lg border border-amber-300 px-3 py-1.5 text-xs text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400'
                       >
                         {selectedPoi?.isDisabled ? "Enable" : "Disable"}
                       </button>
                       <button
                         onClick={handleDelete}
                         disabled={saving}
-                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400"
+                        className='rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400'
                       >
                         Delete
                       </button>

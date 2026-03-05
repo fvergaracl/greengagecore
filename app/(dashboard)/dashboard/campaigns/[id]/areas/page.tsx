@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import ConfirmSubmitButton from "./ConfirmSubmitButton"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 export const metadata = { title: "Areas — GreenCrowd" }
 
@@ -37,14 +38,16 @@ export default async function AreasPage({
       {/* Header */}
       <div className='flex items-center justify-between'>
         <div>
-          <Link
-            href={`/dashboard/campaigns/${id}`}
-            className='text-sm text-gray-500 hover:text-gray-700'
-          >
-            ← {campaign.name}
-          </Link>
+          <Breadcrumbs
+            items={[
+              { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+              { href: "/dashboard/campaigns", label: "Campaigns", emoji: "📢" },
+              { href: `/dashboard/campaigns/${id}`, label: campaign.name, emoji: "📢" },
+              { label: "Areas", emoji: "🗺️" }
+            ]}
+          />
           <h1 className='mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100'>
-            Areas ({campaign.areas.length})
+            🗺️ Areas ({campaign.areas.length})
           </h1>
         </div>
         <Link

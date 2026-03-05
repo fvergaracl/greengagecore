@@ -4,6 +4,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 export const metadata = { title: "Questionnaires — GreenCrowd" }
 
@@ -40,14 +41,16 @@ export default async function QuestionnairesPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Link
-            href={`/dashboard/campaigns/${id}`}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← {campaign.name}
-          </Link>
+          <Breadcrumbs
+            items={[
+              { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+              { href: "/dashboard/campaigns", label: "Campaigns", emoji: "📢" },
+              { href: `/dashboard/campaigns/${id}`, label: campaign.name, emoji: "📢" },
+              { label: "Questionnaires", emoji: "📋" },
+            ]}
+          />
           <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Questionnaires ({campaign.questionnaires.length})
+            📋 Questionnaires ({campaign.questionnaires.length})
           </h1>
           <p className="text-sm text-gray-500">
             Pre/post questionnaires shown to contributors at specific times.

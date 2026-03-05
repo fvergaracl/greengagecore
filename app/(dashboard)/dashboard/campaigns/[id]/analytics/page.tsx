@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { ContributionsChart } from "@/components/analytics/ContributionsChart"
+import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
 
 export const metadata = { title: "Analytics — GreenCrowd" }
 
@@ -138,14 +139,16 @@ export default async function AnalyticsPage({ params, searchParams }: Params) {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link
-            href={`/dashboard/campaigns/${id}`}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← {campaign.name}
-          </Link>
+          <Breadcrumbs
+            items={[
+              { href: "/dashboard", label: "Dashboard", emoji: "🏠" },
+              { href: "/dashboard/campaigns", label: "Campaigns", emoji: "📢" },
+              { href: `/dashboard/campaigns/${id}`, label: campaign.name, emoji: "📢" },
+              { label: "Analytics", emoji: "📈" },
+            ]}
+          />
           <h1 className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Analytics
+            📈 Analytics
           </h1>
           <p className="text-sm text-gray-500">{campaign.category}</p>
         </div>
