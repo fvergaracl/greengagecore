@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react"
 import { FormEvent, useMemo, useState } from "react"
 import { SurveyCreatorWrapper } from "@/components/questionnaires/SurveyCreatorWrapper"
 import PoiSelectionMap, {
+  type TaskAssignmentScope,
   type TaskPoiMapArea,
   type TaskPoiMapPoi,
 } from "@/components/tasks/PoiSelectionMap"
@@ -46,7 +47,11 @@ export function NewTaskFormClient({ campaignId, pois, areas }: Props) {
   const { data: session } = useSession()
   const accessToken = session?.user?.accessToken
 
+  const [targetScope, setTargetScope] = useState<TaskAssignmentScope>(
+    pois.length > 0 ? "poi" : "area"
+  )
   const [poiId, setPoiId] = useState("")
+  const [areaId, setAreaId] = useState(areas[0]?.id ?? "")
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [type, setType] = useState<TaskType>("mixed")
@@ -81,11 +86,23 @@ export function NewTaskFormClient({ campaignId, pois, areas }: Props) {
     () => pois.find((poi) => poi.id === poiId) ?? null,
     [pois, poiId]
   )
+  const selectedArea = useMemo(
+    () => areas.find((area) => area.id === areaId) ?? null,
+    [areas, areaId]
+  )
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!poiId.trim() || !title.trim()) {
-      setError("POI and title are required.")
+    if (!title.trim()) {
+      setError("Title is required.")
+      return
+    }
+    if (targetScope === "poi" && !poiId.trim()) {
+      setError("POI is required for POI tasks.")
+      return
+    }
+    if (targetScope === "area" && !areaId.trim()) {
+      setError("Area is required for open tasks.")
       return
     }
 
@@ -123,7 +140,9 @@ export function NewTaskFormClient({ campaignId, pois, areas }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          poiId,
+          ...(targetScope === "poi"
+            ? { poiId: poiId.trim() }
+            : { areaId: areaId.trim() }),
           title: title.trim(),
           description: description.trim() || undefined,
           type,
@@ -156,12 +175,74 @@ export function NewTaskFormClient({ campaignId, pois, areas }: Props) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Task scope *
+            </label>
+            <select
+              value={targetScope}
+              onChange={(e) => {
+                const nextScope = e.target.value as TaskAssignmentScope
+                setTargetScope(nextScope)
+                if (nextScope === "poi" && !poiId && pois[0]) {
+                  setPoiId(pois[0].id)
+                  setAreaId(pois[0].areaId)
+                }
+                if (nextScope === "area" && !areaId) {
+                  setAreaId(selectedPoi?.areaId ?? areas[0]?.id ?? "")
+                }
+                setError(null)
+              }}
+              required
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            >
+              <option value="poi" disabled={pois.length === 0}>
+                📌 POI task (exact location)
+              </option>
+              <option value="area">🗺️ Open task (area-wide)</option>
+            </select>
+            {targetScope === "poi" && pois.length === 0 ? (
+              <p className="mt-1 text-xs text-gray-500">
+                No POIs in this campaign yet. Switch to Open task or create a POI.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">
+                Choose where participants can complete this task: at a POI or anywhere in an area.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Type *
+            </label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as TaskType)}
+              required
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            >
+              <option value="photo">Photo</option>
+              <option value="survey">Survey</option>
+              <option value="mixed">Mixed (photo + survey)</option>
+              <option value="instruction">Instruction</option>
+            </select>
+          </div>
+        </div>
+
+        {targetScope === "poi" ? (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
               POI *
             </label>
             <select
               value={poiId}
-              onChange={(e) => setPoiId(e.target.value)}
-              required
+              onChange={(e) => {
+                const nextPoiId = e.target.value
+                setPoiId(nextPoiId)
+                const nextPoi = pois.find((poi) => poi.id === nextPoiId)
+                if (nextPoi) setAreaId(nextPoi.areaId)
+                setError(null)
+              }}
+              required={targetScope === "poi"}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
               <option value="">Select a POI…</option>
@@ -185,41 +266,71 @@ export function NewTaskFormClient({ campaignId, pois, areas }: Props) {
               </p>
             )}
           </div>
-
+        ) : (
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Type *
+              Area *
             </label>
             <select
-              value={type}
-              onChange={(e) => setType(e.target.value as TaskType)}
-              required
+              value={areaId}
+              onChange={(e) => {
+                setAreaId(e.target.value)
+                setError(null)
+              }}
+              required={targetScope === "area"}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
             >
-              <option value="photo">Photo</option>
-              <option value="survey">Survey</option>
-              <option value="mixed">Mixed (photo + survey)</option>
-              <option value="instruction">Instruction</option>
+              <option value="">Select an area…</option>
+              {areas.map((area) => (
+                <option key={area.id} value={area.id}>
+                  🗺️ {area.name}
+                </option>
+              ))}
             </select>
+            {selectedArea ? (
+              <p className="mt-1 text-xs text-gray-500">
+                Selected open area: 🗺️ {selectedArea.name}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">
+                Open tasks can be completed anywhere inside the selected area polygon.
+              </p>
+            )}
           </div>
-        </div>
+        )}
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            POI map (visual selector)
+            {targetScope === "poi"
+              ? "POI map (visual selector)"
+              : "Area map (visual selector for OpenTask)"}
           </label>
           <PoiSelectionMap
             areas={areas}
             pois={pois}
-            selectedPoiId={poiId || null}
+            selectionMode={targetScope}
+            selectedPoiId={targetScope === "poi" ? (poiId || null) : null}
+            selectedAreaId={targetScope === "area" ? (areaId || null) : null}
             onPoiSelect={(selectedId) => {
               setPoiId(selectedId)
+              const selected = pois.find((poi) => poi.id === selectedId)
+              if (selected) setAreaId(selected.areaId)
+              setError(null)
+            }}
+            onAreaSelect={(selectedId) => {
+              setAreaId(selectedId)
               setError(null)
             }}
           />
-          <p className="mt-1 text-xs text-gray-500">
-            🟩 Green polygons = areas · 🔵 Blue markers = POIs · 🟡 Orange = selected POI
-          </p>
+          {targetScope === "poi" ? (
+            <p className="mt-1 text-xs text-gray-500">
+              🟩 Green polygons = areas · 🔵 Blue markers = POIs · 🟡 Orange = selected POI
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-gray-500">
+              Click an area polygon or a POI marker to choose the area for this OpenTask.
+            </p>
+          )}
         </div>
 
         <div>

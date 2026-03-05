@@ -1,4 +1,4 @@
-// POST /api/tasks — Crea una nueva task vinculada a un POI.
+// POST /api/tasks — Crea una task vinculada a un POI o como open task de área.
 // Solo researchers/admins pueden crear tasks.
 
 import { NextResponse } from "next/server"
@@ -6,11 +6,13 @@ import { withResearcher } from "@/middleware/auth"
 import { withUserRLS } from "@/middleware/rls"
 import { z } from "zod"
 
-// Tasks are linked to a PointOfInterest.
-// Ownership is verified via poi.area.campaign.researcherId.
+// Tasks target exactly one location scope:
+// - POI task: poiId set, areaId null
+// - Open task: areaId set, poiId null
 
 const TaskSchema = z.object({
-  poiId: z.string().uuid(),
+  poiId: z.string().uuid().optional(),
+  areaId: z.string().uuid().optional(),
   title: z.string().min(1).max(200),
   description: z.string().optional(),
   type: z.enum(["photo", "survey", "mixed", "instruction"]),
@@ -32,6 +34,12 @@ export const POST = withResearcher(async (req, user) => {
   }
 
   const data = parsed.data
+  if (!!data.poiId === !!data.areaId) {
+    return NextResponse.json(
+      { error: "Define exactly one target: poiId or areaId" },
+      { status: 400 }
+    )
+  }
   const hasTaskSchema = Object.keys(data.taskData ?? {}).length > 0
 
   if ((data.type === "survey" || data.type === "mixed") && !hasTaskSchema) {
@@ -61,16 +69,42 @@ export const POST = withResearcher(async (req, user) => {
   const requiresSurvey = data.requiresSurvey || data.type === "survey" || data.type === "mixed"
 
   const task = await withUserRLS(user, async (tx) => {
-    // Verify researcher owns the campaign through the POI.
-    const poi = await tx.pointOfInterest.findFirst({
-      where: { id: data.poiId, area: { campaign: { researcherId: user.userId } } },
+    if (data.poiId) {
+      // POI task: verify researcher owns the campaign through the POI.
+      const poi = await tx.pointOfInterest.findFirst({
+        where: { id: data.poiId, area: { campaign: { researcherId: user.userId } } },
+      })
+      if (!poi) throw Object.assign(new Error("POI_NOT_FOUND"), { status: 404 })
+
+      return tx.task.create({
+        data: {
+          poiId: data.poiId,
+          areaId: null,
+          title: data.title,
+          description: data.description ?? null,
+          type: data.type,
+          taskData: data.taskData as object,
+          requiresPhoto,
+          requiresSurvey,
+          responseLimit: data.responseLimit ?? null,
+          responseLimitInterval: data.responseLimitInterval ?? null,
+          closureMode: data.closureMode,
+          availableFrom,
+          availableTo,
+        },
+      })
+    }
+
+    // Open task (area-level): verify ownership via area -> campaign.
+    const area = await tx.area.findFirst({
+      where: { id: data.areaId!, campaign: { researcherId: user.userId } },
     })
-    if (!poi) throw Object.assign(new Error("POI_NOT_FOUND"), { status: 404 })
+    if (!area) throw Object.assign(new Error("AREA_NOT_FOUND"), { status: 404 })
 
     return tx.task.create({
       data: {
-        poiId: data.poiId,
-        areaId: null,
+        poiId: null,
+        areaId: area.id,
         title: data.title,
         description: data.description ?? null,
         type: data.type,
@@ -84,7 +118,19 @@ export const POST = withResearcher(async (req, user) => {
         availableTo,
       },
     })
+  }).catch((err: Error) => {
+    if (err.message === "POI_NOT_FOUND" || err.message === "AREA_NOT_FOUND") {
+      return null
+    }
+    throw err
   })
+
+  if (!task) {
+    return NextResponse.json(
+      { error: data.poiId ? "POI not found" : "Area not found" },
+      { status: 404 }
+    )
+  }
 
   return NextResponse.json({ task }, { status: 201 })
 })

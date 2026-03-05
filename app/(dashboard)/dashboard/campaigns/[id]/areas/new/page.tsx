@@ -5,8 +5,9 @@
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
+import { polygonsOverlap } from "@/lib/geojson-overlap"
 
 // Leaflet sólo en cliente (no SSR)
 const AreaMapDrawer = dynamic(() => import("@/components/areas/AreaMapDrawer"), {
@@ -22,11 +23,71 @@ export default function NewAreaPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
 
+  const [campaignAreas, setCampaignAreas] = useState<
+    Array<{ id: string; name: string; polygonGeojson: GeoJSON.Polygon }>
+  >([])
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [polygon, setPolygon] = useState<GeoJSON.Polygon | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const asPolygon = (value: unknown): GeoJSON.Polygon | null => {
+      if (!value || typeof value !== "object") return null
+      const candidate = value as { type?: unknown; coordinates?: unknown }
+      if (candidate.type !== "Polygon" || !Array.isArray(candidate.coordinates)) return null
+      return candidate as GeoJSON.Polygon
+    }
+
+    fetch(`/api/campaigns/${params.id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: unknown) => {
+        if (cancelled || !data || typeof data !== "object") return
+        const rawAreas = "areas" in data ? (data.areas as unknown) : null
+        if (!Array.isArray(rawAreas)) return
+
+        const parsed = rawAreas
+          .map((raw) => {
+            if (!raw || typeof raw !== "object") return null
+            const candidate = raw as {
+              id?: unknown
+              name?: unknown
+              polygonGeojson?: unknown
+            }
+            if (typeof candidate.id !== "string" || typeof candidate.name !== "string") {
+              return null
+            }
+            const parsedPolygon = asPolygon(candidate.polygonGeojson)
+            if (!parsedPolygon) return null
+            return {
+              id: candidate.id,
+              name: candidate.name,
+              polygonGeojson: parsedPolygon,
+            }
+          })
+          .filter(
+            (area): area is { id: string; name: string; polygonGeojson: GeoJSON.Polygon } =>
+              area !== null
+          )
+
+        setCampaignAreas(parsed)
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [params.id])
+
+  const overlappingAreaNames = useMemo(() => {
+    if (!polygon) return []
+    return campaignAreas
+      .filter((area) => polygonsOverlap(polygon, area.polygonGeojson))
+      .map((area) => area.name)
+  }, [campaignAreas, polygon])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -94,8 +155,24 @@ export default function NewAreaPage() {
           <label className="mb-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Polygon boundary <span className="text-red-500">*</span>
           </label>
-          <AreaMapDrawer onPolygonChange={setPolygon} />
+          <AreaMapDrawer
+            onPolygonChange={setPolygon}
+            referenceAreas={campaignAreas}
+          />
+          {campaignAreas.length > 0 && (
+            <p className="mt-2 text-xs text-gray-400">
+              Context: {campaignAreas.length} existing area
+              {campaignAreas.length === 1 ? "" : "s"} shown on map.
+            </p>
+          )}
         </div>
+
+        {overlappingAreaNames.length > 0 && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+            ⚠️ Overlap warning: this polygon overlaps with {overlappingAreaNames.join(", ")}.
+            You can still save if this is intentional.
+          </div>
+        )}
 
         {/* Name + description */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800 space-y-4">

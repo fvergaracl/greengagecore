@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { Breadcrumbs } from "@/components/dashboard/breadcrumbs"
+import { CampaignStructureGraph } from "@/components/campaigns/CampaignStructureGraph"
 
 export const metadata = { title: "Campaign — GreenCrowd" }
 
@@ -75,6 +76,30 @@ export default async function CampaignDetailPage({
     ...area.tasks,
     ...area.pointsOfInterest.flatMap((poi) => poi.tasks),
   ])
+  const structureAreas = campaign.areas.map((area) => ({
+    id: area.id,
+    name: area.name,
+    isDisabled: area.isDisabled,
+    openTasks: area.tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      type: task.type,
+      isDisabled: task.isDisabled,
+      contributions: task._count.contributions,
+    })),
+    pois: area.pointsOfInterest.map((poi) => ({
+      id: poi.id,
+      name: poi.name,
+      isDisabled: poi.isDisabled,
+      tasks: poi.tasks.map((task) => ({
+        id: task.id,
+        title: task.title,
+        type: task.type,
+        isDisabled: task.isDisabled,
+        contributions: task._count.contributions,
+      })),
+    })),
+  }))
 
   return (
     <div className="space-y-8">
@@ -195,6 +220,12 @@ export default async function CampaignDetailPage({
           🔍 Review contributions ({statusMap["submitted"] ?? 0} pending)
         </Link>
       </div>
+
+      <CampaignStructureGraph
+        campaignId={id}
+        campaignName={campaign.name}
+        areas={structureAreas}
+      />
 
       {/* Areas + Tasks */}
       <div>

@@ -1,4 +1,4 @@
-// Dashboard — Create task linked to a POI in a campaign.
+// Dashboard — Create a task linked to a POI or an area (open task).
 // Survey schema is designed with SurveyJS and stored in taskData.
 
 import { notFound } from "next/navigation"
@@ -83,18 +83,18 @@ export default async function NewTaskPage({
         🧩 New Task
       </h1>
 
-      {pois.length === 0 ? (
+      {areas.length === 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-700">
-          <p className="font-medium">No POIs yet</p>
+          <p className="font-medium">No areas yet</p>
           <p className="mt-1">
-            Tasks are linked to POIs. Create at least one POI before adding tasks.
+            Tasks need at least one area. Create an area first to enable POI tasks and OpenTasks.
           </p>
           <div className="mt-3">
             <Link
               href={`/dashboard/campaigns/${id}/areas`}
               className="text-sm font-medium text-amber-800 underline dark:text-amber-300"
             >
-              Go to areas and create a POI
+              Go to areas and create one
             </Link>
           </div>
         </div>

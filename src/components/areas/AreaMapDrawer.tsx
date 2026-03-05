@@ -13,14 +13,29 @@ interface Props {
   initialCenter?: LngLat
   /** Polígono existente a cargar (modo edición). Los vértices se precargan en el mapa. */
   initialPolygon?: GeoJSON.Polygon
+  /** Otras áreas de la campaña para contexto visual. */
+  referenceAreas?: Array<{
+    id: string
+    name: string
+    polygonGeojson: GeoJSON.Polygon
+  }>
+  /** Área activa (en edición) para excluirla de las referencias. */
+  activeAreaId?: string
 }
 
-export default function AreaMapDrawer({ onPolygonChange, initialCenter, initialPolygon }: Props) {
+export default function AreaMapDrawer({
+  onPolygonChange,
+  initialCenter,
+  initialPolygon,
+  referenceAreas = [],
+  activeAreaId,
+}: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletRef = useRef<{
     map: L.Map
     polygon: L.Polygon | null
     markers: L.Marker[]
+    referenceLayers: L.Polygon[]
   } | null>(null)
 
   // Si hay polígono inicial, pre-cargar sus puntos (sin el último punto de cierre)
@@ -65,7 +80,7 @@ export default function AreaMapDrawer({ onPolygonChange, initialCenter, initialP
         maxZoom: 19,
       }).addTo(map)
 
-      leafletRef.current = { map, polygon: null, markers: [] }
+      leafletRef.current = { map, polygon: null, markers: [], referenceLayers: [] }
 
       map.on("click", (e: L.LeafletMouseEvent) => {
         setPoints((prev) => {
@@ -102,15 +117,31 @@ export default function AreaMapDrawer({ onPolygonChange, initialCenter, initialP
         return
       }
 
-      // Añadir marcadores
+      // Añadir marcadores drag & drop para editar vértices.
       const newMarkers = points.map(([lng, lat], i) => {
-        const marker = L.circleMarker([lat, lng], {
-          radius: 6,
-          color: i === 0 ? "#16a34a" : "#2563eb",
-          fillColor: i === 0 ? "#4ade80" : "#60a5fa",
-          fillOpacity: 0.8,
-          weight: 2,
+        const marker = L.marker([lat, lng], {
+          draggable: true,
+          icon: L.divIcon({
+            className: "",
+            iconSize: [14, 14],
+            iconAnchor: [7, 7],
+            html:
+              i === 0
+                ? '<span style="display:block;width:14px;height:14px;border-radius:9999px;background:#22c55e;border:2px solid #166534;"></span>'
+                : '<span style="display:block;width:14px;height:14px;border-radius:9999px;background:#60a5fa;border:2px solid #1e40af;"></span>',
+          }),
         }).addTo(map)
+
+        marker.on("click", (e) => L.DomEvent.stopPropagation(e))
+        marker.on("dragstart", (e) => L.DomEvent.stopPropagation(e))
+        marker.on("dragend", () => {
+          const next = marker.getLatLng()
+          setPoints((prev) =>
+            prev.map((point, pointIndex) =>
+              pointIndex === i ? ([next.lng, next.lat] as LngLat) : point
+            )
+          )
+        })
         return marker
       })
       leafletRef.current!.markers = newMarkers
@@ -139,6 +170,45 @@ export default function AreaMapDrawer({ onPolygonChange, initialCenter, initialP
       }
     })
   }, [points, closed]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dibujar otras áreas de la campaña como referencia visual.
+  useEffect(() => {
+    if (!leafletRef.current) return
+    import("leaflet").then((L) => {
+      const state = leafletRef.current
+      if (!state) return
+
+      state.referenceLayers.forEach((layer) => layer.remove())
+      state.referenceLayers = []
+
+      const bounds = L.latLngBounds([])
+
+      for (const area of referenceAreas) {
+        if (activeAreaId && area.id === activeAreaId) continue
+        const ring = area.polygonGeojson.coordinates?.[0]
+        if (!ring || ring.length < 3) continue
+
+        const latlngs = ring.map(([lng, lat]) => [lat, lng] as L.LatLngTuple)
+        const layer = L.polygon(latlngs, {
+          color: "#64748b",
+          fillColor: "#94a3b8",
+          fillOpacity: 0.06,
+          weight: 1.5,
+          dashArray: "5 4",
+          interactive: false,
+        }).addTo(state.map)
+
+        layer.bindTooltip(`🗺️ ${area.name}`, { sticky: true })
+        layer.bringToBack()
+        state.referenceLayers.push(layer)
+        bounds.extend(layer.getBounds())
+      }
+
+      if (!initialPolygon && points.length === 0 && bounds.isValid()) {
+        state.map.fitBounds(bounds.pad(0.15), { maxZoom: 15 })
+      }
+    })
+  }, [referenceAreas, activeAreaId, initialPolygon, points.length])
 
   function handleClose() {
     if (points.length >= 3) {
@@ -178,6 +248,11 @@ export default function AreaMapDrawer({ onPolygonChange, initialCenter, initialP
               ? "Click on the map to add vertices"
               : `${points.length} vertices — ${points.length >= 3 ? 'click "Close" to finish' : "add at least 3 vertices"}`}
         </span>
+        {points.length > 0 && (
+          <span className="text-xs text-gray-400">
+            Drag any vertex to adjust.
+          </span>
+        )}
         <div className="ml-auto flex gap-2">
           {points.length > 0 && !closed && (
             <button

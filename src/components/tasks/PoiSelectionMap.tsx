@@ -18,11 +18,16 @@ export interface TaskPoiMapPoi {
   radiusMeters: number
 }
 
+export type TaskAssignmentScope = "poi" | "area"
+
 interface Props {
   areas: TaskPoiMapArea[]
   pois: TaskPoiMapPoi[]
+  selectionMode?: TaskAssignmentScope
   selectedPoiId?: string | null
+  selectedAreaId?: string | null
   onPoiSelect?: (poiId: string) => void
+  onAreaSelect?: (areaId: string) => void
 }
 
 function getAreaRing(area: TaskPoiMapArea): [number, number][] {
@@ -34,8 +39,11 @@ function getAreaRing(area: TaskPoiMapArea): [number, number][] {
 export default function PoiSelectionMap({
   areas,
   pois,
+  selectionMode = "poi",
   selectedPoiId,
+  selectedAreaId,
   onPoiSelect,
+  onAreaSelect,
 }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletRef = useRef<{
@@ -98,7 +106,8 @@ export default function PoiSelectionMap({
       if (!state) return
 
       const selectedPoi = pois.find((poi) => poi.id === selectedPoiId) ?? null
-      const selectedAreaId = selectedPoi?.areaId ?? null
+      const effectiveSelectedAreaId =
+        selectionMode === "area" ? (selectedAreaId ?? null) : (selectedPoi?.areaId ?? null)
 
       for (const layer of state.areaLayers.values()) layer.remove()
       state.areaLayers.clear()
@@ -113,7 +122,7 @@ export default function PoiSelectionMap({
         const ring = getAreaRing(area)
         if (ring.length === 0) continue
 
-        const isSelectedArea = area.id === selectedAreaId
+        const isSelectedArea = area.id === effectiveSelectedAreaId
         const layer = L.polygon(ring, {
           color: isSelectedArea ? "#f59e0b" : "#16a34a",
           fillColor: isSelectedArea ? "#fde68a" : "#4ade80",
@@ -123,12 +132,20 @@ export default function PoiSelectionMap({
         }).addTo(state.map)
 
         layer.bindTooltip(`🗺️ ${area.name}`, { sticky: true })
+        layer.on("click", (event) => {
+          L.DomEvent.stopPropagation(event)
+          onAreaSelect?.(area.id)
+        })
         state.areaLayers.set(area.id, layer)
       }
 
       for (const poi of pois) {
-        const isSelectedPoi = poi.id === selectedPoiId
-        const color = isSelectedPoi ? "#f59e0b" : "#2563eb"
+        const isSelectedPoi = selectionMode === "poi" && poi.id === selectedPoiId
+        const isPoiInSelectedArea =
+          selectionMode === "area" &&
+          effectiveSelectedAreaId !== null &&
+          poi.areaId === effectiveSelectedAreaId
+        const color = isSelectedPoi || isPoiInSelectedArea ? "#f59e0b" : "#2563eb"
 
         const marker = L.circleMarker([poi.latitude, poi.longitude], {
           radius: 8,
@@ -144,13 +161,17 @@ export default function PoiSelectionMap({
         })
         marker.on("click", (event) => {
           L.DomEvent.stopPropagation(event)
-          onPoiSelect?.(poi.id)
+          if (selectionMode === "poi") {
+            onPoiSelect?.(poi.id)
+          } else {
+            onAreaSelect?.(poi.areaId)
+          }
         })
 
         state.poiLayers.set(poi.id, marker)
       }
 
-      if (selectedPoi) {
+      if (selectionMode === "poi" && selectedPoi) {
         state.selectedRadiusLayer = L.circle(
           [selectedPoi.latitude, selectedPoi.longitude],
           {
@@ -163,20 +184,37 @@ export default function PoiSelectionMap({
         ).addTo(state.map)
       }
 
-      if (selectedPoi) {
+      if (selectionMode === "poi" && selectedPoi) {
         state.map.setView([selectedPoi.latitude, selectedPoi.longitude], 16)
         return
+      }
+
+      if (selectionMode === "area" && effectiveSelectedAreaId) {
+        const selectedAreaLayer = state.areaLayers.get(effectiveSelectedAreaId)
+        if (selectedAreaLayer) {
+          state.map.fitBounds(selectedAreaLayer.getBounds().pad(0.2), { maxZoom: 16 })
+          return
+        }
       }
 
       const bounds = L.latLngBounds([])
       for (const layer of state.areaLayers.values()) bounds.extend(layer.getBounds())
       for (const layer of state.poiLayers.values()) bounds.extend(layer.getLatLng())
+      if (state.selectedRadiusLayer) bounds.extend(state.selectedRadiusLayer.getBounds())
 
       if (bounds.isValid()) {
         state.map.fitBounds(bounds.pad(0.15), { maxZoom: 16 })
       }
     })
-  }, [areas, pois, selectedPoiId, onPoiSelect])
+  }, [
+    areas,
+    pois,
+    selectionMode,
+    selectedPoiId,
+    selectedAreaId,
+    onPoiSelect,
+    onAreaSelect,
+  ])
 
   return (
     <div
