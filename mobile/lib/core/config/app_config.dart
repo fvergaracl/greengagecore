@@ -33,7 +33,7 @@ class AppConfig {
         'KEYCLOAK_POST_LOGOUT_REDIRECT_URL',
         defaultValue: 'com.greencrowd.app://callback',
       ),
-      scopes: const ['openid', 'profile', 'email', 'roles', 'offline_access'],
+      scopes: const ['openid', 'profile', 'email', 'offline_access'],
     );
   }
 

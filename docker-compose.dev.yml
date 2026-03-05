@@ -63,6 +63,54 @@ services:
     networks:
       - greencrowd_dev
 
+  # ── GAME Engine — dedicated PostgreSQL ────────────────────────
+  game_postgres:
+    image: postgres:16-alpine
+    container_name: greencrowd_game_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: game_db
+      POSTGRES_USER: game_user
+      POSTGRES_PASSWORD: game_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - game_postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U game_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - greencrowd_dev
+
+  # ── GAME Engine API ───────────────────────────────────────────
+  game:
+    image: fvergaracl/game:latest
+    container_name: greencrowd_game
+    restart: unless-stopped
+    environment:
+      ENV: dev
+      DB_ENGINE: postgresql
+      DB_NAME: game_db
+      DB_USER: game_user
+      DB_PASSWORD: game_secret
+      DB_HOST: game_postgres
+      DB_PORT: 5432
+      DATABASE_URL: postgresql://game_user:game_secret@game_postgres:5432/game_db
+      ALEMBIC_DATABASE_URL: postgresql://game_user:game_secret@game_postgres:5432/game_db
+      SECRET_KEY: dev_secret_key
+      DEFAULT_CONVERTION_RATE_POINTS_TO_COIN: 100
+      ABUSE_PREVENTION_ENABLED: "false"
+      API_URL_KPI: http://game:8000/api/v1/kpi
+    ports:
+      - "8001:8000"
+    depends_on:
+      game_postgres:
+        condition: service_healthy
+    networks:
+      - greencrowd_dev
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: greencrowd_keycloak
@@ -94,6 +142,7 @@ volumes:
   postgres_dev_data:
   redis_dev_data:
   minio_dev_data:
+  game_postgres_dev_data:
 
 networks:
   greencrowd_dev:

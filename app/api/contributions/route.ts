@@ -4,8 +4,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { withAuth } from "@/middleware/auth"
 import { withUserRLS } from "@/middleware/rls"
 import { isWithinPoiRadius } from "@/domains/geo/geofence"
-import { simulatePoints, assignPoints } from "@/domains/game/client"
-import { buildPoiTaskExternalTaskId } from "@/domains/game/external-ids"
 import { rewardsQueue } from "@/workers/index"
 import { z } from "zod"
 

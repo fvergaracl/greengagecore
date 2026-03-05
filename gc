@@ -130,6 +130,22 @@ kc_put() {
     -d "${2:-}"
 }
 
+# ── Free host ports ───────────────────────────────────────────────────────────
+free_host_port() {
+  local port="$1"
+  local pids
+  pids=$(lsof -ti :"$port" 2>/dev/null || true)
+  if [[ -n "$pids" ]]; then
+    warn "Puerto $port ocupado (PID: $pids) — liberando..."
+    echo "$pids" | xargs kill -15 2>/dev/null || true
+    sleep 0.5
+    # Force kill if still alive
+    pids=$(lsof -ti :"$port" 2>/dev/null || true)
+    [[ -n "$pids" ]] && echo "$pids" | xargs kill -9 2>/dev/null || true
+    log_info "Puerto $port liberado"
+  fi
+}
+
 # ── Wait helpers ──────────────────────────────────────────────────────────────
 wait_for_postgres() {
   local timeout="${1:-60}" interval=3 elapsed=0
@@ -253,6 +269,28 @@ npm_install() {
 # ── Start infrastructure ──────────────────────────────────────────────────────
 start_infra() {
   log_step "[4/8] Starting infrastructure"
+
+  # Free ports that might be held by stale containers or host processes
+  for port in 5432 5433 6379 8001 8080 9000 9001; do
+    cid=$(docker ps -q --filter "publish=$port" 2>/dev/null)
+    if [[ -n "$cid" ]]; then
+      cname=$(docker inspect --format '{{.Name}}' "$cid" 2>/dev/null | tr -d '/')
+      case "$cname" in
+        greencrowd_*|greencrowdv2-*)
+          # Our own container — leave it alone
+          ;;
+        *)
+          warn "Puerto $port ocupado por contenedor '$cname' — deteniéndolo..."
+          docker stop "$cid" >/dev/null
+          free_host_port "$port"
+          ;;
+      esac
+    else
+      # No Docker container on this port — kill any host process holding it
+      free_host_port "$port"
+    fi
+  done
+
   docker compose -f "$COMPOSE_DEV" up -d
   log "PostgreSQL · Redis · MinIO · Keycloak started"
 }
@@ -395,6 +433,19 @@ run_migrations() {
 # ── Start app + worker ────────────────────────────────────────────────────────
 start_dev() {
   log_step "[8/8] Starting dev server"
+
+  # Kill any stale Next.js / worker processes first
+  pkill -f "next dev"    2>/dev/null || true
+  pkill -f "next-server" 2>/dev/null || true
+  pkill -f "tsx watch src/workers" 2>/dev/null || true
+
+  # Ensure all app ports are free before starting
+  for port in 3000; do
+    free_host_port "$port"
+  done
+
+  sleep 0.3
+  rm -f .next/dev/lock
   echo ""
   echo -e "  ${BOLD}App:    ${CYAN}http://localhost:3000${RESET}"
   echo -e "  ${BOLD}MinIO:  ${CYAN}http://localhost:9001${RESET}  (admin / minio_secret_key)"

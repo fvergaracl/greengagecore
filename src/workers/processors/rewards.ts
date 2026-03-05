@@ -2,7 +2,7 @@
 // Processes reward events that failed because GAME was down.
 
 import { prisma } from "@/lib/db"
-import { assignPoints, simulatePoints } from "@/domains/game/client"
+import { assignPoints } from "@/domains/game/client"
 import { buildPoiTaskExternalTaskId, buildOpenTaskExternalTaskId } from "@/domains/game/external-ids"
 
 export async function processRewardEvent(rewardEventId: string): Promise<void> {
@@ -17,7 +17,7 @@ export async function processRewardEvent(rewardEventId: string): Promise<void> {
   if (!event || event.status !== "pending") return
 
   if (!event.campaign.gameEnabled || !event.campaign.gameId) {
-    // GAME no configurado para esta campaña; marcar como aplicado sin puntos
+    // GAME not configured for this campaign; mark as applied with zero points
     await prisma.rewardEvent.update({
       where: { id: rewardEventId },
       data: { status: "applied", points: 0 },
@@ -35,31 +35,18 @@ export async function processRewardEvent(rewardEventId: string): Promise<void> {
       ? buildPoiTaskExternalTaskId(event.campaignId, event.task.poiId, event.taskId)
       : buildOpenTaskExternalTaskId(event.campaignId, event.taskId)
 
-    // Simular puntos (puede retornar null si GAME sigue caído)
-    const simulated = await simulatePoints(
+    const result = await assignPoints(
       event.campaign.gameId,
+      externalTaskId,
       externalUserId,
-      externalTaskId
+      { contributionId: event.id, taskId: event.taskId }
     )
 
-    if (!simulated) {
-      // GAME sigue caído, dejar en pending para siguiente retry
+    if (!result) {
+      // GAME still down — leave as pending for next retry
       return
     }
 
-    const result = await assignPoints(
-      event.campaign.gameId,
-      event.taskId, // gameTaskId
-      externalUserId,
-      {
-        simulationHash: simulated.simulationHash,
-        tasks: [simulated],
-      }
-    )
-
-    if (!result) return
-
-    // Actualizar reward event y wallet
     await prisma.$transaction([
       prisma.rewardEvent.update({
         where: { id: rewardEventId },
@@ -93,7 +80,7 @@ export async function processRewardEvent(rewardEventId: string): Promise<void> {
 }
 
 /**
- * Reintenta todos los reward_events pendientes (llamado cada minuto).
+ * Retries all pending reward_events (called every minute by the worker).
  */
 export async function retryPendingRewards(): Promise<void> {
   const pending = await prisma.rewardEvent.findMany({

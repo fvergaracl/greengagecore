@@ -1,5 +1,5 @@
 // GreenCrowd V2 — GAME Engine client with Circuit Breaker
-// Implements: game creation, task registration, simulation and point assignment.
+// Aligned with GAME Swagger v1.2.047 (POST /games, /tasks, /points, /wallet, /action)
 import CircuitBreaker from "opossum"
 import { redis, CACHE_KEYS } from "@/lib/redis"
 import { buildCampaignExternalGameId, buildPoiTaskExternalTaskId, buildOpenTaskExternalTaskId } from "./external-ids"
@@ -8,29 +8,62 @@ const GAME_BASE_URL = process.env.API_GAME_BASE_URL
 const GAME_API_KEY = process.env.API_GAME_APIKEY
 
 // ─────────────────────────────────────────────────────────────
-// Types
+// Types (aligned with GAME Swagger v1.2.047)
 // ─────────────────────────────────────────────────────────────
 
-export type GameDimensions = {
-  DIM_BP: number
-  DIM_LBE: number
-  DIM_TD: number
-  DIM_PP: number
-  DIM_S: number
+export type GameParam = { key: string; value: string | number | boolean }
+
+export type GameCreated = {
+  gameId: string
+  externalGameId: string
+  strategyId?: string
+  platform?: string
+  params?: Array<GameParam & { id?: string }>
 }
 
-export type SimulatedPoints = {
-  externalUserId: string
+export type TaskCreated = {
+  message?: string
   externalTaskId: string
-  dimensions: { [key: string]: number }[]
-  totalSimulatedPoints: number
-  expirationDate: string
-  simulationHash: string
+  externalGameId: string
+  gameParams?: GameParam[]
+  taskParams?: GameParam[]
 }
 
 export type AssignPointsResult = {
   points: number
   caseName: string
+  isACreatedUser: boolean
+  gameId: string
+  externalTaskId: string
+  created_at: string
+}
+
+export type WalletTransaction = {
+  transactionType: string
+  points: number
+  coins: number
+  data?: Record<string, unknown>
+  id: string
+  created_at: string
+}
+
+export type UserWallet = {
+  externalUserId?: string
+  totalPoints?: number
+  coins?: number
+  transactions?: WalletTransaction[]
+  [key: string]: unknown
+}
+
+export type UserPoints = {
+  externalGameId: string
+  created_at: string
+  task: Array<{
+    externalTaskId?: string
+    points?: number
+    timesAwarded?: number
+    [key: string]: unknown
+  }>
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -50,7 +83,7 @@ async function gameRequest<T>(
     method,
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": GAME_API_KEY,
+      "x-api-key": GAME_API_KEY,
     },
     body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(10_000), // 10s timeout
@@ -66,14 +99,13 @@ async function gameRequest<T>(
 
 // ─────────────────────────────────────────────────────────────
 // Circuit Breaker
-// Envuelve todas las llamadas a GAME
 // ─────────────────────────────────────────────────────────────
 
 const breakerOptions = {
-  timeout: 10_000,       // 10 segundos
-  errorThresholdPercentage: 50,  // Abre si 50% de requests fallan
-  resetTimeout: 30_000,  // Intenta re-conectar cada 30s
-  volumeThreshold: 3,    // Mínimo 3 requests antes de evaluar
+  timeout: 10_000,
+  errorThresholdPercentage: 50,
+  resetTimeout: 30_000,
+  volumeThreshold: 3,
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -107,59 +139,82 @@ async function safeGameRequest<T>(
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Crea un "game" en GAME engine al publicar una campaña.
- * Idempotente: si ya existe, retorna el existente.
+ * Find an existing game in GAME by its externalGameId.
+ * GET /games?externalGameId={externalGameId}
  */
-export async function createGameForCampaign(
-  campaignId: string,
-  strategy = "greencrowdStrategy",
-  basicPoints = 10
-): Promise<{ id: string; externalGameId: string } | null> {
-  const externalGameId = buildCampaignExternalGameId(campaignId)
-
-  return safeGameRequest<{ id: string; externalGameId: string }>(
-    "POST",
-    "/games",
-    {
-      externalGameId,
-      params: { strategyId: strategy, basicPoints },
-    }
+export async function findGameByExternalId(externalGameId: string): Promise<GameCreated | null> {
+  const result = await safeGameRequest<{ items: GameCreated[] }>(
+    "GET",
+    `/games?externalGameId=${encodeURIComponent(externalGameId)}`
   )
+  return result?.items?.[0] ?? null
 }
 
 /**
- * Registra un task POI en GAME.
+ * Creates a "game" in GAME engine when a campaign is published.
+ * POST /games
+ * Body: { externalGameId, platform, strategyId, params: [{key, value}] }
+ */
+export async function createGameForCampaign(
+  campaignId: string,
+  strategy = "default",
+  basicPoints = 10
+): Promise<GameCreated | null> {
+  const externalGameId = buildCampaignExternalGameId(campaignId)
+
+  return safeGameRequest<GameCreated>("POST", "/games", {
+    externalGameId,
+    platform: "greencrowd",
+    strategyId: strategy,
+    params: [{ key: "variable_basic_points", value: basicPoints }],
+  })
+}
+
+/**
+ * Gets or creates a game for a campaign — idempotent helper.
+ */
+export async function getOrCreateGameForCampaign(
+  campaignId: string,
+  strategy = "default",
+  basicPoints = 10
+): Promise<GameCreated | null> {
+  const externalGameId = buildCampaignExternalGameId(campaignId)
+  const existing = await findGameByExternalId(externalGameId)
+  if (existing) return existing
+  return createGameForCampaign(campaignId, strategy, basicPoints)
+}
+
+/**
+ * Registers a POI task in GAME.
+ * POST /games/{gameId}/tasks
  */
 export async function registerPoiTask(
   gameId: string,
   campaignId: string,
   poiId: string,
   taskId: string
-): Promise<{ id: string; externalTaskId: string } | null> {
+): Promise<TaskCreated | null> {
   const externalTaskId = buildPoiTaskExternalTaskId(campaignId, poiId, taskId)
 
-  return safeGameRequest<{ id: string; externalTaskId: string }>(
-    "POST",
-    `/games/${gameId}/tasks`,
-    { externalTaskId, params: {} }
-  )
+  return safeGameRequest<TaskCreated>("POST", `/games/${gameId}/tasks`, {
+    externalTaskId,
+  })
 }
 
 /**
- * Registra un OpenTask (area-level) en GAME.
+ * Registers an open task (area-level) in GAME.
+ * POST /games/{gameId}/tasks
  */
 export async function registerOpenTask(
   gameId: string,
   campaignId: string,
   openTaskId: string
-): Promise<{ id: string; externalTaskId: string } | null> {
+): Promise<TaskCreated | null> {
   const externalTaskId = buildOpenTaskExternalTaskId(campaignId, openTaskId)
 
-  return safeGameRequest<{ id: string; externalTaskId: string }>(
-    "POST",
-    `/games/${gameId}/tasks`,
-    { externalTaskId, params: {} }
-  )
+  return safeGameRequest<TaskCreated>("POST", `/games/${gameId}/tasks`, {
+    externalTaskId,
+  })
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -167,113 +222,94 @@ export async function registerOpenTask(
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Simula los puntos que recibiría el usuario al completar la task.
- * Resultado cacheado en Redis hasta la expirationDate.
- */
-export async function simulatePoints(
-  gameId: string,
-  externalUserId: string,
-  externalTaskId: string
-): Promise<SimulatedPoints | null> {
-  const cacheKey = CACHE_KEYS.gameSimulate(externalUserId, externalTaskId)
-
-  // Intentar cache primero
-  const cached = await redis.get(cacheKey)
-  if (cached) {
-    return JSON.parse(cached) as SimulatedPoints
-  }
-
-  const result = await safeGameRequest<SimulatedPoints>(
-    "GET",
-    `/games/${gameId}/points/simulated?externalUserId=${encodeURIComponent(externalUserId)}&externalTaskId=${encodeURIComponent(externalTaskId)}`
-  )
-
-  if (result) {
-    // Cachear hasta la expiración que indica GAME
-    const expiresAt = new Date(result.expirationDate).getTime()
-    const ttlMs = Math.max(0, expiresAt - Date.now())
-    if (ttlMs > 0) {
-      await redis.setex(cacheKey, Math.floor(ttlMs / 1000), JSON.stringify(result))
-    }
-  }
-
-  return result
-}
-
-/**
- * Asigna los puntos al usuario al completar una task.
- * Usa el simulationHash para validar que la simulación no expiró.
+ * Assigns points to a user for completing a task.
+ * POST /games/{gameId}/tasks/{externalTaskId}/points
+ * Body: { externalUserId, data?, isSimulated }
  */
 export async function assignPoints(
   gameId: string,
-  gameTaskId: string,
+  externalTaskId: string,
   externalUserId: string,
-  simulatedData: { simulationHash: string; tasks: SimulatedPoints[] }
+  data: Record<string, unknown> = {}
 ): Promise<AssignPointsResult | null> {
   const result = await safeGameRequest<AssignPointsResult>(
     "POST",
-    `/games/${gameId}/tasks/${gameTaskId}/points`,
-    {
-      externalUserId,
-      data: simulatedData,
-    }
+    `/games/${gameId}/tasks/${encodeURIComponent(externalTaskId)}/points`,
+    { externalUserId, data, isSimulated: false }
   )
 
   if (result) {
-    // Invalidar cache de wallet y ranking
-    const [walletKey] = [
-      CACHE_KEYS.gameWallet(externalUserId, "*"),
-    ]
-    await redis.del(walletKey)
+    // Invalidate cached wallet so next read is fresh
+    await redis.del(CACHE_KEYS.gameWallet(externalUserId, "wallet"))
   }
 
   return result
 }
 
 /**
- * Obtiene el wallet (puntos totales) del usuario en una campaña.
- * Cacheado 5 minutos; sirve stale si GAME está caído.
+ * Retrieves a user's wallet (points + coins).
+ * GET /users/{externalUserId}/wallet
+ * Cached 5 minutes; serves stale value if GAME is down.
  */
-export async function getWallet(
-  gameId: string,
-  externalUserId: string,
-  campaignId: string
-): Promise<{ totalPoints: number; rank?: number } | null> {
-  const cacheKey = CACHE_KEYS.gameWallet(externalUserId, campaignId)
+export async function getWallet(externalUserId: string): Promise<UserWallet | null> {
+  const cacheKey = CACHE_KEYS.gameWallet(externalUserId, "wallet")
 
-  // Intentar desde cache (sirve stale si GAME caído)
-  const cached = await redis.get(cacheKey)
-
-  const result = await safeGameRequest<{ totalPoints: number; rank?: number }>(
+  const result = await safeGameRequest<UserWallet>(
     "GET",
-    `/games/${gameId}/points?externalUserId=${encodeURIComponent(externalUserId)}`
+    `/users/${encodeURIComponent(externalUserId)}/wallet`
   )
 
   if (result) {
-    await redis.setex(cacheKey, 300, JSON.stringify(result)) // TTL 5 min
+    await redis.setex(cacheKey, 300, JSON.stringify(result))
     return result
   }
 
-  // Fallback: devolver valor cacheado aunque esté expirado (stale)
-  if (cached) {
-    return JSON.parse(cached) as { totalPoints: number }
-  }
+  // Stale fallback
+  const cached = await redis.get(cacheKey)
+  if (cached) return JSON.parse(cached) as UserWallet
 
   return null
 }
 
 /**
- * Trackea una acción del usuario (e.g., task_opened) en GAME.
+ * Retrieves all points earned by a user across all games.
+ * GET /users/{externalUserId}/points
+ */
+export async function getUserPoints(externalUserId: string): Promise<UserPoints[] | null> {
+  return safeGameRequest<UserPoints[]>(
+    "GET",
+    `/users/${encodeURIComponent(externalUserId)}/points`
+  )
+}
+
+/**
+ * Retrieves aggregated points for all users in a game.
+ * GET /games/{gameId}/points
+ */
+export async function getGamePoints(gameId: string): Promise<UserPoints | null> {
+  return safeGameRequest<UserPoints>("GET", `/games/${gameId}/points`)
+}
+
+// ─────────────────────────────────────────────────────────────
+// GAME API — User actions
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Tracks a user action on a task (e.g. "task_opened", "task_viewed").
+ * POST /games/{gameId}/tasks/{externalTaskId}/action
+ * Body: { typeAction, data, description, externalUserId } — all required by GAME
  */
 export async function trackUserAction(
   gameId: string,
-  gameTaskId: string,
+  externalTaskId: string,
   externalUserId: string,
-  action: string
+  typeAction: string,
+  data: Record<string, unknown> = {},
+  description = typeAction
 ): Promise<void> {
   await safeGameRequest(
     "POST",
-    `/games/${gameId}/tasks/${gameTaskId}/action`,
-    { externalUserId, action }
+    `/games/${gameId}/tasks/${encodeURIComponent(externalTaskId)}/action`,
+    { typeAction, data, description, externalUserId }
   )
 }

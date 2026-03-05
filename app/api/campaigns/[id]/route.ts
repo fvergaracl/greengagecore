@@ -63,9 +63,9 @@ export const PATCH = withResearcher(async (req, user) => {
 
     // Si se publica, crear game en GAME si está habilitado
     if (data.status === "published" && existing.status === "draft" && existing.gameEnabled) {
-      const gameResult = await createGameForCampaign(id, existing.gameStrategy ?? "greencrowdStrategy")
+      const gameResult = await createGameForCampaign(id, existing.gameStrategy ?? "default")
       if (gameResult) {
-        data.metadata = { ...(existing.metadata as object ?? {}), gameId: gameResult.id }
+        data.metadata = { ...(existing.metadata as object ?? {}), gameId: gameResult.gameId }
       }
     }
 

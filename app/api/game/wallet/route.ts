@@ -32,9 +32,9 @@ export const GET = withAuth(async (req, user) => {
   }
 
   // Si GAME está habilitado, intentar obtener wallet actualizado
-  let gameWallet: { totalPoints: number; rank?: number } | null = null
+  let gameWallet: { totalPoints?: number; coins?: number } | null = null
   if (campaign.gameEnabled && campaign.gameId) {
-    gameWallet = await getWallet(campaign.gameId, user.sub, campaignId)
+    gameWallet = await getWallet(user.sub)
   }
 
   return NextResponse.json({

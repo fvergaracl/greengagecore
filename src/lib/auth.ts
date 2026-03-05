@@ -28,10 +28,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       issuer: process.env.KEYCLOAK_ISSUER!,
       authorization: {
         params: {
-          scope: "openid email profile roles",
-        },
-      },
-    }),
+          scope: "openid profile email"
+        }
+      }
+    })
   ],
 
   callbacks: {
@@ -60,18 +60,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.roles = (token.roles as string[]) ?? []
       session.user.accessToken = token.accessToken as string
       return session
-    },
+    }
   },
 
   pages: {
     signIn: "/signin",
-    error: "/error",
+    error: "/error"
   },
 
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 horas
-  },
+    maxAge: 24 * 60 * 60 // 24 horas
+  }
 })
 
 // Refresca el access token con el refresh token de Keycloak
@@ -85,8 +85,8 @@ async function refreshAccessToken(token: Record<string, unknown>) {
         client_id: process.env.KEYCLOAK_CLIENT_ID!,
         client_secret: process.env.KEYCLOAK_CLIENT_SECRET!,
         grant_type: "refresh_token",
-        refresh_token: token.refreshToken as string,
-      }),
+        refresh_token: token.refreshToken as string
+      })
     })
 
     const refreshed = await response.json()
@@ -99,7 +99,7 @@ async function refreshAccessToken(token: Record<string, unknown>) {
       ...token,
       accessToken: refreshed.access_token,
       refreshToken: refreshed.refresh_token ?? token.refreshToken,
-      expiresAt: Math.floor(Date.now() / 1000) + refreshed.expires_in,
+      expiresAt: Math.floor(Date.now() / 1000) + refreshed.expires_in
     }
   } catch {
     return { ...token, error: "RefreshAccessTokenError" }
@@ -107,14 +107,17 @@ async function refreshAccessToken(token: Record<string, unknown>) {
 }
 
 // Helper: verifica si el usuario tiene un rol específico
-export function hasRole(session: { user?: { roles?: string[] } } | null, role: string): boolean {
+export function hasRole(
+  session: { user?: { roles?: string[] } } | null,
+  role: string
+): boolean {
   return session?.user?.roles?.includes(role) ?? false
 }
 
 export const ROLES = {
   SUPERADMIN: "superadmin",
   RESEARCHER: "researcher",
-  CONTRIBUTOR: "contributor",
+  CONTRIBUTOR: "contributor"
 } as const
 
 export type UserRole = (typeof ROLES)[keyof typeof ROLES]

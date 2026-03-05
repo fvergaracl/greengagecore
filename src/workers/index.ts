@@ -3,11 +3,10 @@
 // Runs as a separate process: `npm run worker`
 
 import { Worker, Queue, type ConnectionOptions } from "bullmq"
-import { redis } from "@/lib/redis"
+import { redisBull } from "@/lib/redis-bullmq"
 
 // BullMQ acepta una instancia ioredis como connection
-const connection = { connection: redis as unknown as ConnectionOptions }
-
+const connection = { connection: redisBull as unknown as ConnectionOptions }
 // ─────────────────────────────────────────────────────────────
 // Queue definitions (exportadas para usar en la app principal)
 // ─────────────────────────────────────────────────────────────
@@ -21,15 +20,27 @@ export const analyticsRefreshQueue = new Queue("analytics-refresh", connection)
 // Workers
 // ─────────────────────────────────────────────────────────────
 
-const workerOpts = { connection: redis as unknown as ConnectionOptions }
+const workerOpts = { connection: redisBull as unknown as ConnectionOptions }
 
 // Worker: Procesa reward_events pendientes (cuando GAME vuelve a estar disponible)
 const rewardsWorker = new Worker(
   "rewards",
-  async (job) => {
-    const { rewardEventId } = job.data as { rewardEventId: string }
-    const { processRewardEvent } = await import("./processors/rewards")
-    await processRewardEvent(rewardEventId)
+  async job => {
+    const { processRewardEvent, retryPendingRewards } = await import("./processors/rewards")
+
+    if (job.name === "process-pending") {
+      await retryPendingRewards()
+      return
+    }
+
+    if (job.name === "process-one") {
+      const { rewardEventId } = job.data as { rewardEventId?: string }
+      if (!rewardEventId) return // o throw new Error("Missing rewardEventId")
+      await processRewardEvent(rewardEventId)
+      return
+    }
+
+    // fallback: no-op
   },
   { ...workerOpts, concurrency: 5 }
 )
@@ -37,7 +48,7 @@ const rewardsWorker = new Worker(
 // Worker: Push notifications (FCM/APNs/WebPush)
 const pushWorker = new Worker(
   "push-notifications",
-  async (job) => {
+  async job => {
     const { sendPushNotification } = await import("./processors/push")
     await sendPushNotification(job.data)
   },
@@ -47,7 +58,7 @@ const pushWorker = new Worker(
 // Worker: Exportaciones async (CSV, GeoJSON, ZIP)
 const exportWorker = new Worker(
   "exports",
-  async (job) => {
+  async job => {
     const { processExport } = await import("./processors/export")
     await processExport(job.data)
   },
@@ -59,7 +70,12 @@ const analyticsWorker = new Worker(
   "analytics-refresh",
   async () => {
     const { prisma } = await import("@/lib/db")
-    await prisma.$executeRaw`SELECT refresh_analytics_views()`
+    try {
+      await prisma.$executeRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY v_campaign_stats`
+    } catch {
+      // Fallback si la view no soporta CONCURRENTLY (primera vez sin datos)
+      await prisma.$executeRaw`REFRESH MATERIALIZED VIEW v_campaign_stats`
+    }
   },
   { ...workerOpts, concurrency: 1 }
 )
@@ -86,11 +102,16 @@ rewardsQueue.add(
 // Error handling
 // ─────────────────────────────────────────────────────────────
 
-for (const worker of [rewardsWorker, pushWorker, exportWorker, analyticsWorker]) {
+for (const worker of [
+  rewardsWorker,
+  pushWorker,
+  exportWorker,
+  analyticsWorker
+]) {
   worker.on("failed", (job, err) => {
     console.error(`[Worker] Job ${job?.id} failed:`, err.message)
   })
-  worker.on("error", (err) => {
+  worker.on("error", err => {
     console.error("[Worker] Worker error:", err.message)
   })
 }
@@ -104,7 +125,7 @@ process.on("SIGTERM", async () => {
     rewardsWorker.close(),
     pushWorker.close(),
     exportWorker.close(),
-    analyticsWorker.close(),
+    analyticsWorker.close()
   ])
   process.exit(0)
 })

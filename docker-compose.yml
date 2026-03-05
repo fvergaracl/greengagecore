@@ -124,6 +124,81 @@ services:
       - greencrowd_net
 
   # ─────────────────────────────────────────────────────────────
+  # GAME Engine — dedicated PostgreSQL
+  # ─────────────────────────────────────────────────────────────
+  game_postgres:
+    image: postgres:16-alpine
+    container_name: greencrowd_game_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${GAME_DB_NAME:-game_db}
+      POSTGRES_USER: ${GAME_DB_USER:-game_user}
+      POSTGRES_PASSWORD: ${GAME_DB_PASSWORD:-game_secret}
+    volumes:
+      - game_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GAME_DB_USER:-game_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - greencrowd_net
+
+  # ─────────────────────────────────────────────────────────────
+  # GAME Engine API
+  # ─────────────────────────────────────────────────────────────
+  game:
+    image: fvergaracl/game:latest
+    container_name: greencrowd_game
+    restart: unless-stopped
+    environment:
+      ENV: prod
+      DB_ENGINE: postgresql
+      DB_NAME: ${GAME_DB_NAME:-game_db}
+      DB_USER: ${GAME_DB_USER:-game_user}
+      DB_PASSWORD: ${GAME_DB_PASSWORD:-game_secret}
+      DB_HOST: game_postgres
+      DB_PORT: 5432
+      DATABASE_URL: postgresql://${GAME_DB_USER:-game_user}:${GAME_DB_PASSWORD:-game_secret}@game_postgres:5432/${GAME_DB_NAME:-game_db}
+      ALEMBIC_DATABASE_URL: postgresql://${GAME_DB_USER:-game_user}:${GAME_DB_PASSWORD:-game_secret}@game_postgres:5432/${GAME_DB_NAME:-game_db}
+      SECRET_KEY: ${GAME_SECRET_KEY:-change_this_secret}
+      DEFAULT_CONVERTION_RATE_POINTS_TO_COIN: 100
+      ABUSE_PREVENTION_ENABLED: "false"
+      API_URL_KPI: http://game:8000/api/v1/kpi
+    ports:
+      - "8001:8000"
+    depends_on:
+      game_postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/kpi"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - greencrowd_net
+
+  # ─────────────────────────────────────────────────────────────
+  # GAME Health-check sidecar
+  # ─────────────────────────────────────────────────────────────
+  game_healthcheck:
+    image: fvergaracl/game-health-check:latest
+    container_name: greencrowd_game_healthcheck
+    restart: unless-stopped
+    environment:
+      DB_HOST: game_postgres
+      DB_NAME: ${GAME_DB_NAME:-game_db}
+      DB_USER: ${GAME_DB_USER:-game_user}
+      DB_PASSWORD: ${GAME_DB_PASSWORD:-game_secret}
+      API_URL_KPI: http://game:8000/api/v1/kpi
+    depends_on:
+      - game_postgres
+      - game
+    networks:
+      - greencrowd_net
+
+  # ─────────────────────────────────────────────────────────────
   # GreenCrowd Next.js App
   # ─────────────────────────────────────────────────────────────
   app:
@@ -137,6 +212,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-greencrowd}:${POSTGRES_PASSWORD:-greencrowd_secret}@postgres:5432/${POSTGRES_DB:-greencrowd}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      API_GAME_BASE_URL: http://game:8000/api/v1
     depends_on:
       postgres:
         condition: service_healthy
@@ -144,6 +220,8 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+      game:
+        condition: service_healthy
     ports:
       - "3000:3000"
     networks:
@@ -164,10 +242,13 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-greencrowd}:${POSTGRES_PASSWORD:-greencrowd_secret}@postgres:5432/${POSTGRES_DB:-greencrowd}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secret}@redis:6379
+      API_GAME_BASE_URL: http://game:8000/api/v1
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      game:
         condition: service_healthy
     networks:
       - greencrowd_net
@@ -190,10 +271,13 @@ services:
     networks:
       - greencrowd_net
 
+  
+
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  game_postgres_data:
 
 networks:
   greencrowd_net:

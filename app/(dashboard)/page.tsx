@@ -9,33 +9,48 @@ async function getStats(researcherId: string) {
   const [campaigns, contributions, pending] = await Promise.all([
     prisma.campaign.count({ where: { researcherId } }),
     prisma.contribution.count({
-      where: { campaign: { researcherId } },
+      where: { campaign: { researcherId } }
     }),
     prisma.contribution.count({
-      where: { campaign: { researcherId }, status: "submitted" },
-    }),
+      where: { campaign: { researcherId }, status: "submitted" }
+    })
   ])
   return { campaigns, contributions, pending }
 }
 
 export default async function DashboardPage() {
   const session = await auth()
-  const researcherId = session!.user!.id!
+
+  if (!session?.user?.id) {
+    return (
+      <div className='p-6 text-center'>
+        <p className='text-lg text-gray-700 dark:text-gray-300'>
+          Please sign in to view your dashboard.
+        </p>
+      </div>
+    )
+  }
+
+  const researcherId = session.user.id
   const stats = await getStats(researcherId)
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <h1 className='mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100'>
         Overview
       </h1>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Campaigns" value={stats.campaigns} icon="🗺️" />
-        <StatCard label="Total contributions" value={stats.contributions} icon="📋" />
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+        <StatCard label='Campaigns' value={stats.campaigns} icon='🗺️' />
         <StatCard
-          label="Pending moderation"
+          label='Total contributions'
+          value={stats.contributions}
+          icon='📋'
+        />
+        <StatCard
+          label='Pending moderation'
           value={stats.pending}
-          icon="🔍"
+          icon='🔍'
           highlight={stats.pending > 0}
         />
       </div>
@@ -47,7 +62,7 @@ function StatCard({
   label,
   value,
   icon,
-  highlight = false,
+  highlight = false
 }: {
   label: string
   value: number
@@ -62,7 +77,7 @@ function StatCard({
           : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
       }`}
     >
-      <p className="text-2xl">{icon}</p>
+      <p className='text-2xl'>{icon}</p>
       <p
         className={`mt-2 text-3xl font-bold ${
           highlight
@@ -72,7 +87,7 @@ function StatCard({
       >
         {value.toLocaleString()}
       </p>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{label}</p>
+      <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>{label}</p>
     </div>
   )
 }
