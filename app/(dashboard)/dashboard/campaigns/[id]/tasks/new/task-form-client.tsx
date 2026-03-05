@@ -328,7 +328,7 @@ export function NewTaskFormClient({ campaignId, pois, areas }: Props) {
             </p>
           ) : (
             <p className="mt-1 text-xs text-gray-500">
-              Click an area polygon or a POI marker to choose the area for this OpenTask.
+              Focus on area polygons. POIs are shown in gray only as reference.
             </p>
           )}
         </div>

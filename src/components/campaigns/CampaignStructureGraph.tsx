@@ -32,13 +32,95 @@ interface Props {
   areas: AreaNode[]
 }
 
-type StructureView = "tree" | "graph"
-type GraphBranch = { kind: "open" } | { kind: "poi"; poiId: string }
+type GraphNodeKind =
+  | "campaign"
+  | "area"
+  | "openHub"
+  | "openTask"
+  | "poi"
+  | "poiTask"
+  | "more"
 
-function pillClass(active: boolean) {
-  return active
-    ? "bg-green-100 text-green-700 ring-1 ring-green-300 dark:bg-green-900/30 dark:text-green-300 dark:ring-green-800"
-    : "bg-gray-100 text-gray-600 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700"
+type GraphNodeMeta =
+  | {
+      type: "campaign"
+      areaCount: number
+      taskCount: number
+    }
+  | {
+      type: "area"
+      areaId: string
+      openTaskCount: number
+      poiCount: number
+      taskCount: number
+    }
+  | {
+      type: "openHub"
+      areaId: string
+      openTaskCount: number
+    }
+  | {
+      type: "poi"
+      areaId: string
+      poiId: string
+      poiTaskCount: number
+    }
+  | {
+      type: "task"
+      areaId: string
+      poiId?: string
+      taskId: string
+      scope: "open" | "poi"
+      taskType: string
+      contributions: number
+      isDisabled: boolean
+    }
+  | {
+      type: "more"
+      parentType: "area" | "openTask" | "poiTask"
+      hiddenCount: number
+      areaId: string
+      poiId?: string
+    }
+
+type GraphNode = {
+  id: string
+  kind: GraphNodeKind
+  label: string
+  subtitle?: string
+  x: number
+  y: number
+  r: number
+  parentId?: string
+  meta: GraphNodeMeta
+}
+
+type GraphEdge = {
+  id: string
+  from: string
+  to: string
+  stroke: string
+}
+
+const MAX_POIS_PER_AREA = 4
+const MAX_OPEN_TASKS_PER_AREA = 3
+const MAX_TASKS_PER_POI = 2
+
+const NODE_STYLE: Record<
+  GraphNodeKind,
+  { fill: string; stroke: string; text: string }
+> = {
+  campaign: { fill: "#2563eb", stroke: "#1e40af", text: "#ffffff" },
+  area: { fill: "#10b981", stroke: "#047857", text: "#ffffff" },
+  openHub: { fill: "#6366f1", stroke: "#4338ca", text: "#ffffff" },
+  openTask: { fill: "#f59e0b", stroke: "#b45309", text: "#ffffff" },
+  poi: { fill: "#eab308", stroke: "#a16207", text: "#ffffff" },
+  poiTask: { fill: "#ef4444", stroke: "#b91c1c", text: "#ffffff" },
+  more: { fill: "#94a3b8", stroke: "#475569", text: "#ffffff" },
+}
+
+function truncate(text: string, max = 14) {
+  return text.length > max ? `${text.slice(0, Math.max(1, max - 1))}…` : text
 }
 
 export function CampaignStructureGraph({
@@ -46,22 +128,9 @@ export function CampaignStructureGraph({
   campaignName,
   areas,
 }: Props) {
-  const [view, setView] = useState<StructureView>("tree")
   const [query, setQuery] = useState("")
-  const [expandedAreas, setExpandedAreas] = useState<Set<string>>(
-    () => new Set(areas.map((area) => area.id))
-  )
-  const [expandedPois, setExpandedPois] = useState<Set<string>>(
-    () => new Set(areas.flatMap((area) => area.pois.map((poi) => poi.id)))
-  )
-  const [selectedAreaId, setSelectedAreaId] = useState<string>(areas[0]?.id ?? "")
-  const [selectedBranch, setSelectedBranch] = useState<GraphBranch>(() => {
-    const firstArea = areas[0]
-    if (!firstArea) return { kind: "open" }
-    if (firstArea.openTasks.length > 0) return { kind: "open" }
-    if (firstArea.pois[0]) return { kind: "poi", poiId: firstArea.pois[0].id }
-    return { kind: "open" }
-  })
+  const [activeNodeId, setActiveNodeId] = useState<string>("campaign")
+  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null)
 
   const filteredAreas = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -94,348 +163,529 @@ export function CampaignStructureGraph({
       .filter((area): area is AreaNode => area !== null)
   }, [areas, query])
 
-  const effectiveSelectedAreaId = filteredAreas.some(
-    (area) => area.id === selectedAreaId
-  )
-    ? selectedAreaId
-    : (filteredAreas[0]?.id ?? "")
+  const graph = useMemo(() => {
+    const areaCount = filteredAreas.length
+    const width = Math.max(980, areaCount * 300 + 200)
+    const height = 640
+    const centerX = width / 2
 
-  const selectedArea =
-    filteredAreas.find((area) => area.id === effectiveSelectedAreaId) ?? null
+    const nodes: GraphNode[] = []
+    const edges: GraphEdge[] = []
 
-  const effectiveSelectedBranch: GraphBranch = (() => {
-    if (!selectedArea) return { kind: "open" }
-    if (selectedBranch.kind === "open") return selectedBranch
-    if (selectedArea.pois.some((poi) => poi.id === selectedBranch.poiId)) {
-      return selectedBranch
+    const totalTaskCount = filteredAreas.reduce(
+      (sum, area) =>
+        sum + area.openTasks.length + area.pois.reduce((poiSum, poi) => poiSum + poi.tasks.length, 0),
+      0
+    )
+
+    nodes.push({
+      id: "campaign",
+      kind: "campaign",
+      label: "Campaign",
+      subtitle: truncate(campaignName, 18),
+      x: centerX,
+      y: 70,
+      r: 42,
+      meta: {
+        type: "campaign",
+        areaCount,
+        taskCount: totalTaskCount,
+      },
+    })
+
+    if (areaCount === 0) {
+      return { width, height, nodes, edges }
     }
-    if (selectedArea.openTasks.length > 0) return { kind: "open" }
-    if (selectedArea.pois[0]) return { kind: "poi", poiId: selectedArea.pois[0].id }
-    return { kind: "open" }
-  })()
 
-  const selectedPoi =
-    selectedArea && effectiveSelectedBranch.kind === "poi"
-      ? selectedArea.pois.find((poi) => poi.id === effectiveSelectedBranch.poiId) ??
-        null
-      : null
+    const areaY = 200
+    const openTaskY = 300
+    const poiY = 390
+    const poiTaskY = 540
+    const marginX = 130
+    const areaStep = areaCount === 1 ? 0 : (width - marginX * 2) / (areaCount - 1)
 
-  const graphTasks =
-    selectedArea === null
-      ? []
-      : effectiveSelectedBranch.kind === "open"
-      ? selectedArea.openTasks
-      : selectedPoi?.tasks ?? []
+    filteredAreas.forEach((area, areaIndex) => {
+      const areaX = areaCount === 1 ? centerX : marginX + areaStep * areaIndex
+      const areaId = `area:${area.id}`
+      const openHubId = `open:${area.id}`
+      const areaTaskCount =
+        area.openTasks.length +
+        area.pois.reduce((sum, poi) => sum + poi.tasks.length, 0)
 
-  function toggleArea(areaId: string) {
-    setExpandedAreas((prev) => {
-      const next = new Set(prev)
-      if (next.has(areaId)) next.delete(areaId)
-      else next.add(areaId)
-      return next
+      nodes.push({
+        id: areaId,
+        kind: "area",
+        label: area.name,
+        subtitle: `${areaTaskCount} tasks`,
+        x: areaX,
+        y: areaY,
+        r: 36,
+        parentId: "campaign",
+        meta: {
+          type: "area",
+          areaId: area.id,
+          openTaskCount: area.openTasks.length,
+          poiCount: area.pois.length,
+          taskCount: areaTaskCount,
+        },
+      })
+      edges.push({
+        id: `edge:campaign:${area.id}`,
+        from: "campaign",
+        to: areaId,
+        stroke: "#93c5fd",
+      })
+
+      const openHubX = areaX - 120
+      nodes.push({
+        id: openHubId,
+        kind: "openHub",
+        label: "OpenTask",
+        subtitle: `${area.openTasks.length}`,
+        x: openHubX,
+        y: areaY,
+        r: 28,
+        parentId: areaId,
+        meta: {
+          type: "openHub",
+          areaId: area.id,
+          openTaskCount: area.openTasks.length,
+        },
+      })
+      edges.push({
+        id: `edge:area-open:${area.id}`,
+        from: areaId,
+        to: openHubId,
+        stroke: "#a5b4fc",
+      })
+
+      const shownOpenTasks = area.openTasks.slice(0, MAX_OPEN_TASKS_PER_AREA)
+      const openSpacing = 72
+      const openStartX =
+        openHubX - ((shownOpenTasks.length - 1) * openSpacing) / 2
+
+      shownOpenTasks.forEach((task, taskIndex) => {
+        const taskId = `open-task:${task.id}`
+        const taskX = openStartX + taskIndex * openSpacing
+        nodes.push({
+          id: taskId,
+          kind: "openTask",
+          label: task.title,
+          subtitle: `${task.contributions} c`,
+          x: taskX,
+          y: openTaskY,
+          r: 24,
+          parentId: openHubId,
+          meta: {
+            type: "task",
+            areaId: area.id,
+            taskId: task.id,
+            scope: "open",
+            taskType: task.type,
+            contributions: task.contributions,
+            isDisabled: task.isDisabled,
+          },
+        })
+        edges.push({
+          id: `edge:open-task:${task.id}`,
+          from: openHubId,
+          to: taskId,
+          stroke: "#fcd34d",
+        })
+      })
+
+      if (area.openTasks.length > MAX_OPEN_TASKS_PER_AREA) {
+        const hiddenCount = area.openTasks.length - MAX_OPEN_TASKS_PER_AREA
+        const moreId = `open-more:${area.id}`
+        const moreX = openStartX + shownOpenTasks.length * openSpacing
+        nodes.push({
+          id: moreId,
+          kind: "more",
+          label: `+${hiddenCount}`,
+          subtitle: "tasks",
+          x: moreX,
+          y: openTaskY,
+          r: 20,
+          parentId: openHubId,
+          meta: {
+            type: "more",
+            parentType: "openTask",
+            hiddenCount,
+            areaId: area.id,
+          },
+        })
+        edges.push({
+          id: `edge:open-more:${area.id}`,
+          from: openHubId,
+          to: moreId,
+          stroke: "#cbd5e1",
+        })
+      }
+
+      const shownPois = area.pois.slice(0, MAX_POIS_PER_AREA)
+      const poiSpacing = 95
+      const poiStartX = areaX - ((shownPois.length - 1) * poiSpacing) / 2
+
+      shownPois.forEach((poi, poiIndex) => {
+        const poiNodeId = `poi:${poi.id}`
+        const poiX = poiStartX + poiIndex * poiSpacing
+        nodes.push({
+          id: poiNodeId,
+          kind: "poi",
+          label: poi.name,
+          subtitle: `${poi.tasks.length} tasks`,
+          x: poiX,
+          y: poiY,
+          r: 28,
+          parentId: areaId,
+          meta: {
+            type: "poi",
+            areaId: area.id,
+            poiId: poi.id,
+            poiTaskCount: poi.tasks.length,
+          },
+        })
+        edges.push({
+          id: `edge:area-poi:${area.id}:${poi.id}`,
+          from: areaId,
+          to: poiNodeId,
+          stroke: "#86efac",
+        })
+
+        const shownPoiTasks = poi.tasks.slice(0, MAX_TASKS_PER_POI)
+        const taskSpacing = 68
+        const taskStartX =
+          poiX - ((shownPoiTasks.length - 1) * taskSpacing) / 2
+
+        shownPoiTasks.forEach((task, taskIndex) => {
+          const taskNodeId = `poi-task:${task.id}`
+          const taskX = taskStartX + taskIndex * taskSpacing
+          nodes.push({
+            id: taskNodeId,
+            kind: "poiTask",
+            label: task.title,
+            subtitle: `${task.contributions} c`,
+            x: taskX,
+            y: poiTaskY,
+            r: 24,
+            parentId: poiNodeId,
+            meta: {
+              type: "task",
+              areaId: area.id,
+              poiId: poi.id,
+              taskId: task.id,
+              scope: "poi",
+              taskType: task.type,
+              contributions: task.contributions,
+              isDisabled: task.isDisabled,
+            },
+          })
+          edges.push({
+            id: `edge:poi-task:${poi.id}:${task.id}`,
+            from: poiNodeId,
+            to: taskNodeId,
+            stroke: "#fde68a",
+          })
+        })
+
+        if (poi.tasks.length > MAX_TASKS_PER_POI) {
+          const hiddenCount = poi.tasks.length - MAX_TASKS_PER_POI
+          const moreId = `poi-more:${poi.id}`
+          const moreX = taskStartX + shownPoiTasks.length * taskSpacing
+          nodes.push({
+            id: moreId,
+            kind: "more",
+            label: `+${hiddenCount}`,
+            subtitle: "tasks",
+            x: moreX,
+            y: poiTaskY,
+            r: 20,
+            parentId: poiNodeId,
+            meta: {
+              type: "more",
+              parentType: "poiTask",
+              hiddenCount,
+              areaId: area.id,
+              poiId: poi.id,
+            },
+          })
+          edges.push({
+            id: `edge:poi-more:${poi.id}`,
+            from: poiNodeId,
+            to: moreId,
+            stroke: "#cbd5e1",
+          })
+        }
+      })
+
+      if (area.pois.length > MAX_POIS_PER_AREA) {
+        const hiddenPois = area.pois.length - MAX_POIS_PER_AREA
+        const morePoiId = `area-poi-more:${area.id}`
+        const morePoiX = poiStartX + shownPois.length * poiSpacing
+        nodes.push({
+          id: morePoiId,
+          kind: "more",
+          label: `+${hiddenPois}`,
+          subtitle: "POIs",
+          x: morePoiX,
+          y: poiY,
+          r: 20,
+          parentId: areaId,
+          meta: {
+            type: "more",
+            parentType: "area",
+            hiddenCount: hiddenPois,
+            areaId: area.id,
+          },
+        })
+        edges.push({
+          id: `edge:area-poi-more:${area.id}`,
+          from: areaId,
+          to: morePoiId,
+          stroke: "#cbd5e1",
+        })
+      }
     })
+
+    return { width, height, nodes, edges }
+  }, [campaignName, filteredAreas])
+
+  const nodeMap = useMemo(
+    () => new Map(graph.nodes.map((node) => [node.id, node])),
+    [graph.nodes]
+  )
+
+  const effectiveActiveNodeId = nodeMap.has(activeNodeId) ? activeNodeId : "campaign"
+  const focusedNodeId = hoverNodeId ?? effectiveActiveNodeId
+  const selectedNode = nodeMap.get(effectiveActiveNodeId) ?? graph.nodes[0] ?? null
+
+  function isAncestor(ancestorId: string, nodeId: string) {
+    let currentId: string | undefined = nodeId
+    while (currentId) {
+      if (currentId === ancestorId) return true
+      currentId = nodeMap.get(currentId)?.parentId
+    }
+    return false
   }
 
-  function togglePoi(poiId: string) {
-    setExpandedPois((prev) => {
-      const next = new Set(prev)
-      if (next.has(poiId)) next.delete(poiId)
-      else next.add(poiId)
-      return next
-    })
-  }
-
-  function collapseAll() {
-    setExpandedAreas(new Set())
-    setExpandedPois(new Set())
-  }
-
-  function expandAll() {
-    setExpandedAreas(new Set(filteredAreas.map((area) => area.id)))
-    setExpandedPois(
-      new Set(filteredAreas.flatMap((area) => area.pois.map((poi) => poi.id)))
+  function isNodeHighlighted(nodeId: string) {
+    if (!focusedNodeId) return true
+    return (
+      isAncestor(focusedNodeId, nodeId) || isAncestor(nodeId, focusedNodeId)
     )
   }
 
-  function selectAreaInGraph(area: AreaNode) {
-    setSelectedAreaId(area.id)
-    if (area.openTasks.length > 0) {
-      setSelectedBranch({ kind: "open" })
-      return
+  function isEdgeHighlighted(edge: GraphEdge) {
+    if (!focusedNodeId) return true
+    return isNodeHighlighted(edge.from) && isNodeHighlighted(edge.to)
+  }
+
+  function describeSelectedNode(node: GraphNode | null) {
+    if (!node) return { title: "No selection", lines: [] as string[] }
+
+    switch (node.meta.type) {
+      case "campaign":
+        return {
+          title: "Campaign node",
+          lines: [
+            `${node.meta.areaCount} areas`,
+            `${node.meta.taskCount} tasks represented in the graph`,
+          ],
+        }
+      case "area":
+        return {
+          title: `Area: ${node.label}`,
+          lines: [
+            `${node.meta.poiCount} POIs`,
+            `${node.meta.openTaskCount} open tasks`,
+            `${node.meta.taskCount} total tasks`,
+          ],
+        }
+      case "openHub":
+        return {
+          title: "OpenTask hub",
+          lines: [`${node.meta.openTaskCount} open tasks in this area`],
+        }
+      case "poi":
+        return {
+          title: `POI: ${node.label}`,
+          lines: [`${node.meta.poiTaskCount} tasks linked to this POI`],
+        }
+      case "task":
+        return {
+          title: `Task: ${node.label}`,
+          lines: [
+            `Scope: ${node.meta.scope === "open" ? "Area-wide OpenTask" : "POI task"}`,
+            `Type: ${node.meta.taskType}`,
+            `${node.meta.contributions} contributions`,
+            node.meta.isDisabled ? "Status: disabled" : "Status: active",
+          ],
+        }
+      case "more":
+        return {
+          title: "Collapsed group",
+          lines: [`${node.meta.hiddenCount} hidden ${node.subtitle ?? "nodes"}`],
+        }
+      default:
+        return { title: node.label, lines: [] as string[] }
     }
-    if (area.pois[0]) {
-      setSelectedBranch({ kind: "poi", poiId: area.pois[0].id })
-      return
-    }
-    setSelectedBranch({ kind: "open" })
   }
 
   return (
     <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             🧭 Campaign Structure
           </h2>
           <p className="text-xs text-gray-500">
-            Interactive hierarchy: Campaign → Areas → POIs/OpenTasks → Tasks
+            Interactive graph: Campaign → Areas → POIs/OpenTasks → Tasks
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setView("tree")}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${pillClass(
-              view === "tree"
-            )}`}
-          >
-            Tree
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("graph")}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${pillClass(
-              view === "graph"
-            )}`}
-          >
-            Graph
-          </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-gray-50 p-2 dark:bg-gray-900">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter by area, POI or task…"
           className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-xs focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
         />
-        <button
-          type="button"
-          onClick={expandAll}
-          className="rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          Expand all
-        </button>
-        <button
-          type="button"
-          onClick={collapseAll}
-          className="rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          Collapse all
-        </button>
+        <div className="flex flex-wrap gap-1.5 text-[11px]">
+          <span className="rounded bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+            Campaign
+          </span>
+          <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+            Areas
+          </span>
+          <span className="rounded bg-indigo-100 px-2 py-0.5 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+            OpenTask
+          </span>
+          <span className="rounded bg-yellow-100 px-2 py-0.5 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">
+            POIs
+          </span>
+          <span className="rounded bg-red-100 px-2 py-0.5 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+            Tasks
+          </span>
+        </div>
       </div>
 
       {filteredAreas.length === 0 ? (
         <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-500 dark:bg-gray-900">
           No nodes match this filter.
         </p>
-      ) : view === "tree" ? (
-        <div className="overflow-x-auto">
-          <div className="min-w-[640px]">
-            <div className="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800 ring-1 ring-green-200 dark:bg-green-900/20 dark:text-green-300 dark:ring-green-800">
-              📢 {campaignName}
-            </div>
-            <div className="ml-4 border-l-2 border-dashed border-green-200 pl-4 pt-3 dark:border-green-800">
-              {filteredAreas.map((area) => {
-                const isAreaExpanded = expandedAreas.has(area.id)
+      ) : (
+        <div className="space-y-3">
+          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 dark:border-gray-700 dark:from-gray-800 dark:to-gray-900">
+            <svg
+              viewBox={`0 0 ${graph.width} ${graph.height}`}
+              className="h-[42rem] w-full min-w-[980px]"
+              role="img"
+              aria-label="Campaign graph"
+            >
+              {graph.edges.map((edge) => {
+                const from = nodeMap.get(edge.from)
+                const to = nodeMap.get(edge.to)
+                if (!from || !to) return null
+                const highlighted = isEdgeHighlighted(edge)
                 return (
-                  <div key={area.id} className="mb-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleArea(area.id)}
-                      className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm hover:border-green-300 dark:border-gray-700 dark:bg-gray-900"
-                    >
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        🗺️ {area.name}
-                        {area.isDisabled ? (
-                          <span className="ml-2 text-xs text-red-500">disabled</span>
-                        ) : null}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {isAreaExpanded ? "Hide" : "Show"} · {area.pois.length} POIs ·{" "}
-                        {area.openTasks.length} open tasks
-                      </span>
-                    </button>
-
-                    {isAreaExpanded ? (
-                      <div className="ml-4 mt-2 border-l border-gray-200 pl-3 dark:border-gray-700">
-                        <div className="mb-2 rounded-md bg-amber-50 px-3 py-1.5 text-xs text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:ring-amber-800">
-                          🧭 OpenTasks ({area.openTasks.length})
-                        </div>
-                        <div className="space-y-1">
-                          {area.openTasks.length === 0 ? (
-                            <p className="text-xs text-gray-400">No open tasks in this area.</p>
-                          ) : (
-                            area.openTasks.map((task) => (
-                              <div
-                                key={task.id}
-                                className="rounded-md bg-gray-50 px-3 py-1.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                              >
-                                🧩 {task.title} [{task.type}] · {task.contributions} contrib.
-                                {task.isDisabled ? " · disabled" : ""}
-                              </div>
-                            ))
-                          )}
-                        </div>
-
-                        <div className="mb-2 mt-3 rounded-md bg-blue-50 px-3 py-1.5 text-xs text-blue-700 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:ring-blue-800">
-                          📌 POIs ({area.pois.length})
-                        </div>
-                        {area.pois.length === 0 ? (
-                          <p className="text-xs text-gray-400">No POIs in this area.</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {area.pois.map((poi) => {
-                              const isPoiExpanded = expandedPois.has(poi.id)
-                              return (
-                                <div key={poi.id}>
-                                  <button
-                                    type="button"
-                                    onClick={() => togglePoi(poi.id)}
-                                    className="flex w-full items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-1.5 text-left text-xs hover:border-blue-300 dark:border-gray-700 dark:bg-gray-900"
-                                  >
-                                    <span className="text-gray-800 dark:text-gray-100">
-                                      📌 {poi.name}
-                                      {poi.isDisabled ? (
-                                        <span className="ml-2 text-[11px] text-red-500">
-                                          disabled
-                                        </span>
-                                      ) : null}
-                                    </span>
-                                    <span className="text-gray-500">
-                                      {isPoiExpanded ? "Hide" : "Show"} · {poi.tasks.length} tasks
-                                    </span>
-                                  </button>
-                                  {isPoiExpanded ? (
-                                    <div className="ml-4 mt-1 space-y-1 border-l border-gray-200 pl-3 dark:border-gray-700">
-                                      {poi.tasks.length === 0 ? (
-                                        <p className="text-xs text-gray-400">
-                                          No tasks in this POI.
-                                        </p>
-                                      ) : (
-                                        poi.tasks.map((task) => (
-                                          <div
-                                            key={task.id}
-                                            className="rounded-md bg-gray-50 px-3 py-1.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                          >
-                                            🧩 {task.title} [{task.type}] · {task.contributions}{" "}
-                                            contrib.
-                                            {task.isDisabled ? " · disabled" : ""}
-                                          </div>
-                                        ))
-                                      )}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
+                  <line
+                    key={edge.id}
+                    x1={from.x}
+                    y1={from.y}
+                    x2={to.x}
+                    y2={to.y}
+                    stroke={edge.stroke}
+                    strokeWidth={highlighted ? 3 : 1.5}
+                    opacity={highlighted ? 0.9 : 0.18}
+                  />
                 )
               })}
-            </div>
+
+              {graph.nodes.map((node) => {
+                const style = NODE_STYLE[node.kind]
+                const highlighted = isNodeHighlighted(node.id)
+                const selected = node.id === effectiveActiveNodeId
+                const label = truncate(
+                  node.label,
+                  node.kind === "campaign" ? 16 : node.kind === "area" ? 14 : 12
+                )
+
+                return (
+                  <g
+                    key={node.id}
+                    onClick={() => setActiveNodeId(node.id)}
+                    onMouseEnter={() => setHoverNodeId(node.id)}
+                    onMouseLeave={() => setHoverNodeId(null)}
+                    className="cursor-pointer"
+                    style={{ opacity: highlighted ? 1 : 0.22 }}
+                  >
+                    {selected && (
+                      <circle
+                        cx={node.x}
+                        cy={node.y}
+                        r={node.r + 8}
+                        fill="none"
+                        stroke="#22c55e"
+                        strokeWidth={2.5}
+                        opacity={0.85}
+                      />
+                    )}
+                    <circle
+                      cx={node.x}
+                      cy={node.y}
+                      r={node.r}
+                      fill={style.fill}
+                      stroke={style.stroke}
+                      strokeWidth={2}
+                    />
+                    <text
+                      x={node.x}
+                      y={node.subtitle ? node.y - 4 : node.y + 4}
+                      textAnchor="middle"
+                      fill={style.text}
+                      fontSize={node.kind === "campaign" ? 15 : 13}
+                      fontWeight={700}
+                    >
+                      {label}
+                    </text>
+                    {node.subtitle && (
+                      <text
+                        x={node.x}
+                        y={node.y + 14}
+                        textAnchor="middle"
+                        fill={style.text}
+                        opacity={0.92}
+                        fontSize={10}
+                        fontWeight={500}
+                      >
+                        {truncate(node.subtitle, 16)}
+                      </text>
+                    )}
+                  </g>
+                )
+              })}
+            </svg>
           </div>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <div className="grid min-w-[900px] gap-3 lg:grid-cols-4">
-            <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
-              <p className="text-xs text-green-700 dark:text-green-300">Campaign</p>
-              <p className="mt-1 text-sm font-semibold text-green-900 dark:text-green-100">
-                📢 {campaignName}
-              </p>
-            </div>
 
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900">
-              <p className="mb-2 text-xs text-gray-500">Areas</p>
-              <div className="space-y-1.5">
-                {filteredAreas.map((area) => (
-                  <button
-                    key={area.id}
-                    type="button"
-                    onClick={() => selectAreaInGraph(area)}
-                    className={`w-full rounded-md px-2.5 py-2 text-left text-xs ${
-                      effectiveSelectedAreaId === area.id
-                        ? "bg-green-100 text-green-800 ring-1 ring-green-300 dark:bg-green-900/30 dark:text-green-200 dark:ring-green-800"
-                        : "bg-white text-gray-700 ring-1 ring-gray-200 hover:ring-green-300 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700"
-                    }`}
-                  >
-                    🗺️ {area.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900">
-              <p className="mb-2 text-xs text-gray-500">
-                Nodes in {selectedArea?.name ?? "selected area"}
-              </p>
-              {selectedArea ? (
-                <div className="space-y-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedBranch({ kind: "open" })}
-                    className={`w-full rounded-md px-2.5 py-2 text-left text-xs ${
-                      effectiveSelectedBranch.kind === "open"
-                        ? "bg-amber-100 text-amber-800 ring-1 ring-amber-300 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-800"
-                        : "bg-white text-gray-700 ring-1 ring-gray-200 hover:ring-amber-300 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700"
-                    }`}
-                  >
-                    🧭 OpenTasks ({selectedArea.openTasks.length})
-                  </button>
-                  {selectedArea.pois.map((poi) => (
-                    <button
-                      key={poi.id}
-                      type="button"
-                      onClick={() =>
-                        setSelectedBranch({ kind: "poi", poiId: poi.id })
-                      }
-                      className={`w-full rounded-md px-2.5 py-2 text-left text-xs ${
-                        effectiveSelectedBranch.kind === "poi" &&
-                        effectiveSelectedBranch.poiId === poi.id
-                          ? "bg-blue-100 text-blue-800 ring-1 ring-blue-300 dark:bg-blue-900/30 dark:text-blue-200 dark:ring-blue-800"
-                          : "bg-white text-gray-700 ring-1 ring-gray-200 hover:ring-blue-300 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700"
-                      }`}
-                    >
-                      📌 {poi.name} ({poi.tasks.length} tasks)
-                    </button>
+          <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Selected node
+            </p>
+            {selectedNode ? (
+              <>
+                <p className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {describeSelectedNode(selectedNode).title}
+                </p>
+                <ul className="mt-1 space-y-0.5 text-xs text-gray-600 dark:text-gray-300">
+                  {describeSelectedNode(selectedNode).lines.map((line) => (
+                    <li key={line}>• {line}</li>
                   ))}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-400">Select an area.</p>
-              )}
-            </div>
-
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900">
-              <p className="mb-2 text-xs text-gray-500">
-                Tasks for{" "}
-                {effectiveSelectedBranch.kind === "open"
-                  ? "OpenTasks"
-                  : `POI: ${selectedPoi?.name ?? "unknown"}`}
-              </p>
-              {graphTasks.length === 0 ? (
-                <p className="text-xs text-gray-400">No tasks in this node.</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {graphTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="rounded-md bg-white px-2.5 py-2 text-xs text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700"
-                    >
-                      🧩 {task.title}
-                      <p className="mt-0.5 text-[11px] text-gray-500">
-                        {task.type} · {task.contributions} contributions
-                        {task.isDisabled ? " · disabled" : ""}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                </ul>
+              </>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">Select a node.</p>
+            )}
           </div>
         </div>
       )}

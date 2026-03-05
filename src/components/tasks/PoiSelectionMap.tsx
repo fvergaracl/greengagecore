@@ -140,25 +140,26 @@ export default function PoiSelectionMap({
       }
 
       for (const poi of pois) {
-        const isSelectedPoi = selectionMode === "poi" && poi.id === selectedPoiId
-        const isPoiInSelectedArea =
-          selectionMode === "area" &&
-          effectiveSelectedAreaId !== null &&
-          poi.areaId === effectiveSelectedAreaId
-        const color = isSelectedPoi || isPoiInSelectedArea ? "#f59e0b" : "#2563eb"
+        const isAreaMode = selectionMode === "area"
+        const isSelectedPoi = !isAreaMode && poi.id === selectedPoiId
+        const color = isAreaMode ? "#9ca3af" : isSelectedPoi ? "#f59e0b" : "#2563eb"
+        const fillOpacity = isAreaMode ? 0.4 : 0.75
+        const radius = isAreaMode ? 6 : 8
 
         const marker = L.circleMarker([poi.latitude, poi.longitude], {
-          radius: 8,
+          radius,
           color,
           fillColor: color,
-          fillOpacity: 0.75,
+          fillOpacity,
           weight: 2,
         }).addTo(state.map)
 
-        marker.bindTooltip(`📌 ${poi.name} · ${poi.areaName}`, {
-          permanent: false,
-          direction: "top",
-        })
+        if (!isAreaMode) {
+          marker.bindTooltip(`📌 ${poi.name} · ${poi.areaName}`, {
+            permanent: false,
+            direction: "top",
+          })
+        }
         marker.on("click", (event) => {
           L.DomEvent.stopPropagation(event)
           if (selectionMode === "poi") {

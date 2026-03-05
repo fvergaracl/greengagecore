@@ -76,6 +76,26 @@ export default async function CampaignDetailPage({
     ...area.tasks,
     ...area.pointsOfInterest.flatMap((poi) => poi.tasks),
   ])
+  const totalOpenTasks = campaign.areas.reduce(
+    (sum, area) => sum + area.tasks.length,
+    0
+  )
+  const totalPoiTasks = campaign.areas.reduce(
+    (sum, area) =>
+      sum +
+      area.pointsOfInterest.reduce((poiSum, poi) => poiSum + poi.tasks.length, 0),
+    0
+  )
+  const taskTypeClass: Record<string, string> = {
+    photo:
+      "bg-sky-100 text-sky-700 ring-1 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:ring-sky-800",
+    survey:
+      "bg-violet-100 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:ring-violet-800",
+    mixed:
+      "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800",
+    instruction:
+      "bg-amber-100 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800",
+  }
   const structureAreas = campaign.areas.map((area) => ({
     id: area.id,
     name: area.name,
@@ -221,85 +241,197 @@ export default async function CampaignDetailPage({
         </Link>
       </div>
 
-      <CampaignStructureGraph
-        campaignId={id}
-        campaignName={campaign.name}
-        areas={structureAreas}
-      />
-
       {/* Areas + Tasks */}
-      <div>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Areas &amp; Tasks ({campaign.areas.length} areas, {allTasks.length} tasks)
-          </h2>
+      <section className="space-y-4 rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 dark:border-gray-700 dark:from-gray-800 dark:to-gray-900">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              🧩 Areas &amp; Tasks
+            </h2>
+            <p className="text-xs text-gray-500">
+              {campaign.areas.length} areas · {allTasks.length} tasks
+            </p>
+          </div>
           <div className="flex gap-2">
             <Link
               href={`/dashboard/campaigns/${id}/areas`}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               📍 Manage areas
             </Link>
             <Link
               href={`/dashboard/campaigns/${id}/tasks/new`}
-              className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
+              className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-green-700"
             >
               + Add task
             </Link>
           </div>
         </div>
 
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700">
+            🗺️ {campaign.areas.length} areas
+          </span>
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:ring-amber-800">
+            🧭 {totalOpenTasks} open tasks
+          </span>
+          <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:ring-blue-800">
+            📌 {totalPoiTasks} POI tasks
+          </span>
+          <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800">
+            ✅ {statusMap["validated"] ?? 0} validated contributions
+          </span>
+        </div>
+
         {campaign.areas.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No areas yet. Create areas via the API or import from GeoJSON.
-          </p>
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white/70 px-4 py-6 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-900/60">
+            No areas yet. Create areas and start adding open tasks or POI tasks.
+          </div>
         ) : (
           <div className="space-y-4">
             {campaign.areas.map((area) => {
-              const areaTasks = [
-                ...area.tasks,
-                ...area.pointsOfInterest.flatMap((p) => p.tasks),
-              ]
+              const openTasks = area.tasks
+              const poiTasks = area.pointsOfInterest.flatMap((poi) =>
+                poi.tasks.map((task) => ({
+                  ...task,
+                  poiName: poi.name,
+                }))
+              )
+              const areaContributionCount = [...openTasks, ...poiTasks].reduce(
+                (sum, task) => sum + task._count.contributions,
+                0
+              )
+
               return (
-                <div
+                <article
                   key={area.id}
-                  className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+                  className="rounded-xl border border-gray-200 bg-white/90 p-4 shadow-sm transition-colors hover:border-green-300 dark:border-gray-700 dark:bg-gray-800/90"
                 >
-                  <p className="mb-2 font-medium text-gray-900 dark:text-gray-100">
-                    📍 {area.name}{" "}
-                    <span className="text-xs font-normal text-gray-400">
-                      ({area.pointsOfInterest.length} POIs, {areaTasks.length} tasks)
-                    </span>
-                  </p>
-                  {areaTasks.length > 0 ? (
-                    <div className="space-y-1">
-                      {areaTasks.map((t) => (
-                        <div
-                          key={t.id}
-                          className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm dark:bg-gray-900"
-                        >
-                          <span className="text-gray-700 dark:text-gray-300">
-                            {t.title}
-                            <span className="ml-2 text-xs text-gray-400">
-                              [{t.type}]
-                            </span>
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {t._count.contributions} contributions ·{" "}
-                            {t.isDisabled ? "disabled" : "active"}
-                          </span>
-                        </div>
-                      ))}
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                        🗺️ {area.name}
+                      </p>
+                      <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                          📌 {area.pointsOfInterest.length} POIs
+                        </span>
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                          🧭 {openTasks.length} open
+                        </span>
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                          📍 {poiTasks.length} POI
+                        </span>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                          ✅ {areaContributionCount} contrib.
+                        </span>
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-xs text-gray-400">No tasks in this area.</p>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span
+                        className={`rounded-full px-2 py-0.5 ${
+                          area.isDisabled
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                            : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                        }`}
+                      >
+                        {area.isDisabled ? "disabled" : "active"}
+                      </span>
+                      <Link
+                        href={`/dashboard/campaigns/${id}/areas/${area.id}/pois`}
+                        className="rounded-md border border-gray-300 px-2 py-1 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                      >
+                        Manage POIs
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                        Open Tasks (Area-wide)
+                      </p>
+                      {openTasks.length === 0 ? (
+                        <p className="text-xs text-gray-400">No open tasks in this area.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {openTasks.map((task) => (
+                            <div
+                              key={task.id}
+                              className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="truncate text-gray-700 dark:text-gray-300">
+                                  {task.title}
+                                </span>
+                                <span
+                                  className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                    taskTypeClass[task.type] ?? taskTypeClass.mixed
+                                  }`}
+                                >
+                                  {task.type}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {task._count.contributions} contrib. ·{" "}
+                                {task.isDisabled ? "disabled" : "active"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                        POI Tasks
+                      </p>
+                      {poiTasks.length === 0 ? (
+                        <p className="text-xs text-gray-400">No POI tasks in this area.</p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          {poiTasks.map((task) => (
+                            <div
+                              key={task.id}
+                              className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
+                            >
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="truncate text-gray-700 dark:text-gray-300">
+                                  {task.title}
+                                </span>
+                                <span
+                                  className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                    taskTypeClass[task.type] ?? taskTypeClass.mixed
+                                  }`}
+                                >
+                                  {task.type}
+                                </span>
+                                <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                  📌 {task.poiName}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {task._count.contributions} contrib. ·{" "}
+                                {task.isDisabled ? "disabled" : "active"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </article>
               )
             })}
           </div>
         )}
-      </div>
+      </section>
+
+      <CampaignStructureGraph
+        campaignId={id}
+        campaignName={campaign.name}
+        areas={structureAreas}
+      />
     </div>
   )
 }
