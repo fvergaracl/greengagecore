@@ -434,18 +434,30 @@ run_migrations() {
 start_dev() {
   log_step "[8/8] Starting dev server"
 
-  # Kill any stale Next.js / worker processes first
-  pkill -f "next dev"    2>/dev/null || true
-  pkill -f "next-server" 2>/dev/null || true
+  # Kill any stale Next.js / worker processes (parent + all children)
+  pkill -f "next dev"         2>/dev/null || true
+  pkill -f "next-server"      2>/dev/null || true
+  pkill -f "node.*\.next"     2>/dev/null || true
   pkill -f "tsx watch src/workers" 2>/dev/null || true
 
-  # Ensure all app ports are free before starting
-  for port in 3000; do
-    free_host_port "$port"
+  # Wait for port 3000 to actually be free (up to 10s)
+  local t=0
+  while lsof -ti :3000 >/dev/null 2>&1; do
+    if [[ $t -ge 10 ]]; then
+      warn "Forzando cierre del proceso en puerto 3000..."
+      lsof -ti :3000 | xargs kill -9 2>/dev/null || true
+      sleep 0.5
+      break
+    fi
+    sleep 0.5
+    t=$((t + 1))
   done
 
-  sleep 0.3
   rm -f .next/dev/lock
+
+  # Ensure AUTH_URL and NEXT_PUBLIC_APP_URL point to the correct port
+  env_set "AUTH_URL"               "http://localhost:3000"
+  env_set "NEXT_PUBLIC_APP_URL"    "http://localhost:3000"
   echo ""
   echo -e "  ${BOLD}App:    ${CYAN}http://localhost:3000${RESET}"
   echo -e "  ${BOLD}MinIO:  ${CYAN}http://localhost:9001${RESET}  (admin / minio_secret_key)"
@@ -461,8 +473,9 @@ start_dev() {
   source "$ENV_FILE" 2>/dev/null || true
   set +o allexport
 
-  # Start app and worker in background
-  npm run dev &
+  # Start app and worker in their own process groups so we can kill all children
+  set -m
+  PORT=3000 npm run dev &
   APP_PID=$!
 
   # Worker (if script exists)
@@ -472,13 +485,14 @@ start_dev() {
   else
     WORKER_PID=""
   fi
+  set +m
 
-  # Trap Ctrl+C — clean shutdown
+  # Trap Ctrl+C — kill entire process group (captures all Next.js child processes)
   trap_handler() {
     echo ""
     echo -e "\n${YELLOW}Shutting down...${RESET}"
-    kill "$APP_PID" 2>/dev/null || true
-    [[ -n "$WORKER_PID" ]] && kill "$WORKER_PID" 2>/dev/null || true
+    kill -- -$APP_PID 2>/dev/null || kill "$APP_PID" 2>/dev/null || true
+    [[ -n "$WORKER_PID" ]] && { kill -- -$WORKER_PID 2>/dev/null || kill "$WORKER_PID" 2>/dev/null || true; }
     exit 0
   }
   trap trap_handler INT TERM

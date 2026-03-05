@@ -71,10 +71,13 @@ const analyticsWorker = new Worker(
   async () => {
     const { prisma } = await import("@/lib/db")
     try {
-      await prisma.$executeRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY v_campaign_stats`
+      await prisma.$executeRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY mv_campaign_stats`
     } catch {
-      // Fallback si la view no soporta CONCURRENTLY (primera vez sin datos)
-      await prisma.$executeRaw`REFRESH MATERIALIZED VIEW v_campaign_stats`
+      try {
+        await prisma.$executeRaw`REFRESH MATERIALIZED VIEW mv_campaign_stats`
+      } catch {
+        // View no existe aún (migraciones pendientes) — ignorar silenciosamente
+      }
     }
   },
   { ...workerOpts, concurrency: 1 }
