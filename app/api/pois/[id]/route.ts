@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { prisma } from "@/lib/db"
 import { withResearcher } from "@/middleware/auth"
+import { isPointInsideArea } from "@/domains/geo/geofence"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -43,6 +44,18 @@ export function PATCH(req: NextRequest, { params }: Params) {
     }
 
     const { latitude, longitude, ...rest } = parsed.data
+    const nextLatitude = latitude ?? poi.latitude
+    const nextLongitude = longitude ?? poi.longitude
+    const isInside = await isPointInsideArea(
+      { latitude: nextLatitude, longitude: nextLongitude },
+      poi.area.id
+    )
+    if (!isInside) {
+      return NextResponse.json(
+        { error: "POI center must be inside the area polygon" },
+        { status: 400 }
+      )
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       const u = await tx.pointOfInterest.update({

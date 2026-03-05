@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { prisma } from "@/lib/db"
 import { withResearcher } from "@/middleware/auth"
+import { isPointInsideArea } from "@/domains/geo/geofence"
 
 const CreatePoiSchema = z.object({
   areaId: z.string().uuid(),
@@ -31,6 +32,14 @@ export const POST = withResearcher(async (req: NextRequest, user) => {
   })
   if (!area) {
     return NextResponse.json({ error: "Area not found or access denied" }, { status: 404 })
+  }
+
+  const isInside = await isPointInsideArea({ latitude, longitude }, areaId)
+  if (!isInside) {
+    return NextResponse.json(
+      { error: "POI center must be inside the area polygon" },
+      { status: 400 }
+    )
   }
 
   const poi = await prisma.$transaction(async (tx) => {

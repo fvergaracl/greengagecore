@@ -48,6 +48,46 @@ const EMPTY_FORM: PoiForm = {
   radiusMeters: 100
 }
 
+function isPointInsideAreaPolygon(
+  latitude: number,
+  longitude: number,
+  polygon?: GeoJSON.Polygon
+): boolean {
+  if (!polygon?.coordinates?.[0]?.length) return false
+  const ring = polygon.coordinates[0]
+
+  const isPointOnSegment = (
+    px: number,
+    py: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ) => {
+    const epsilon = 1e-10
+    const cross = (py - y1) * (x2 - x1) - (px - x1) * (y2 - y1)
+    if (Math.abs(cross) > epsilon) return false
+    const dot = (px - x1) * (px - x2) + (py - y1) * (py - y2)
+    return dot <= epsilon
+  }
+
+  let inside = false
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]
+    const [xj, yj] = ring[j]
+
+    if (isPointOnSegment(longitude, latitude, xi, yi, xj, yj)) return true
+
+    const intersects =
+      yi > latitude !== yj > latitude &&
+      longitude < ((xj - xi) * (latitude - yi)) / (yj - yi) + xi
+
+    if (intersects) inside = !inside
+  }
+
+  return inside
+}
+
 export default function PoisPage() {
   const params = useParams<{ id: string; areaId: string }>()
 
@@ -72,6 +112,10 @@ export default function PoisPage() {
 
   function handleMapClick(lat: number, lng: number) {
     if (formMode === "edit") return // No crear si estamos editando
+    if (!isPointInsideAreaPolygon(lat, lng, area?.polygonGeojson)) {
+      setError("POI center must be inside the area boundary.")
+      return
+    }
     setSelectedPoi(null)
     setForm({
       ...EMPTY_FORM,
@@ -98,6 +142,16 @@ export default function PoisPage() {
   async function handleSave() {
     if (!form.name.trim() || form.latitude === "" || form.longitude === "") {
       setError("Name and coordinates are required.")
+      return
+    }
+    if (
+      !isPointInsideAreaPolygon(
+        Number(form.latitude),
+        Number(form.longitude),
+        area?.polygonGeojson
+      )
+    ) {
+      setError("POI center must be inside the area boundary.")
       return
     }
 
@@ -199,6 +253,13 @@ export default function PoisPage() {
             (formMode === "create" ? "New POI" : (selectedPoi?.name ?? "POI"))
         }
       : null
+  const livePoiInsideArea = livePoi
+    ? isPointInsideAreaPolygon(
+        livePoi.latitude,
+        livePoi.longitude,
+        area?.polygonGeojson
+      )
+    : true
 
   return (
     <div className='space-y-6'>
@@ -403,12 +464,17 @@ export default function PoisPage() {
                     {error}
                   </p>
                 )}
+                {livePoi && !livePoiInsideArea && !error && (
+                  <p className='rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'>
+                    POI center must be inside the area boundary.
+                  </p>
+                )}
 
                 <div className='flex gap-2'>
                   <button
                     onClick={handleSave}
-                    disabled={saving}
-                    className='flex-1 rounded-lg bg-green-600 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50'
+                    disabled={saving || (livePoi ? !livePoiInsideArea : false)}
+                    className='flex-1 rounded-lg bg-green-600 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50'
                   >
                     {saving ? "…" : formMode === "create" ? "Add POI" : "Save"}
                   </button>

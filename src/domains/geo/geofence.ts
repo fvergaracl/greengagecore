@@ -150,6 +150,22 @@ export async function isWithinPoiRadius(
 }
 
 /**
+ * Validates that a point is inside (or on boundary of) an area polygon.
+ */
+export async function isPointInsideArea(position: LatLng, areaId: string): Promise<boolean> {
+  const results = await prisma.$queryRaw<{ inside: boolean }[]>`
+    SELECT ST_Covers(
+      a.polygon::geometry,
+      ST_SetSRID(ST_MakePoint(${position.longitude}, ${position.latitude}), 4326)
+    ) AS inside
+    FROM areas a
+    WHERE a.id = ${areaId}::uuid
+  `
+
+  return results[0]?.inside ?? false
+}
+
+/**
  * Calcula la distancia en metros entre dos puntos.
  */
 export function haversineDistance(a: LatLng, b: LatLng): number {
