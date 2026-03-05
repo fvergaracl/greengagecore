@@ -10,6 +10,14 @@ import { NewTaskFormClient } from "./task-form-client"
 
 export const metadata = { title: "New Task — GreenCrowd" }
 
+function asPolygon(value: unknown): GeoJSON.Polygon | null {
+  if (!value || typeof value !== "object") return null
+  const candidate = value as { type?: unknown; coordinates?: unknown }
+  if (candidate.type !== "Polygon") return null
+  if (!Array.isArray(candidate.coordinates)) return null
+  return candidate as GeoJSON.Polygon
+}
+
 export default async function NewTaskPage({
   params,
 }: {
@@ -26,9 +34,16 @@ export default async function NewTaskPage({
         select: {
           id: true,
           name: true,
+          polygonGeojson: true,
           pointsOfInterest: {
             orderBy: { name: "asc" },
-            select: { id: true, name: true },
+            select: {
+              id: true,
+              name: true,
+              latitude: true,
+              longitude: true,
+              radiusMeters: true,
+            },
           },
         },
       },
@@ -36,12 +51,21 @@ export default async function NewTaskPage({
   })
   if (!campaign) notFound()
 
+  const areas = campaign.areas.map((area) => ({
+    id: area.id,
+    name: area.name,
+    polygonGeojson: asPolygon(area.polygonGeojson),
+  }))
+
   const pois = campaign.areas.flatMap((area) =>
     area.pointsOfInterest.map((poi) => ({
       id: poi.id,
       name: poi.name,
       areaId: area.id,
-      areaName: area.name
+      areaName: area.name,
+      latitude: poi.latitude,
+      longitude: poi.longitude,
+      radiusMeters: poi.radiusMeters,
     }))
   )
 
@@ -75,7 +99,7 @@ export default async function NewTaskPage({
           </div>
         </div>
       ) : (
-        <NewTaskFormClient campaignId={id} pois={pois} />
+        <NewTaskFormClient campaignId={id} pois={pois} areas={areas} />
       )}
     </div>
   )

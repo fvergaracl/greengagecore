@@ -5,20 +5,18 @@ import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { FormEvent, useMemo, useState } from "react"
 import { SurveyCreatorWrapper } from "@/components/questionnaires/SurveyCreatorWrapper"
+import PoiSelectionMap, {
+  type TaskPoiMapArea,
+  type TaskPoiMapPoi,
+} from "@/components/tasks/PoiSelectionMap"
 
 type TaskType = "photo" | "survey" | "mixed" | "instruction"
 type ClosureMode = "single" | "threshold" | "unlimited"
 
-interface PoiOption {
-  id: string
-  name: string
-  areaId: string
-  areaName: string
-}
-
 interface Props {
   campaignId: string
-  pois: PoiOption[]
+  pois: TaskPoiMapPoi[]
+  areas: TaskPoiMapArea[]
 }
 
 function hasSurveyContent(schema: object) {
@@ -43,7 +41,7 @@ function toIsoFromLocalDateTime(date: string, time: string) {
   return value.toISOString()
 }
 
-export function NewTaskFormClient({ campaignId, pois }: Props) {
+export function NewTaskFormClient({ campaignId, pois, areas }: Props) {
   const router = useRouter()
   const { data: session } = useSession()
   const accessToken = session?.user?.accessToken
@@ -63,7 +61,7 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const groupedPois = useMemo(() => {
-    const byArea = new Map<string, { areaName: string; values: PoiOption[] }>()
+    const byArea = new Map<string, { areaName: string; values: TaskPoiMapPoi[] }>()
     for (const poi of pois) {
       const key = poi.areaId
       const group = byArea.get(key)
@@ -79,6 +77,10 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
       pois: group.values,
     }))
   }, [pois])
+  const selectedPoi = useMemo(
+    () => pois.find((poi) => poi.id === poiId) ?? null,
+    [pois, poiId]
+  )
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -173,6 +175,15 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
                 </optgroup>
               ))}
             </select>
+            {selectedPoi ? (
+              <p className="mt-1 text-xs text-gray-500">
+                Selected: 📌 {selectedPoi.name} · Area: 🗺️ {selectedPoi.areaName}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">
+                POIs are grouped by area. You can also select one directly on the map below.
+              </p>
+            )}
           </div>
 
           <div>
@@ -191,6 +202,24 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
               <option value="instruction">Instruction</option>
             </select>
           </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            POI map (visual selector)
+          </label>
+          <PoiSelectionMap
+            areas={areas}
+            pois={pois}
+            selectedPoiId={poiId || null}
+            onPoiSelect={(selectedId) => {
+              setPoiId(selectedId)
+              setError(null)
+            }}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            🟩 Green polygons = areas · 🔵 Blue markers = POIs · 🟡 Orange = selected POI
+          </p>
         </div>
 
         <div>
