@@ -78,7 +78,7 @@ export default async function CampaignsPage() {
                   </span>
                 </div>
                 <p className="mt-0.5 text-sm text-gray-500">
-                  {c.category} · {c._count.areas} areas · {c._count.contributions}{" "}
+                  {c.category} · {c.timezone} · {c._count.areas} areas · {c._count.contributions}{" "}
                   contributions
                 </p>
               </div>

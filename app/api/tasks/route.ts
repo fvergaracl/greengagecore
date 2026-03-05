@@ -20,6 +20,8 @@ const TaskSchema = z.object({
   responseLimit: z.number().int().positive().optional(),
   responseLimitInterval: z.number().int().positive().optional(),
   closureMode: z.enum(["single", "threshold", "unlimited"]).default("unlimited"),
+  availableFrom: z.string().optional(),
+  availableTo: z.string().optional(),
 })
 
 export const POST = withResearcher(async (req, user) => {
@@ -35,6 +37,22 @@ export const POST = withResearcher(async (req, user) => {
   if ((data.type === "survey" || data.type === "mixed") && !hasTaskSchema) {
     return NextResponse.json(
       { error: "Survey and mixed tasks require a SurveyJS schema in taskData" },
+      { status: 400 }
+    )
+  }
+
+  const availableFrom = data.availableFrom ? new Date(data.availableFrom) : null
+  const availableTo = data.availableTo ? new Date(data.availableTo) : null
+
+  if (availableFrom && Number.isNaN(availableFrom.getTime())) {
+    return NextResponse.json({ error: "Invalid availableFrom datetime" }, { status: 400 })
+  }
+  if (availableTo && Number.isNaN(availableTo.getTime())) {
+    return NextResponse.json({ error: "Invalid availableTo datetime" }, { status: 400 })
+  }
+  if (availableFrom && availableTo && availableFrom > availableTo) {
+    return NextResponse.json(
+      { error: "availableFrom must be before or equal to availableTo" },
       { status: 400 }
     )
   }
@@ -62,6 +80,8 @@ export const POST = withResearcher(async (req, user) => {
         responseLimit: data.responseLimit ?? null,
         responseLimitInterval: data.responseLimitInterval ?? null,
         closureMode: data.closureMode,
+        availableFrom,
+        availableTo,
       },
     })
   })

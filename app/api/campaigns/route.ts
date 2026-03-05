@@ -1,16 +1,25 @@
 // GET /api/campaigns — lista campañas del researcher autenticado
 // POST /api/campaigns — crea nueva campaña
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { withAuth, withResearcher } from "@/middleware/auth"
 import { withUserRLS } from "@/middleware/rls"
 import { z } from "zod"
-import { createGameForCampaign } from "@/domains/game/client"
+
+function isValidTimezone(value: string) {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: value })
+    return true
+  } catch {
+    return false
+  }
+}
 
 const CreateCampaignSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
   category: z.string().min(1),
   groupName: z.string().optional(),
+  timezone: z.string().min(1).default("UTC"),
   startDatetime: z.string().datetime().optional(),
   endDatetime: z.string().datetime().optional(),
   gameEnabled: z.boolean().default(false),
@@ -51,6 +60,9 @@ export const POST = withResearcher(async (req, user) => {
   }
 
   const data = parsed.data
+  if (!isValidTimezone(data.timezone)) {
+    return NextResponse.json({ error: "Invalid timezone" }, { status: 400 })
+  }
 
   const campaign = await withUserRLS(user, async (tx, ctx) => {
     return tx.campaign.create({
@@ -60,6 +72,7 @@ export const POST = withResearcher(async (req, user) => {
         description: data.description,
         category: data.category,
         groupName: data.groupName,
+        timezone: data.timezone,
         startDatetime: data.startDatetime ? new Date(data.startDatetime) : undefined,
         endDatetime: data.endDatetime ? new Date(data.endDatetime) : undefined,
         gameEnabled: data.gameEnabled,

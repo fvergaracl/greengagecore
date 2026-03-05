@@ -1,7 +1,22 @@
 "use client"
 
+import Link from "next/link"
 import { useActionState, useState } from "react"
 import { createCampaign, type CampaignFormState } from "./actions"
+
+const COMMON_TIMEZONES = [
+  "UTC",
+  "Europe/Madrid",
+  "Europe/London",
+  "Europe/Paris",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Mexico_City",
+  "America/Bogota",
+  "America/Argentina/Buenos_Aires",
+] as const
 
 export function NewCampaignForm() {
   const [state, formAction, isPending] = useActionState<CampaignFormState, FormData>(
@@ -9,6 +24,9 @@ export function NewCampaignForm() {
     null
   )
   const [gameEnabled, setGameEnabled] = useState(false)
+  const [timezone, setTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+  )
 
   return (
     <form action={formAction} className="space-y-5">
@@ -33,6 +51,29 @@ export function NewCampaignForm() {
       </div>
 
       <Field label="Category *" name="category" type="text" placeholder="Environment" required />
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Timezone *
+        </label>
+        <input
+          name="timezone"
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          list="timezone-options"
+          required
+          placeholder="e.g. Europe/Madrid"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+        />
+        <datalist id="timezone-options">
+          {COMMON_TIMEZONES.map((tz) => (
+            <option key={tz} value={tz} />
+          ))}
+        </datalist>
+        <p className="mt-1 text-xs text-gray-500">
+          Use IANA timezone format (for example: Europe/Madrid).
+        </p>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Start date (optional)" name="startDatetime" type="datetime-local" />
@@ -69,12 +110,12 @@ export function NewCampaignForm() {
         >
           {isPending ? "Creating…" : "Create campaign"}
         </button>
-        <a
+        <Link
           href="/dashboard/campaigns"
           className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
         >
           Cancel
-        </a>
+        </Link>
       </div>
     </form>
   )

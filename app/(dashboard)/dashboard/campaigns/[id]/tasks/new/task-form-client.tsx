@@ -35,6 +35,14 @@ function parseApiError(payload: unknown) {
   return "Failed to create task"
 }
 
+function toIsoFromLocalDateTime(date: string, time: string) {
+  if (!date) return undefined
+  const safeTime = time || "00:00"
+  const value = new Date(`${date}T${safeTime}`)
+  if (Number.isNaN(value.getTime())) return null
+  return value.toISOString()
+}
+
 export function NewTaskFormClient({ campaignId, pois }: Props) {
   const router = useRouter()
   const { data: session } = useSession()
@@ -44,10 +52,12 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [type, setType] = useState<TaskType>("mixed")
-  const [requiresPhoto, setRequiresPhoto] = useState(false)
-  const [requiresSurvey, setRequiresSurvey] = useState(false)
   const [responseLimit, setResponseLimit] = useState("")
   const [closureMode, setClosureMode] = useState<ClosureMode>("unlimited")
+  const [availableFromDate, setAvailableFromDate] = useState("")
+  const [availableFromTime, setAvailableFromTime] = useState("")
+  const [availableToDate, setAvailableToDate] = useState("")
+  const [availableToTime, setAvailableToTime] = useState("")
   const [taskSchema, setTaskSchema] = useState<object>({})
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -82,11 +92,29 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
       return
     }
 
+    const availableFromIso = toIsoFromLocalDateTime(
+      availableFromDate,
+      availableFromTime
+    )
+    const availableToIso = toIsoFromLocalDateTime(availableToDate, availableToTime)
+    if (availableFromIso === null) {
+      setError("Invalid start date/time.")
+      return
+    }
+    if (availableToIso === null) {
+      setError("Invalid end date/time.")
+      return
+    }
+    if (availableFromIso && availableToIso && availableFromIso > availableToIso) {
+      setError("Availability start must be before end.")
+      return
+    }
+
     setSubmitting(true)
     setError(null)
 
-    const effectiveRequiresPhoto = requiresPhoto || type === "photo" || type === "mixed"
-    const effectiveRequiresSurvey = requiresSurvey || type === "survey" || type === "mixed"
+    const effectiveRequiresPhoto = type === "photo" || type === "mixed"
+    const effectiveRequiresSurvey = type === "survey" || type === "mixed"
 
     try {
       const res = await fetch("/api/tasks", {
@@ -102,6 +130,8 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
           requiresSurvey: effectiveRequiresSurvey,
           responseLimit: responseLimit.trim() ? Number(responseLimit) : undefined,
           closureMode,
+          availableFrom: availableFromIso,
+          availableTo: availableToIso,
         }),
       })
 
@@ -189,27 +219,6 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
           />
         </div>
 
-        <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-            <input
-              type="checkbox"
-              checked={requiresPhoto}
-              onChange={(e) => setRequiresPhoto(e.target.checked)}
-              className="rounded"
-            />
-            Requires photo
-          </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-            <input
-              type="checkbox"
-              checked={requiresSurvey}
-              onChange={(e) => setRequiresSurvey(e.target.checked)}
-              className="rounded"
-            />
-            Requires survey
-          </label>
-        </div>
-
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -237,6 +246,87 @@ export function NewTaskFormClient({ campaignId, pois }: Props) {
               <option value="single">Single response</option>
               <option value="threshold">Threshold</option>
             </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Available from (optional)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={availableFromDate}
+                onChange={(e) => {
+                  const nextDate = e.target.value
+                  setAvailableFromDate(nextDate)
+                  if (!nextDate) setAvailableFromTime("")
+                }}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+              <input
+                type="time"
+                value={availableFromTime}
+                onChange={(e) => setAvailableFromTime(e.target.value)}
+                step={60}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                Hour optional (defaults to 00:00). If date is empty, time is ignored.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAvailableFromDate("")
+                  setAvailableFromTime("")
+                }}
+                className="text-xs font-medium text-gray-500 underline hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Available to (optional)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={availableToDate}
+                onChange={(e) => {
+                  const nextDate = e.target.value
+                  setAvailableToDate(nextDate)
+                  if (!nextDate) setAvailableToTime("")
+                }}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+              <input
+                type="time"
+                value={availableToTime}
+                onChange={(e) => setAvailableToTime(e.target.value)}
+                step={60}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                Hour optional (defaults to 00:00). If date is empty, time is ignored.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAvailableToDate("")
+                  setAvailableToTime("")
+                }}
+                className="text-xs font-medium text-gray-500 underline hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Clear
+              </button>
+            </div>
           </div>
         </div>
       </div>

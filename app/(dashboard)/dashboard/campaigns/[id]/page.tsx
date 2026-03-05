@@ -92,7 +92,7 @@ export default async function CampaignDetailPage({
             📢 {campaign.name}
           </h1>
           <p className="text-sm text-gray-500">
-            {campaign.category} · Status: <strong>{campaign.status}</strong>
+            {campaign.category} · TZ: {campaign.timezone} · Status: <strong>{campaign.status}</strong>
           </p>
           {campaign.description && (
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -101,6 +101,12 @@ export default async function CampaignDetailPage({
           )}
         </div>
         <div className="flex gap-2">
+          <Link
+            href={`/dashboard/campaigns/${id}/edit`}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            Edit campaign
+          </Link>
           {campaign.status === "draft" && (
             <form action={publishAction}>
               <button

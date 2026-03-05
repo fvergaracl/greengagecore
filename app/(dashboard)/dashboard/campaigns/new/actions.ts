@@ -6,6 +6,15 @@ import { prisma } from "@/lib/db"
 
 export type CampaignFormState = { error: string } | null
 
+function isValidTimezone(value: string) {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: value })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function createCampaign(
   _prev: CampaignFormState,
   formData: FormData
@@ -20,6 +29,10 @@ export async function createCampaign(
   const description = (formData.get("description") as string)?.trim() || null
   const startDatetime = formData.get("startDatetime") as string
   const endDatetime = formData.get("endDatetime") as string
+  const timezoneRaw = (formData.get("timezone") as string)?.trim() || "UTC"
+  if (!isValidTimezone(timezoneRaw)) {
+    return { error: "Invalid timezone." }
+  }
   const gameEnabled = formData.get("gameEnabled") === "on"
 
   let campaignId: string
@@ -30,6 +43,7 @@ export async function createCampaign(
         name,
         description,
         category,
+        timezone: timezoneRaw,
         status: "draft",
         startDatetime: startDatetime ? new Date(startDatetime) : null,
         endDatetime: endDatetime ? new Date(endDatetime) : null,

@@ -166,6 +166,7 @@ model Campaign {
   endDatetime   DateTime?     @map("end_datetime") @db.Timestamptz
   category     String
   groupName    String?        @map("group_name")
+  timezone     String         @default("UTC")
   isDisabled   Boolean        @default(false) @map("is_disabled")
 
   // GAME integration

@@ -1,14 +1,24 @@
 // GET/PATCH/DELETE /api/campaigns/[id]
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { withAuth, withResearcher, apiError } from "@/middleware/auth"
 import { withUserRLS } from "@/middleware/rls"
 import { createGameForCampaign } from "@/domains/game/client"
 import { z } from "zod"
 
+function isValidTimezone(value: string) {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: value })
+    return true
+  } catch {
+    return false
+  }
+}
+
 const PatchCampaignSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),
+  timezone: z.string().min(1).optional(),
   startDatetime: z.string().datetime().optional().nullable(),
   endDatetime: z.string().datetime().optional().nullable(),
   gameEnabled: z.boolean().optional(),
@@ -50,6 +60,9 @@ export const PATCH = withResearcher(async (req, user) => {
   }
 
   const data = parsed.data
+  if (data.timezone && !isValidTimezone(data.timezone)) {
+    return NextResponse.json({ error: "Invalid timezone" }, { status: 400 })
+  }
 
   const updated = await withUserRLS(user, async (tx, ctx) => {
     // Verificar ownership
@@ -75,6 +88,7 @@ export const PATCH = withResearcher(async (req, user) => {
         name: data.name,
         description: data.description,
         status: data.status,
+        timezone: data.timezone,
         gameEnabled: data.gameEnabled,
         gameStrategy: data.gameStrategy,
         metadata: data.metadata ? JSON.parse(JSON.stringify(data.metadata)) : undefined,
