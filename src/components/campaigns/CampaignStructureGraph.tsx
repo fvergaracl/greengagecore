@@ -113,14 +113,18 @@ const NODE_STYLE: Record<
   campaign: { fill: "#2563eb", stroke: "#1e40af", text: "#ffffff" },
   area: { fill: "#10b981", stroke: "#047857", text: "#ffffff" },
   openHub: { fill: "#6366f1", stroke: "#4338ca", text: "#ffffff" },
-  openTask: { fill: "#f59e0b", stroke: "#b45309", text: "#ffffff" },
-  poi: { fill: "#eab308", stroke: "#a16207", text: "#ffffff" },
+  openTask: { fill: "#f59e0b", stroke: "#b45309", text: "#111827" },
+  poi: { fill: "#eab308", stroke: "#a16207", text: "#111827" },
   poiTask: { fill: "#ef4444", stroke: "#b91c1c", text: "#ffffff" },
   more: { fill: "#94a3b8", stroke: "#475569", text: "#ffffff" },
 }
 
 function truncate(text: string, max = 14) {
   return text.length > max ? `${text.slice(0, Math.max(1, max - 1))}…` : text
+}
+
+function nodeClipId(nodeId: string) {
+  return `node-clip-${nodeId.replace(/[^a-zA-Z0-9_-]/g, "-")}`
 }
 
 export function CampaignStructureGraph({
@@ -583,6 +587,14 @@ export function CampaignStructureGraph({
               role="img"
               aria-label="Campaign graph"
             >
+              <defs>
+                {graph.nodes.map((node) => (
+                  <clipPath id={nodeClipId(node.id)} key={`clip:${node.id}`}>
+                    <circle cx={node.x} cy={node.y} r={node.r - 2} />
+                  </clipPath>
+                ))}
+              </defs>
+
               {graph.edges.map((edge) => {
                 const from = nodeMap.get(edge.from)
                 const to = nodeMap.get(edge.to)
@@ -606,10 +618,16 @@ export function CampaignStructureGraph({
                 const style = NODE_STYLE[node.kind]
                 const highlighted = isNodeHighlighted(node.id)
                 const selected = node.id === effectiveActiveNodeId
+                const labelMax =
+                  node.kind === "campaign" ? 14 : node.kind === "area" ? 11 : 9
                 const label = truncate(
                   node.label,
-                  node.kind === "campaign" ? 16 : node.kind === "area" ? 14 : 12
+                  labelMax
                 )
+                const subtitle = node.subtitle ? truncate(node.subtitle, 12) : null
+                const forceFitLabel = label.length > 7
+                const forceFitSubtitle = Boolean(subtitle && subtitle.length > 9)
+                const clipId = nodeClipId(node.id)
 
                 return (
                   <g
@@ -639,29 +657,47 @@ export function CampaignStructureGraph({
                       stroke={style.stroke}
                       strokeWidth={2}
                     />
-                    <text
-                      x={node.x}
-                      y={node.subtitle ? node.y - 4 : node.y + 4}
-                      textAnchor="middle"
-                      fill={style.text}
-                      fontSize={node.kind === "campaign" ? 15 : 13}
-                      fontWeight={700}
-                    >
-                      {label}
-                    </text>
-                    {node.subtitle && (
+                    <g clipPath={`url(#${clipId})`}>
                       <text
                         x={node.x}
-                        y={node.y + 14}
+                        y={subtitle ? node.y - 4 : node.y + 4}
                         textAnchor="middle"
                         fill={style.text}
-                        opacity={0.92}
-                        fontSize={10}
-                        fontWeight={500}
+                        fontSize={node.kind === "campaign" ? 14 : 12}
+                        fontWeight={700}
+                        stroke="rgba(0,0,0,0.35)"
+                        strokeWidth={0.8}
+                        paintOrder="stroke"
+                        textLength={forceFitLabel ? node.r * 1.45 : undefined}
+                        lengthAdjust={
+                          forceFitLabel ? "spacingAndGlyphs" : undefined
+                        }
                       >
-                        {truncate(node.subtitle, 16)}
+                        {label}
                       </text>
-                    )}
+                      {subtitle && (
+                        <text
+                          x={node.x}
+                          y={node.y + 13}
+                          textAnchor="middle"
+                          fill={style.text}
+                          opacity={0.9}
+                          fontSize={10}
+                          fontWeight={500}
+                          stroke="rgba(0,0,0,0.28)"
+                          strokeWidth={0.6}
+                          paintOrder="stroke"
+                          textLength={
+                            forceFitSubtitle ? node.r * 1.4 : undefined
+                          }
+                          lengthAdjust={
+                            forceFitSubtitle ? "spacingAndGlyphs" : undefined
+                          }
+                        >
+                          {subtitle}
+                        </text>
+                      )}
+                    </g>
                   </g>
                 )
               })}
