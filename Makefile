@@ -21,16 +21,16 @@ dev: infra-up
 
 ## Start infrastructure only (without the Next.js app)
 infra-up:
-	docker compose -f docker-compose.dev.yml up -d
+	docker compose --env-file .env.local -f docker-compose.dev.yml up -d
 	@echo "✅ Infrastructure started"
 	@echo "   PostgreSQL: localhost:5432"
 	@echo "   Redis:      localhost:6379"
 	@echo "   MinIO:      http://localhost:9000 (console: http://localhost:9001)"
-	@echo "   Keycloak:   http://localhost:8080 (admin/admin_secret)"
+	@echo "   Keycloak:   http://localhost:8080"
 
 ## Stop infrastructure
 infra-down:
-	docker compose -f docker-compose.dev.yml down
+	docker compose --env-file .env.local -f docker-compose.dev.yml down
 
 ## Start infrastructure + App in production
 prod-up:
@@ -117,7 +117,7 @@ logs:
 
 ## View infrastructure logs
 logs-infra:
-	docker compose -f docker-compose.dev.yml logs -f
+	docker compose --env-file .env.local -f docker-compose.dev.yml logs -f
 
 # ─────────────────────────────────────────────────────────────
 # Tests
@@ -138,7 +138,7 @@ test-e2e:
 ## Clean node_modules and build cache
 clean:
 	rm -rf .next node_modules
-	docker compose -f docker-compose.dev.yml down -v
+	docker compose --env-file .env.local -f docker-compose.dev.yml down -v
 
 ## Help
 help:

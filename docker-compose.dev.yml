@@ -1,20 +1,22 @@
 # Local development: infrastructure only, Next.js runs with `npm run dev`
+# Variable substitution reads from .env.local:
+#   docker compose --env-file .env.local -f docker-compose.dev.yml up -d
 services:
   postgres:
     image: postgis/postgis:16-3.4-alpine
     container_name: greencrowd_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: greencrowd
-      POSTGRES_PASSWORD: greencrowd_secret
-      POSTGRES_DB: greencrowd
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U greencrowd"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -25,7 +27,7 @@ services:
     image: redis:7-alpine
     container_name: greencrowd_redis
     restart: unless-stopped
-    command: redis-server --requirepass redis_secret --appendonly yes
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     ports:
       - "6379:6379"
     volumes:
@@ -39,8 +41,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: greencrowd_minio
-      MINIO_ROOT_PASSWORD: minio_secret_key
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -53,11 +55,15 @@ services:
     image: minio/mc:latest
     depends_on:
       - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET}
     entrypoint: >
       /bin/sh -c "
         sleep 5;
-        mc alias set local http://minio:9000 greencrowd_minio minio_secret_key;
-        mc mb --ignore-existing local/greencrowd-attachments;
+        mc alias set local http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD;
+        mc mb --ignore-existing local/$MINIO_BUCKET;
         exit 0;
       "
     networks:
@@ -69,15 +75,15 @@ services:
     container_name: greencrowd_game_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: game_dev_db
-      POSTGRES_USER: game_user
-      POSTGRES_PASSWORD: game_secret
+      POSTGRES_DB: ${GAME_DB_NAME}
+      POSTGRES_USER: ${GAME_DB_USER}
+      POSTGRES_PASSWORD: ${GAME_DB_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
       - game_postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U game_user"]
+      test: ["CMD-SHELL", "pg_isready -U ${GAME_DB_USER}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -92,42 +98,44 @@ services:
       game_postgres:
         condition: service_healthy
     environment:
-      PGPASSWORD: game_secret
+      PGPASSWORD: ${GAME_DB_PASSWORD}
+      GAME_DB_USER: ${GAME_DB_USER}
+      GAME_DB_NAME: ${GAME_DB_NAME}
     command: >
-      sh -c "psql -h game_postgres -U game_user -d postgres -tc
-      \"SELECT 1 FROM pg_database WHERE datname='game_dev_db'\" | grep -q 1 ||
-      psql -h game_postgres -U game_user -d postgres
-      -c 'CREATE DATABASE game_dev_db;'"
+      sh -c "psql -h game_postgres -U $GAME_DB_USER -d postgres -tc
+      \"SELECT 1 FROM pg_database WHERE datname='$GAME_DB_NAME'\" | grep -q 1 ||
+      psql -h game_postgres -U $GAME_DB_USER -d postgres
+      -c 'CREATE DATABASE $GAME_DB_NAME;'"
     networks:
       - greencrowd_dev
     restart: "no"
 
   # ── GAME Engine API ───────────────────────────────────────────
   game:
-    image: fvergaracl/game:latest
+    image: fvergaracl/game:alpha.20260306
     container_name: greencrowd_game
     restart: unless-stopped
     environment:
       ENV: dev
       DB_ENGINE: postgresql
-      DB_NAME: game_dev_db
-      DB_USER: game_user
-      DB_PASSWORD: game_secret
+      DB_NAME: ${GAME_DB_NAME}
+      DB_USER: ${GAME_DB_USER}
+      DB_PASSWORD: ${GAME_DB_PASSWORD}
       DB_HOST: game_postgres
       DB_PORT: 5432
-      DATABASE_URL: postgresql://game_user:game_secret@game_postgres:5432/game_dev_db
-      ALEMBIC_DATABASE_URL: postgresql://game_user:game_secret@game_postgres:5432/game_dev_db
-      SECRET_KEY: dev_secret_key
+      DATABASE_URL: postgresql://${GAME_DB_USER}:${GAME_DB_PASSWORD}@game_postgres:5432/${GAME_DB_NAME}
+      ALEMBIC_DATABASE_URL: postgresql://${GAME_DB_USER}:${GAME_DB_PASSWORD}@game_postgres:5432/${GAME_DB_NAME}
+      SECRET_KEY: ${GAME_SECRET_KEY}
       DEFAULT_CONVERTION_RATE_POINTS_TO_COIN: 100
       ABUSE_PREVENTION_ENABLED: "false"
       API_URL_KPI: http://game:8000/api/v1/kpi
       # ── Keycloak (GreenCrowd realm) ─────────────────────────
       KEYCLOAK_REALM: greencrowd
-      KEYCLOAK_CLIENT_ID: game-backend
-      KEYCLOAK_CLIENT_SECRET: game-backend-secret
+      KEYCLOAK_CLIENT_ID: ${GAME_KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${GAME_KEYCLOAK_CLIENT_SECRET}
       KEYCLOAK_URL: http://localhost:8080
       KEYCLOAK_URL_DOCKER: http://keycloak:8080
-      KEYCLOAK_AUDIENCE: game-backend
+      KEYCLOAK_AUDIENCE: ${GAME_KEYCLOAK_CLIENT_ID}
     ports:
       - "8001:8000"
     depends_on:
@@ -138,6 +146,21 @@ services:
     networks:
       - greencrowd_dev
 
+  keycloak-init:
+    image: python:3.12-alpine
+    container_name: greencrowd_keycloak_init
+    environment:
+      KC_DEV_ADMIN_PASSWORD: ${KC_DEV_ADMIN_PASSWORD}
+      KC_DEV_ADMIN_EMAIL: ${KC_DEV_ADMIN_EMAIL}
+    volumes:
+      - ./docker/keycloak/realm-export.json:/input/realm-export.json:ro
+      - ./docker/keycloak/init-realm.py:/init-realm.py:ro
+      - keycloak_import:/output
+    command: ["python3", "/init-realm.py"]
+    restart: "no"
+    networks:
+      - greencrowd_dev
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: greencrowd_keycloak
@@ -145,23 +168,25 @@ services:
     command: start-dev --import-realm
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/greencrowd
-      KC_DB_USERNAME: greencrowd
-      KC_DB_PASSWORD: greencrowd_secret
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KC_DB_SCHEMA: keycloak
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin_secret
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8080
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME}
+      KC_HOSTNAME_PORT: ${KEYCLOAK_PORT}
       KC_HOSTNAME_STRICT: "false"
       KC_HTTP_ENABLED: "true"
     ports:
       - "8080:8080"
     volumes:
-      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - keycloak_import:/opt/keycloak/data/import:ro
     depends_on:
       postgres:
         condition: service_healthy
+      keycloak-init:
+        condition: service_completed_successfully
     networks:
       - greencrowd_dev
 
@@ -170,6 +195,7 @@ volumes:
   redis_dev_data:
   minio_dev_data:
   game_postgres_dev_data:
+  keycloak_import:
 
 networks:
   greencrowd_dev:

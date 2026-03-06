@@ -13,8 +13,6 @@ STATE_FILE=".gc_state"
 
 KC_BASE="http://localhost:8080"
 KC_REALM="greencrowd"
-KC_ADMIN_USER="admin"
-KC_ADMIN_PASS="admin_secret"
 
 # ── Colors ────────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -61,6 +59,11 @@ env_get() {
   grep "^${1}=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"'
 }
 
+# ── Docker Compose dev wrapper (always uses --env-file .env.local) ────────────
+dc_dev() {
+  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_DEV" "$@"
+}
+
 # ── JSON parsing via python3 ──────────────────────────────────────────────────
 kc_json() {
   # Usage: echo '{"foo":"bar"}' | kc_json 'd["foo"]'
@@ -91,6 +94,11 @@ KC_TOKEN=""
 
 kc_get_token() {
   local attempts=5 delay=5 resp
+  local KC_ADMIN_USER KC_ADMIN_PASS
+  KC_ADMIN_USER=$(env_get "KEYCLOAK_ADMIN")
+  KC_ADMIN_PASS=$(env_get "KEYCLOAK_ADMIN_PASSWORD")
+  KC_ADMIN_USER="${KC_ADMIN_USER:-admin}"
+  KC_ADMIN_PASS="${KC_ADMIN_PASS:-admin_secret}"
   for ((i=1; i<=attempts; i++)); do
     resp=$(curl -s -X POST \
       "${KC_BASE}/realms/master/protocol/openid-connect/token" \
@@ -149,8 +157,11 @@ free_host_port() {
 # ── Wait helpers ──────────────────────────────────────────────────────────────
 wait_for_postgres() {
   local timeout="${1:-60}" interval=3 elapsed=0
+  local pg_user
+  pg_user=$(env_get "POSTGRES_USER")
+  pg_user="${pg_user:-greencrowd}"
   progress "PostgreSQL "
-  while ! docker exec greencrowd_postgres pg_isready -U greencrowd -q 2>/dev/null; do
+  while ! docker exec greencrowd_postgres pg_isready -U "$pg_user" -q 2>/dev/null; do
     [[ $elapsed -ge $timeout ]] && echo "" && die "PostgreSQL no respondió en ${timeout}s"
     sleep $interval
     elapsed=$((elapsed + interval))
@@ -291,7 +302,7 @@ start_infra() {
     fi
   done
 
-  docker compose -f "$COMPOSE_DEV" up -d
+  dc_dev up -d
   log "PostgreSQL · Redis · MinIO · Keycloak started"
 }
 
@@ -458,10 +469,15 @@ start_dev() {
   # Ensure AUTH_URL and NEXT_PUBLIC_APP_URL point to the correct port
   env_set "AUTH_URL"               "http://localhost:3000"
   env_set "NEXT_PUBLIC_APP_URL"    "http://localhost:3000"
+  local minio_user minio_pass kc_admin kc_pass
+  minio_user=$(env_get "MINIO_ROOT_USER"); minio_user="${minio_user:-greencrowd_minio}"
+  minio_pass=$(env_get "MINIO_ROOT_PASSWORD"); minio_pass="${minio_pass:-minio_secret_key}"
+  kc_admin=$(env_get "KEYCLOAK_ADMIN"); kc_admin="${kc_admin:-admin}"
+  kc_pass=$(env_get "KEYCLOAK_ADMIN_PASSWORD"); kc_pass="${kc_pass:-admin_secret}"
   echo ""
   echo -e "  ${BOLD}App:    ${CYAN}http://localhost:3000${RESET}"
-  echo -e "  ${BOLD}MinIO:  ${CYAN}http://localhost:9001${RESET}  (admin / minio_secret_key)"
-  echo -e "  ${BOLD}KC:     ${CYAN}http://localhost:8080${RESET}  (admin / admin_secret)"
+  echo -e "  ${BOLD}MinIO:  ${CYAN}http://localhost:9001${RESET}  (${minio_user} / ${minio_pass})"
+  echo -e "  ${BOLD}KC:     ${CYAN}http://localhost:8080${RESET}  (${kc_admin} / ${kc_pass})"
   echo -e "  ${BOLD}Studio: ${CYAN}http://localhost:5555${RESET}  (npx prisma studio)"
   echo ""
   echo -e "  ${YELLOW}Press Ctrl+C to stop.${RESET}"
@@ -523,7 +539,7 @@ cmd_start() {
   echo -e "${BOLD}${GREEN}🌿 GreenCrowd V2 — Starting${RESET}"
   echo ""
   log_step "Starting infrastructure"
-  docker compose -f "$COMPOSE_DEV" up -d
+  dc_dev up -d
   log "Infrastructure started"
 
   log_step "Waiting for services"
@@ -535,7 +551,7 @@ cmd_start() {
 
 cmd_stop() {
   log_step "Stopping infrastructure"
-  docker compose -f "$COMPOSE_DEV" down
+  dc_dev down
   log "Infrastructure stopped"
 }
 
@@ -565,7 +581,7 @@ cmd_reset() {
   read -rp "Escribe RESET para confirmar: " confirm
   [[ "$confirm" != "RESET" ]] && die "Cancelado."
 
-  docker compose -f "$COMPOSE_DEV" down -v 2>/dev/null || true
+  dc_dev down -v 2>/dev/null || true
   rm -f "$STATE_FILE"
 
   if $hard; then
@@ -639,13 +655,13 @@ cmd_status() {
 cmd_logs() {
   local svc="${1:-all}"
   case "$svc" in
-    app)      docker compose logs -f app 2>/dev/null || warn "Servicio 'app' no disponible en dev mode" ;;
-    worker)   docker compose logs -f worker 2>/dev/null || warn "Servicio 'worker' no disponible en dev mode" ;;
-    postgres) docker compose -f "$COMPOSE_DEV" logs -f postgres ;;
-    redis)    docker compose -f "$COMPOSE_DEV" logs -f redis ;;
-    minio)    docker compose -f "$COMPOSE_DEV" logs -f minio ;;
-    keycloak) docker compose -f "$COMPOSE_DEV" logs -f keycloak ;;
-    all)      docker compose -f "$COMPOSE_DEV" logs -f ;;
+    app)      dc_dev logs -f app 2>/dev/null || warn "Servicio 'app' no disponible en dev mode" ;;
+    worker)   dc_dev logs -f worker 2>/dev/null || warn "Servicio 'worker' no disponible en dev mode" ;;
+    postgres) dc_dev logs -f postgres ;;
+    redis)    dc_dev logs -f redis ;;
+    minio)    dc_dev logs -f minio ;;
+    keycloak) dc_dev logs -f keycloak ;;
+    all)      dc_dev logs -f ;;
     *)        die "Servicios válidos: app, worker, postgres, redis, minio, keycloak, all" ;;
   esac
 }
@@ -671,7 +687,10 @@ cmd_db() {
       local postgis_file="prisma/migrations/0001_initial_postgis/migration.sql"
       [[ ! -f "$postgis_file" ]] && die "No encontrado: $postgis_file"
       log_step "Applying PostGIS migration"
-      docker exec -i greencrowd_postgres psql -U greencrowd -d greencrowd < "$postgis_file"
+      local pg_user pg_db
+      pg_user=$(env_get "POSTGRES_USER"); pg_user="${pg_user:-greencrowd}"
+      pg_db=$(env_get "POSTGRES_DB"); pg_db="${pg_db:-greencrowd}"
+      docker exec -i greencrowd_postgres psql -U "$pg_user" -d "$pg_db" < "$postgis_file"
       log "PostGIS migration applied"
       ;;
     seed)
@@ -688,9 +707,12 @@ cmd_db() {
       ;;
     refresh)
       log_step "Refreshing materialized views"
-      docker exec -i greencrowd_postgres psql -U greencrowd -d greencrowd \
+      local pg_user pg_db
+      pg_user=$(env_get "POSTGRES_USER"); pg_user="${pg_user:-greencrowd}"
+      pg_db=$(env_get "POSTGRES_DB"); pg_db="${pg_db:-greencrowd}"
+      docker exec -i greencrowd_postgres psql -U "$pg_user" -d "$pg_db" \
         -c "REFRESH MATERIALIZED VIEW CONCURRENTLY v_campaign_stats;" 2>/dev/null || \
-      docker exec -i greencrowd_postgres psql -U greencrowd -d greencrowd \
+      docker exec -i greencrowd_postgres psql -U "$pg_user" -d "$pg_db" \
         -c "REFRESH MATERIALIZED VIEW v_campaign_stats;" 2>/dev/null || \
         warn "Vista materializada no encontrada o no soportada"
       ;;
