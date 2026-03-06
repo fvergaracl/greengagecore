@@ -365,6 +365,26 @@ async function createGameApiKey(
   return data.apiKey
 }
 
+async function validateGameApiKey(
+  gameBaseUrl: string,
+  apiKey: string
+): Promise<boolean> {
+  try {
+    const res = await kfetch(`${gameBaseUrl}/games?limit=1`, {
+      method: "GET",
+      headers: {
+        "X-API-Key": apiKey,
+      },
+    })
+
+    if (res.ok) return true
+    if (res.status === 401 || res.status === 403) return false
+    return false
+  } catch {
+    return false
+  }
+}
+
 // ─── .env.local updater ───────────────────────────────────────────────────────
 
 function writeApiKeyToEnvLocal(apiKey: string): void {
@@ -388,15 +408,6 @@ async function main(): Promise<void> {
   const env = loadEnvFile(ENV_FILE)
 
   const currentKey = process.env.API_GAME_APIKEY ?? env["API_GAME_APIKEY"] ?? ""
-  if (currentKey && currentKey !== PLACEHOLDER) {
-    console.log(
-      "✅  API_GAME_APIKEY is already configured — skipping provisioning"
-    )
-    return
-  }
-
-  console.log("🔑  API_GAME_APIKEY is not set — provisioning...")
-
   const issuer = getVar(env, "KEYCLOAK_ISSUER")
   const adminUser = getVar(env, "KEYCLOAK_ADMIN")
   const adminPass = getVar(env, "KEYCLOAK_ADMIN_PASSWORD")
@@ -404,6 +415,20 @@ async function main(): Promise<void> {
   const clientSecret = getVar(env, "GAME_KEYCLOAK_CLIENT_SECRET")
   const issuerBase = issuer.replace(/\/$/, "")
   const gameBaseUrl = getVar(env, "API_GAME_BASE_URL").replace(/\/$/, "")
+
+  if (currentKey && currentKey !== PLACEHOLDER) {
+    console.log("🔎  Validating existing API_GAME_APIKEY...")
+    const isValid = await validateGameApiKey(gameBaseUrl, currentKey)
+    if (isValid) {
+      console.log(
+        "✅  API_GAME_APIKEY is already configured and valid — skipping provisioning"
+      )
+      return
+    }
+    console.log("⚠️  Existing API_GAME_APIKEY is invalid — reprovisioning...")
+  } else {
+    console.log("🔑  API_GAME_APIKEY is not set — provisioning...")
+  }
 
   console.log("\n[1/4] Waiting for Keycloak and GAME...")
   await waitForEndpoint(

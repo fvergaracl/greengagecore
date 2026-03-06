@@ -12,12 +12,20 @@ type DashboardSummary = {
   points_earned: DashboardSummaryElement[]
   actions_performed: DashboardSummaryElement[]
 }
+type StrategyVariableValue =
+  | string
+  | number
+  | boolean
+  | null
+  | StrategyVariableMap
+  | StrategyVariableValue[]
+type StrategyVariableMap = Record<string, StrategyVariableValue>
 type Strategy = {
   id: string
   name?: string
   description?: string
   version: string
-  variables: Record<string, number>
+  variables: StrategyVariableMap
 }
 type GameEntry = {
   campaignId: string
@@ -34,6 +42,36 @@ type GameEntry = {
   } | null
 }
 type LeaderboardEntry = { externalUserId: string; totalPoints: number }
+
+function gameErrorMessage(error: string | null, subject: "summary" | "strategies") {
+  if (!error) return null
+  if (error === "not_configured") {
+    return "GAME is not configured in this environment."
+  }
+  if (error === "status_403") {
+    return `GAME rejected the configured API key, so ${subject} cannot be loaded. Run \`make provision-game-key\` and restart the app.`
+  }
+  if (error === "status_401") {
+    return `GAME authentication failed while loading ${subject}.`
+  }
+  if (error === "unreachable") {
+    return `GAME is unreachable, so ${subject} cannot be loaded.`
+  }
+  return `GAME returned ${error.replace("status_", "HTTP ")} while loading ${subject}.`
+}
+
+function formatStrategyVariableValue(value: StrategyVariableValue): string {
+  if (value === null) return "null"
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value)
+  }
+
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return "[unserializable]"
+  }
+}
 
 // ─── Summary card ─────────────────────────────────────────────────────────────
 
@@ -164,6 +202,8 @@ export default function GamificationPage() {
   const [games, setGames] = useState<GameEntry[]>([])
   const [loadingStatus, setLoadingStatus] = useState(true)
   const [loadingGames, setLoadingGames] = useState(true)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [strategiesError, setStrategiesError] = useState<string | null>(null)
   const [leaderboard, setLeaderboard] = useState<{ gameId: string; name: string } | null>(null)
 
   useEffect(() => {
@@ -172,6 +212,8 @@ export default function GamificationPage() {
       .then((d) => {
         setSummary(d.summary ?? null)
         setStrategies(d.strategies ?? [])
+        setSummaryError(d.summaryError ?? null)
+        setStrategiesError(d.strategiesError ?? null)
       })
       .catch(() => {})
       .finally(() => setLoadingStatus(false))
@@ -188,6 +230,8 @@ export default function GamificationPage() {
     { id: "games", label: "Games", icon: "🎮" },
     { id: "strategies", label: "Strategies", icon: "🎯" },
   ]
+  const summaryErrorMessage = gameErrorMessage(summaryError, "summary")
+  const strategiesErrorMessage = gameErrorMessage(strategiesError, "strategies")
 
   return (
     <div className='space-y-6'>
@@ -232,6 +276,11 @@ export default function GamificationPage() {
       {/* ── Overview tab ── */}
       {tab === "overview" && (
         <div className='space-y-6'>
+          {summaryErrorMessage && (
+            <div className='rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200'>
+              {summaryErrorMessage}
+            </div>
+          )}
           {loadingStatus ? (
             <div className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
               {[...Array(4)].map((_, i) => (
@@ -407,6 +456,11 @@ export default function GamificationPage() {
       {/* ── Strategies tab ── */}
       {tab === "strategies" && (
         <div className='space-y-3'>
+          {strategiesErrorMessage && (
+            <div className='rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200'>
+              {strategiesErrorMessage}
+            </div>
+          )}
           {loadingStatus ? (
             <div className='space-y-3'>
               {[...Array(2)].map((_, i) => (
@@ -454,8 +508,8 @@ export default function GamificationPage() {
                         className='rounded-md bg-gray-50 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                       >
                         {k}:{" "}
-                        <span className='font-semibold text-gray-800 dark:text-gray-200'>
-                          {v}
+                        <span className='font-semibold break-all text-gray-800 dark:text-gray-200'>
+                          {formatStrategyVariableValue(v)}
                         </span>
                       </span>
                     ))}
