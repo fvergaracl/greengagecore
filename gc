@@ -419,18 +419,29 @@ run_migrations() {
   db_url=$(env_get "DATABASE_URL")
   [[ -z "$db_url" ]] && die "DATABASE_URL no encontrado en $ENV_FILE"
 
-  # Run Prisma migrations
+  # Run Prisma migrations — deploy existing, or generate initial if none found
   log_info "Aplicando migraciones Prisma..."
-  DATABASE_URL="$db_url" npx prisma migrate deploy 2>&1 | tail -5 || \
-    DATABASE_URL="$db_url" npx prisma migrate dev --name init 2>&1 | tail -5
+  local pg_user pg_db
+  pg_user=$(env_get "POSTGRES_USER"); pg_user="${pg_user:-greencrowd}"
+  pg_db=$(env_get "POSTGRES_DB"); pg_db="${pg_db:-greencrowd}"
 
-  # Apply PostGIS migration via docker exec (no psql required on host)
-  local postgis_file="prisma/migrations/0001_initial_postgis/migration.sql"
-  if [[ -f "$postgis_file" ]]; then
-    log_info "Aplicando extensiones PostGIS..."
-    docker exec -i greencrowd_postgres \
-      psql -U greencrowd -d greencrowd < "$postgis_file" 2>&1 | tail -3 || true
+  if ! DATABASE_URL="$db_url" npx prisma migrate deploy; then
+    # No timestamped migration files yet → generate initial migration from schema
+    DATABASE_URL="$db_url" npx prisma migrate dev --name init
   fi
+
+  # Apply all custom SQL migrations (PostGIS, triggers, schema extensions)
+  # These must run AFTER the Prisma base migration creates the tables.
+  for sql_file in \
+    "prisma/custom-sql/0001_initial_postgis/migration.sql" \
+    "prisma/custom-sql/0002_poi_center_inside_area/migration.sql" \
+    "prisma/custom-sql/0003_campaign_timezone/migration.sql"; do
+    if [[ -f "$sql_file" ]]; then
+      log_info "Aplicando: $sql_file"
+      docker exec -i greencrowd_postgres \
+        psql -U "$pg_user" -d "$pg_db" < "$sql_file" 2>&1 | tail -3 || true
+    fi
+  done
 
   # Generate Prisma client
   log_info "Generando cliente Prisma..."
@@ -684,7 +695,7 @@ cmd_db() {
       DATABASE_URL="$db_url" npx prisma generate
       ;;
     postgis)
-      local postgis_file="prisma/migrations/0001_initial_postgis/migration.sql"
+      local postgis_file="prisma/custom-sql/0001_initial_postgis/migration.sql"
       [[ ! -f "$postgis_file" ]] && die "No encontrado: $postgis_file"
       log_step "Applying PostGIS migration"
       local pg_user pg_db
