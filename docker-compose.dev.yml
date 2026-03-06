@@ -112,7 +112,7 @@ services:
 
   # ── GAME Engine API ───────────────────────────────────────────
   game:
-    image: fvergaracl/game:alpha.20260306
+    image: fvergaracl/game:alpha
     container_name: greencrowd_game
     restart: unless-stopped
     environment:
