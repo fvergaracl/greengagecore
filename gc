@@ -407,31 +407,36 @@ configure_keycloak() {
 run_migrations() {
   log_step "[7/8] Running database migrations"
 
-  if state_get "DB_MIGRATED"; then
-    log_info "Migraciones ya aplicadas (usa ./gc db migrate para forzar)"
-    # Always generate Prisma client in case schema changed
-    npx prisma generate --silent 2>/dev/null || npx prisma generate
-    return
-  fi
-
   # Load DATABASE_URL from .env.local
   local db_url
   db_url=$(env_get "DATABASE_URL")
   [[ -z "$db_url" ]] && die "DATABASE_URL no encontrado en $ENV_FILE"
 
-  # Run Prisma migrations — deploy existing, or generate initial if none found
-  log_info "Aplicando migraciones Prisma..."
+  # Detect schema changes via checksum — re-migrate only when needed
+  local schema_hash stored_hash
+  schema_hash=$(md5sum prisma/schema.prisma 2>/dev/null | cut -d' ' -f1)
+  stored_hash=$(grep "^SCHEMA_HASH=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2)
+
+  if state_get "DB_MIGRATED" && [[ "$schema_hash" == "$stored_hash" ]]; then
+    log_info "Schema sin cambios — saltando migraciones"
+    DATABASE_URL="$db_url" npx prisma generate --silent 2>/dev/null || \
+      DATABASE_URL="$db_url" npx prisma generate
+    return
+  fi
+
+  state_get "DB_MIGRATED" && [[ "$schema_hash" != "$stored_hash" ]] && \
+    log_info "Schema cambiado — reaplicando migraciones..."
+
+  # prisma db push: idempotent, no migration-history drift, handles extensions
+  log_info "Sincronizando schema con la base de datos..."
+  DATABASE_URL="$db_url" npx prisma db push --accept-data-loss
+
+  # Apply custom SQL (PostGIS GEOGRAPHY columns, RLS, triggers, schema extras)
+  # These run AFTER db push has created the base tables.
   local pg_user pg_db
   pg_user=$(env_get "POSTGRES_USER"); pg_user="${pg_user:-greencrowd}"
   pg_db=$(env_get "POSTGRES_DB"); pg_db="${pg_db:-greencrowd}"
 
-  if ! DATABASE_URL="$db_url" npx prisma migrate deploy; then
-    # No timestamped migration files yet → generate initial migration from schema
-    DATABASE_URL="$db_url" npx prisma migrate dev --name init
-  fi
-
-  # Apply all custom SQL migrations (PostGIS, triggers, schema extensions)
-  # These must run AFTER the Prisma base migration creates the tables.
   for sql_file in \
     "prisma/custom-sql/0001_initial_postgis/migration.sql" \
     "prisma/custom-sql/0002_poi_center_inside_area/migration.sql" \
@@ -449,6 +454,7 @@ run_migrations() {
     DATABASE_URL="$db_url" npx prisma generate
 
   state_set "DB_MIGRATED" "true"
+  state_set "SCHEMA_HASH" "$schema_hash"
   log "Migraciones aplicadas"
 }
 
