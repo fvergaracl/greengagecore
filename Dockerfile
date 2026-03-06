@@ -19,7 +19,14 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# ── Stage 3: Runner (producción) ──────────────────────────────
+# ── Stage 3: Tooling (scripts + deps for one-shot containers) ───────────────
+FROM node:20-alpine AS tooling
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# ── Stage 4: Runner (producción) ──────────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
 
@@ -34,6 +41,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/docker/start-with-game-apikey.sh ./docker/start-with-game-apikey.sh
+
+RUN chmod 755 ./docker/start-with-game-apikey.sh
 
 USER nextjs
 

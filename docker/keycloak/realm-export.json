@@ -80,11 +80,11 @@
       "serviceAccountsEnabled": true,
       "authorizationServicesEnabled": false,
       "redirectUris": [
-        "http://localhost:8001/docs/oauth2-redirect",
-        "http://localhost:8001/*"
+        "http://localhost:8000/docs/oauth2-redirect",
+        "http://localhost:8000/*"
       ],
       "webOrigins": [
-        "http://localhost:8001"
+        "http://localhost:8000"
       ],
       "protocol": "openid-connect",
       "defaultClientScopes": [

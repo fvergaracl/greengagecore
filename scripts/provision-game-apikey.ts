@@ -29,7 +29,9 @@ import * as path from "path"
 
 const PLACEHOLDER = "your_game_api_key_here"
 const GAME_ROLE = "AdministratorGAME"
-const ENV_FILE = path.join(process.cwd(), ".env.local")
+const ENV_FILE = process.env.GAME_APIKEY_ENV_FILE
+  ? path.resolve(process.env.GAME_APIKEY_ENV_FILE)
+  : path.join(process.cwd(), ".env.local")
 
 // ─── Minimal .env.local parser ───────────────────────────────────────────────
 
@@ -58,6 +60,32 @@ function getVar(env: Record<string, string>, name: string): string {
 
 async function kfetch(url: string, init: RequestInit): Promise<Response> {
   return fetch(url, { ...init, signal: AbortSignal.timeout(15_000) })
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function waitForEndpoint(label: string, url: string, attempts = 30, delayMs = 2_000): Promise<void> {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const res = await kfetch(url, { method: "GET" })
+      if (res.ok) {
+        console.log(`   ${label} reachable ✓`)
+        return
+      }
+    } catch {
+      // Service is still booting; retry until the timeout is reached.
+    }
+
+    if (attempt === 1) {
+      console.log(`   Waiting for ${label} at ${url}...`)
+    }
+
+    await sleep(delayMs)
+  }
+
+  throw new Error(`${label} did not become ready at ${url}`)
 }
 
 async function adminJson<T>(url: string, adminToken: string, init: RequestInit = {}): Promise<T> {
@@ -291,14 +319,15 @@ async function createGameApiKey(gameBaseUrl: string, bearerToken: string): Promi
 // ─── .env.local updater ───────────────────────────────────────────────────────
 
 function writeApiKeyToEnvLocal(apiKey: string): void {
-  let content = fs.readFileSync(ENV_FILE, "utf8")
+  fs.mkdirSync(path.dirname(ENV_FILE), { recursive: true })
+  let content = fs.existsSync(ENV_FILE) ? fs.readFileSync(ENV_FILE, "utf8") : ""
   if (/^API_GAME_APIKEY=.*/m.test(content)) {
     content = content.replace(/^API_GAME_APIKEY=.*$/m, `API_GAME_APIKEY=${apiKey}`)
   } else {
     content += `\nAPI_GAME_APIKEY=${apiKey}\n`
   }
   fs.writeFileSync(ENV_FILE, content, "utf8")
-  console.log(`✅  API_GAME_APIKEY written to .env.local`)
+  console.log(`✅  API_GAME_APIKEY written to ${ENV_FILE}`)
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -319,19 +348,24 @@ async function main(): Promise<void> {
   const adminPass   = getVar(env, "KEYCLOAK_ADMIN_PASSWORD")
   const clientId    = getVar(env, "GAME_KEYCLOAK_CLIENT_ID")
   const clientSecret = getVar(env, "GAME_KEYCLOAK_CLIENT_SECRET")
-  const gameBaseUrl = getVar(env, "API_GAME_BASE_URL")
+  const issuerBase = issuer.replace(/\/$/, "")
+  const gameBaseUrl = getVar(env, "API_GAME_BASE_URL").replace(/\/$/, "")
+
+  console.log("\n[1/4] Waiting for Keycloak and GAME...")
+  await waitForEndpoint("Keycloak", `${issuerBase}/.well-known/openid-configuration`)
+  await waitForEndpoint("GAME API", `${gameBaseUrl}/kpi`)
 
   // ── 1. Provision Keycloak ──────────────────────────────────────────────────
-  console.log("\n[1/3] Provisioning Keycloak...")
+  console.log("\n[2/4] Provisioning Keycloak...")
   await provisionKeycloak({ issuer, adminUser, adminPass, clientId, clientSecret })
 
   // ── 2. Get client_credentials token ───────────────────────────────────────
-  console.log("\n[2/3] Obtaining client_credentials token...")
+  console.log("\n[3/4] Obtaining client_credentials token...")
   const token = await getKeycloakToken(issuer, clientId, clientSecret)
   console.log("   Token obtained ✓")
 
   // ── 3. Create GAME API key ─────────────────────────────────────────────────
-  console.log(`\n[3/3] Creating GAME API key at ${gameBaseUrl}...`)
+  console.log(`\n[4/4] Creating GAME API key at ${gameBaseUrl}...`)
   const apiKey = await createGameApiKey(gameBaseUrl, token)
   console.log(`   API key received: ${apiKey.slice(0, 8)}...`)
 

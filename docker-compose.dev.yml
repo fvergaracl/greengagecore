@@ -137,7 +137,7 @@ services:
       KEYCLOAK_URL_DOCKER: http://keycloak:8080
       KEYCLOAK_AUDIENCE: ${GAME_KEYCLOAK_CLIENT_ID}
     ports:
-      - "8001:8000"
+      - "8000:8000"
     depends_on:
       game_db_init:
         condition: service_completed_successfully

@@ -1,0 +1,13 @@
+.git
+.gitignore
+.next
+.gc_state
+.env
+.env.local
+node_modules
+mobile
+coverage
+dist
+tmp
+*.log
+tsconfig.tsbuildinfo

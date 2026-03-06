@@ -22,6 +22,8 @@ dev: infra-up
 ## Start infrastructure only (without the Next.js app)
 infra-up:
 	docker compose --env-file .env.local -f docker-compose.dev.yml up -d
+	@echo "🔑 Ensuring GAME API key is provisioned..."
+	npx tsx scripts/provision-game-apikey.ts
 	@echo "✅ Infrastructure started"
 	@echo "   PostgreSQL: localhost:5432"
 	@echo "   Redis:      localhost:6379"

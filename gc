@@ -196,7 +196,7 @@ wait_for_minio() {
 
 # ── Dependency check ──────────────────────────────────────────────────────────
 check_deps() {
-  log_step "[1/8] Checking dependencies"
+  log_step "[1/9] Checking dependencies"
   local missing=()
 
   command -v docker    >/dev/null 2>&1 || missing+=("docker")
@@ -220,7 +220,7 @@ check_deps() {
 
 # ── Init .env.local ───────────────────────────────────────────────────────────
 init_env() {
-  log_step "[2/8] Initializing .env.local"
+  log_step "[2/9] Initializing .env.local"
 
   if [[ -f "$ENV_FILE" ]]; then
     log_info "Ya existe $ENV_FILE — se actualizarán sólo los valores vacíos"
@@ -268,7 +268,7 @@ init_env() {
 
 # ── npm install ───────────────────────────────────────────────────────────────
 npm_install() {
-  log_step "[3/8] Installing npm dependencies"
+  log_step "[3/9] Installing npm dependencies"
   if [[ ! -d node_modules ]]; then
     npm install
     log "Dependencies installed"
@@ -279,10 +279,10 @@ npm_install() {
 
 # ── Start infrastructure ──────────────────────────────────────────────────────
 start_infra() {
-  log_step "[4/8] Starting infrastructure"
+  log_step "[4/9] Starting infrastructure"
 
   # Free ports that might be held by stale containers or host processes
-  for port in 5432 5433 6379 8001 8080 9000 9001; do
+  for port in 5432 5433 6379 8000 8080 9000 9001; do
     cid=$(docker ps -q --filter "publish=$port" 2>/dev/null)
     if [[ -n "$cid" ]]; then
       cname=$(docker inspect --format '{{.Name}}' "$cid" 2>/dev/null | tr -d '/')
@@ -308,7 +308,7 @@ start_infra() {
 
 # ── Wait for services ─────────────────────────────────────────────────────────
 wait_for_services() {
-  log_step "[5/8] Waiting for services..."
+  log_step "[5/9] Waiting for services..."
   wait_for_postgres
   wait_for_minio
   wait_for_keycloak
@@ -365,7 +365,7 @@ print(json.dumps({
 
 # ── Configure Keycloak ────────────────────────────────────────────────────────
 configure_keycloak() {
-  log_step "[6/8] Configuring Keycloak"
+  log_step "[6/9] Configuring Keycloak"
 
   if state_get "KEYCLOAK_CONFIGURED"; then
     log_info "Keycloak ya configurado (usa ./gc reset para reinicializar)"
@@ -403,9 +403,16 @@ configure_keycloak() {
   log "Keycloak configurado"
 }
 
+# ── Ensure GAME API key ───────────────────────────────────────────────────────
+ensure_game_apikey() {
+  log_step "[7/9] Provisioning GAME API key"
+  npx tsx scripts/provision-game-apikey.ts
+  log "GAME API key ready"
+}
+
 # ── Run DB migrations ─────────────────────────────────────────────────────────
 run_migrations() {
-  log_step "[7/8] Running database migrations"
+  log_step "[8/9] Running database migrations"
 
   # Load DATABASE_URL from .env.local
   local db_url
@@ -460,7 +467,7 @@ run_migrations() {
 
 # ── Start app + worker ────────────────────────────────────────────────────────
 start_dev() {
-  log_step "[8/8] Starting dev server"
+  log_step "[9/9] Starting dev server"
 
   # Kill any stale Next.js / worker processes (parent + all children)
   pkill -f "next dev"         2>/dev/null || true
@@ -548,6 +555,7 @@ cmd_dev() {
   start_infra
   wait_for_services
   configure_keycloak
+  ensure_game_apikey
   run_migrations
   start_dev
 }
@@ -563,6 +571,7 @@ cmd_start() {
   wait_for_postgres
   wait_for_minio
 
+  ensure_game_apikey
   start_dev
 }
 

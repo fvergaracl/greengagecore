@@ -190,28 +190,30 @@ export default function GamificationPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className='flex items-center justify-between'>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gamification</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>
+            Gamification
+          </h1>
+          <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
             GAME engine · live data
           </p>
         </div>
         <a
-          href="http://localhost:8001/docs"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+          href='http://localhost:8000/docs'
+          target='_blank'
+          rel='noopener noreferrer'
+          className='inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300'
         >
           📖 GAME API Docs ↗
         </a>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
-        {TABS.map((t) => (
+      <div className='flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800'>
+        {TABS.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -229,59 +231,65 @@ export default function GamificationPage() {
 
       {/* ── Overview tab ── */}
       {tab === "overview" && (
-        <div className="space-y-6">
+        <div className='space-y-6'>
           {loadingStatus ? (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-36 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+                <div
+                  key={i}
+                  className='h-36 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800'
+                />
               ))}
             </div>
           ) : summary ? (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
               <SummaryCard
-                title="New Users"
+                title='New Users'
                 items={summary.new_users}
-                color="border-blue-100 dark:border-blue-900/30"
+                color='border-blue-100 dark:border-blue-900/30'
               />
               <SummaryCard
-                title="Games Opened"
+                title='Games Opened'
                 items={summary.games_opened}
-                color="border-green-100 dark:border-green-900/30"
+                color='border-green-100 dark:border-green-900/30'
               />
               <SummaryCard
-                title="Points Earned"
+                title='Points Earned'
                 items={summary.points_earned}
-                color="border-yellow-100 dark:border-yellow-900/30"
+                color='border-yellow-100 dark:border-yellow-900/30'
               />
               <SummaryCard
-                title="Actions Performed"
+                title='Actions Performed'
                 items={summary.actions_performed}
-                color="border-purple-100 dark:border-purple-900/30"
+                color='border-purple-100 dark:border-purple-900/30'
               />
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-gray-200 p-10 text-center dark:border-gray-700">
-              <p className="text-sm text-gray-500">No summary data available from GAME engine.</p>
+            <div className='rounded-xl border border-dashed border-gray-200 p-10 text-center dark:border-gray-700'>
+              <p className='text-sm text-gray-500'>
+                No summary data available from GAME engine.
+              </p>
             </div>
           )}
 
           {/* Quick links */}
-          <div className="rounded-xl border border-gray-100 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <div className='rounded-xl border border-gray-100 bg-white p-5 dark:border-gray-800 dark:bg-gray-900'>
+            <h2 className='mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300'>
               Quick access
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className='flex flex-wrap gap-2'>
               <button
                 onClick={() => setTab("games")}
-                className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300"
+                className='rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300'
               >
                 🎮 {games.length} game{games.length !== 1 ? "s" : ""} active
               </button>
               <button
                 onClick={() => setTab("strategies")}
-                className="rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300"
+                className='rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-300'
               >
-                🎯 {strategies.length} strateg{strategies.length !== 1 ? "ies" : "y"} available
+                🎯 {strategies.length} strateg
+                {strategies.length !== 1 ? "ies" : "y"} available
               </button>
             </div>
           </div>
@@ -290,81 +298,99 @@ export default function GamificationPage() {
 
       {/* ── Games tab ── */}
       {tab === "games" && (
-        <div className="rounded-xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <div className='rounded-xl border border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900'>
           {loadingGames ? (
-            <div className="space-y-3 p-5">
+            <div className='space-y-3 p-5'>
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-12 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
+                <div
+                  key={i}
+                  className='h-12 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800'
+                />
               ))}
             </div>
           ) : games.length === 0 ? (
-            <div className="p-10 text-center">
-              <p className="text-sm text-gray-500">
+            <div className='p-10 text-center'>
+              <p className='text-sm text-gray-500'>
                 No campaigns with gamification enabled.{" "}
-                <Link href="/dashboard/campaigns" className="text-green-600 hover:underline">
+                <Link
+                  href='/dashboard/campaigns'
+                  className='text-green-600 hover:underline'
+                >
                   Create one →
                 </Link>
               </p>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-100 dark:border-gray-800">
-                <tr className="text-left text-xs text-gray-500">
-                  <th className="px-5 py-3 font-medium">Campaign</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Strategy</th>
-                  <th className="px-5 py-3 font-medium">Contributions</th>
-                  <th className="px-5 py-3 font-medium">GAME ID</th>
-                  <th className="px-5 py-3 font-medium"></th>
+            <table className='w-full text-sm'>
+              <thead className='border-b border-gray-100 dark:border-gray-800'>
+                <tr className='text-left text-xs text-gray-500'>
+                  <th className='px-5 py-3 font-medium'>Campaign</th>
+                  <th className='px-5 py-3 font-medium'>Status</th>
+                  <th className='px-5 py-3 font-medium'>Strategy</th>
+                  <th className='px-5 py-3 font-medium'>Contributions</th>
+                  <th className='px-5 py-3 font-medium'>GAME ID</th>
+                  <th className='px-5 py-3 font-medium'></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                {games.map((g) => (
-                  <tr key={g.campaignId} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                    <td className="px-5 py-3">
+              <tbody className='divide-y divide-gray-50 dark:divide-gray-800/50'>
+                {games.map(g => (
+                  <tr
+                    key={g.campaignId}
+                    className='hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
+                  >
+                    <td className='px-5 py-3'>
                       <Link
                         href={`/dashboard/campaigns/${g.campaignId}`}
-                        className="font-medium text-gray-900 hover:text-green-600 dark:text-white dark:hover:text-green-400"
+                        className='font-medium text-gray-900 hover:text-green-600 dark:text-white dark:hover:text-green-400'
                       >
                         {g.campaignName}
                       </Link>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className='px-5 py-3'>
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                           g.campaignStatus === "published"
                             ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
                             : g.campaignStatus === "archived"
-                            ? "bg-gray-100 text-gray-500"
-                            : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"
+                              ? "bg-gray-100 text-gray-500"
+                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"
                         }`}
                       >
                         {g.campaignStatus}
                       </span>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className='px-5 py-3'>
                       <StrategyBadge
-                        strategyId={g.game?.strategyId ?? g.gameStrategy ?? undefined}
+                        strategyId={
+                          g.game?.strategyId ?? g.gameStrategy ?? undefined
+                        }
                         strategies={strategies}
                       />
                     </td>
-                    <td className="px-5 py-3 text-gray-600 dark:text-gray-400">
+                    <td className='px-5 py-3 text-gray-600 dark:text-gray-400'>
                       {g.contributionCount.toLocaleString()}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className='px-5 py-3'>
                       {g.game ? (
-                        <span className="font-mono text-xs text-gray-500">{g.game.gameId.slice(0, 8)}…</span>
+                        <span className='font-mono text-xs text-gray-500'>
+                          {g.game.gameId.slice(0, 8)}…
+                        </span>
                       ) : (
-                        <span className="text-xs text-gray-300 dark:text-gray-600">not synced</span>
+                        <span className='text-xs text-gray-300 dark:text-gray-600'>
+                          not synced
+                        </span>
                       )}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className='px-5 py-3'>
                       {g.game && (
                         <button
                           onClick={() =>
-                            setLeaderboard({ gameId: g.game!.gameId, name: g.campaignName })
+                            setLeaderboard({
+                              gameId: g.game!.gameId,
+                              name: g.campaignName
+                            })
                           }
-                          className="rounded-lg px-3 py-1 text-xs font-medium text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                          className='rounded-lg px-3 py-1 text-xs font-medium text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20'
                         >
                           Leaderboard
                         </button>
@@ -380,47 +406,57 @@ export default function GamificationPage() {
 
       {/* ── Strategies tab ── */}
       {tab === "strategies" && (
-        <div className="space-y-3">
+        <div className='space-y-3'>
           {loadingStatus ? (
-            <div className="space-y-3">
+            <div className='space-y-3'>
               {[...Array(2)].map((_, i) => (
-                <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+                <div
+                  key={i}
+                  className='h-24 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800'
+                />
               ))}
             </div>
           ) : strategies.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 p-10 text-center dark:border-gray-700">
-              <p className="text-sm text-gray-500">No strategies found in GAME engine.</p>
+            <div className='rounded-xl border border-dashed border-gray-200 p-10 text-center dark:border-gray-700'>
+              <p className='text-sm text-gray-500'>
+                No strategies found in GAME engine.
+              </p>
             </div>
           ) : (
-            strategies.map((s) => (
+            strategies.map(s => (
               <div
                 key={s.id}
-                className="rounded-xl border border-gray-100 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
+                className='rounded-xl border border-gray-100 bg-white p-5 dark:border-gray-800 dark:bg-gray-900'
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className='flex items-start justify-between gap-4'>
                   <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                    <h3 className='font-semibold text-gray-900 dark:text-white'>
                       {s.name ?? s.id}
                     </h3>
                     {s.description && (
-                      <p className="mt-0.5 text-xs text-gray-500">{s.description}</p>
+                      <p className='mt-0.5 text-xs text-gray-500'>
+                        {s.description}
+                      </p>
                     )}
-                    <p className="mt-1 font-mono text-xs text-gray-400">
+                    <p className='mt-1 font-mono text-xs text-gray-400'>
                       v{s.version} · {s.id}
                     </p>
                   </div>
-                  <span className="rounded-lg bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/20 dark:text-purple-300">
+                  <span className='rounded-lg bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'>
                     🎯 Strategy
                   </span>
                 </div>
                 {Object.keys(s.variables).length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className='mt-3 flex flex-wrap gap-2'>
                     {Object.entries(s.variables).map(([k, v]) => (
                       <span
                         key={k}
-                        className="rounded-md bg-gray-50 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                        className='rounded-md bg-gray-50 px-2 py-1 font-mono text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                       >
-                        {k}: <span className="font-semibold text-gray-800 dark:text-gray-200">{v}</span>
+                        {k}:{" "}
+                        <span className='font-semibold text-gray-800 dark:text-gray-200'>
+                          {v}
+                        </span>
                       </span>
                     ))}
                   </div>
