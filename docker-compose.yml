@@ -214,7 +214,7 @@ services:
       dockerfile: Dockerfile
       target: tooling
     restart: "no"
-    command: ["/app/node_modules/.bin/tsx", "scripts/provision-game-apikey.ts"]
+    command: ["npx", "tsx", "scripts/provision-game-apikey.ts"]
     environment:
       KEYCLOAK_ISSUER: http://keycloak:8080/realms/${KEYCLOAK_REALM:-greencrowd}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}

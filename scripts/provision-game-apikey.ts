@@ -63,10 +63,15 @@ async function kfetch(url: string, init: RequestInit): Promise<Response> {
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function waitForEndpoint(label: string, url: string, attempts = 30, delayMs = 2_000): Promise<void> {
+async function waitForEndpoint(
+  label: string,
+  url: string,
+  attempts = 30,
+  delayMs = 2_000
+): Promise<void> {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       const res = await kfetch(url, { method: "GET" })
@@ -88,18 +93,24 @@ async function waitForEndpoint(label: string, url: string, attempts = 30, delayM
   throw new Error(`${label} did not become ready at ${url}`)
 }
 
-async function adminJson<T>(url: string, adminToken: string, init: RequestInit = {}): Promise<T> {
+async function adminJson<T>(
+  url: string,
+  adminToken: string,
+  init: RequestInit = {}
+): Promise<T> {
   const res = await kfetch(url, {
     ...init,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${adminToken}`,
-      ...(init.headers as Record<string, string> | undefined),
-    },
+      ...(init.headers as Record<string, string> | undefined)
+    }
   })
   if (!res.ok) {
     const txt = await res.text().catch(() => "")
-    throw new Error(`Keycloak Admin API ${init.method ?? "GET"} ${url} → ${res.status}: ${txt}`)
+    throw new Error(
+      `Keycloak Admin API ${init.method ?? "GET"} ${url} → ${res.status}: ${txt}`
+    )
   }
   const text = await res.text()
   return (text ? JSON.parse(text) : null) as T
@@ -107,7 +118,11 @@ async function adminJson<T>(url: string, adminToken: string, init: RequestInit =
 
 // ─── Step 1: Keycloak Admin token (master realm / admin-cli) ─────────────────
 
-async function getAdminToken(host: string, adminUser: string, adminPass: string): Promise<string> {
+async function getAdminToken(
+  host: string,
+  adminUser: string,
+  adminPass: string
+): Promise<string> {
   const url = `${host}/realms/master/protocol/openid-connect/token`
   const res = await kfetch(url, {
     method: "POST",
@@ -116,8 +131,8 @@ async function getAdminToken(host: string, adminUser: string, adminPass: string)
       grant_type: "password",
       client_id: "admin-cli",
       username: adminUser,
-      password: adminPass,
-    }),
+      password: adminPass
+    })
   })
   if (!res.ok) {
     const txt = await res.text().catch(() => "")
@@ -137,13 +152,16 @@ async function ensureRealmRole(
 ): Promise<void> {
   const url = `${host}/admin/realms/${realm}/roles/${encodeURIComponent(roleName)}`
   const res = await kfetch(url, {
-    headers: { Authorization: `Bearer ${adminToken}` },
+    headers: { Authorization: `Bearer ${adminToken}` }
   })
 
   if (res.status === 404) {
     await adminJson(`${host}/admin/realms/${realm}/roles`, adminToken, {
       method: "POST",
-      body: JSON.stringify({ name: roleName, description: "Can create API keys in GAME engine" }),
+      body: JSON.stringify({
+        name: roleName,
+        description: "Can create API keys in GAME engine"
+      })
     })
     console.log(`   Role "${roleName}" created ✓`)
   } else if (res.ok) {
@@ -176,7 +194,8 @@ async function ensureClient(
     body: JSON.stringify({
       clientId,
       name: "GAME Engine Backend",
-      description: "Service account used by GreenCrowd to provision GAME API keys",
+      description:
+        "Service account used by GreenCrowd to provision GAME API keys",
       enabled: true,
       publicClient: false,
       secret: clientSecret,
@@ -185,14 +204,15 @@ async function ensureClient(
       directAccessGrantsEnabled: false,
       serviceAccountsEnabled: true,
       authorizationServicesEnabled: false,
-      protocol: "openid-connect",
-    }),
+      protocol: "openid-connect"
+    })
   })
   console.log(`   Client "${clientId}" created ✓`)
 
   // Fetch UUID of newly-created client
   const created = await adminJson<Array<{ id: string }>>(listUrl, adminToken)
-  if (!created[0]) throw new Error(`Client "${clientId}" not found after creation`)
+  if (!created[0])
+    throw new Error(`Client "${clientId}" not found after creation`)
   return created[0].id
 }
 
@@ -224,9 +244,9 @@ async function assignRoleToServiceAccount(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${adminToken}`,
+        Authorization: `Bearer ${adminToken}`
       },
-      body: JSON.stringify([{ id: role.id, name: role.name }]),
+      body: JSON.stringify([{ id: role.id, name: role.name }])
     }
   )
 
@@ -249,8 +269,8 @@ async function provisionKeycloak(opts: {
 }): Promise<void> {
   // Derive host and realm from issuer (e.g. http://localhost:8080/realms/greencrowd)
   const issuerUrl = new URL(opts.issuer)
-  const host = issuerUrl.origin                       // http://localhost:8080
-  const realm = issuerUrl.pathname.split("/").pop()!  // greencrowd
+  const host = issuerUrl.origin // http://localhost:8080
+  const realm = issuerUrl.pathname.split("/").pop()! // greencrowd
 
   console.log(`   Host: ${host}  Realm: ${realm}`)
 
@@ -258,17 +278,37 @@ async function provisionKeycloak(opts: {
   console.log("   Keycloak admin token obtained ✓")
 
   await ensureRealmRole(host, realm, adminToken, GAME_ROLE)
-  const clientUUID = await ensureClient(host, realm, adminToken, opts.clientId, opts.clientSecret)
-  await assignRoleToServiceAccount(host, realm, adminToken, clientUUID, GAME_ROLE)
+  const clientUUID = await ensureClient(
+    host,
+    realm,
+    adminToken,
+    opts.clientId,
+    opts.clientSecret
+  )
+  await assignRoleToServiceAccount(
+    host,
+    realm,
+    adminToken,
+    clientUUID,
+    GAME_ROLE
+  )
 }
 
 // ─── Keycloak: client_credentials token ──────────────────────────────────────
 
-async function getKeycloakToken(issuer: string, clientId: string, clientSecret: string): Promise<string> {
+async function getKeycloakToken(
+  issuer: string,
+  clientId: string,
+  clientSecret: string
+): Promise<string> {
   const res = await kfetch(`${issuer}/protocol/openid-connect/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }),
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret
+    })
   })
   if (!res.ok) {
     const txt = await res.text().catch(() => "")
@@ -279,30 +319,39 @@ async function getKeycloakToken(issuer: string, clientId: string, clientSecret: 
 
 // ─── GAME: POST /apikey/create ────────────────────────────────────────────────
 
-async function createGameApiKey(gameBaseUrl: string, bearerToken: string): Promise<string> {
+async function createGameApiKey(
+  gameBaseUrl: string,
+  bearerToken: string
+): Promise<string> {
   let res: Response
   try {
     res = await kfetch(`${gameBaseUrl}/apikey/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${bearerToken}` },
-      body: JSON.stringify({ client: "greencrowd", description: "GreenCrowd auto-provisioned API key" }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${bearerToken}`
+      },
+      body: JSON.stringify({
+        client: "greencrowd",
+        description: "GreenCrowd auto-provisioned API key"
+      })
     })
   } catch (err: unknown) {
     const code = (err as { cause?: { code?: string } })?.cause?.code
     if (code === "ECONNREFUSED") {
       throw new Error(
         `Cannot reach GAME engine at ${gameBaseUrl}\n` +
-        `  → Make sure the game container is running: make infra-up`
+          `  → Make sure the game container is running: make infra-up`
       )
     }
     if (code === "ECONNRESET") {
       throw new Error(
         `GAME engine at ${gameBaseUrl} reset the connection.\n` +
-        `  → GAME crashed while processing the request (likely wrong Keycloak config).\n` +
-        `  → Restart containers with the updated docker-compose:\n` +
-        `      docker compose -f docker-compose.dev.yml down\n` +
-        `      docker volume rm greencrowd_game_postgres_dev_data\n` +
-        `      make infra-up`
+          `  → GAME crashed while processing the request (likely wrong Keycloak config).\n` +
+          `  → Restart containers with the updated docker-compose:\n` +
+          `      docker compose -f docker-compose.dev.yml down\n` +
+          `      docker volume rm greencrowd_game_postgres_dev_data\n` +
+          `      make infra-up`
       )
     }
     throw err
@@ -322,7 +371,10 @@ function writeApiKeyToEnvLocal(apiKey: string): void {
   fs.mkdirSync(path.dirname(ENV_FILE), { recursive: true })
   let content = fs.existsSync(ENV_FILE) ? fs.readFileSync(ENV_FILE, "utf8") : ""
   if (/^API_GAME_APIKEY=.*/m.test(content)) {
-    content = content.replace(/^API_GAME_APIKEY=.*$/m, `API_GAME_APIKEY=${apiKey}`)
+    content = content.replace(
+      /^API_GAME_APIKEY=.*$/m,
+      `API_GAME_APIKEY=${apiKey}`
+    )
   } else {
     content += `\nAPI_GAME_APIKEY=${apiKey}\n`
   }
@@ -337,27 +389,38 @@ async function main(): Promise<void> {
 
   const currentKey = process.env.API_GAME_APIKEY ?? env["API_GAME_APIKEY"] ?? ""
   if (currentKey && currentKey !== PLACEHOLDER) {
-    console.log("✅  API_GAME_APIKEY is already configured — skipping provisioning")
+    console.log(
+      "✅  API_GAME_APIKEY is already configured — skipping provisioning"
+    )
     return
   }
 
   console.log("🔑  API_GAME_APIKEY is not set — provisioning...")
 
-  const issuer      = getVar(env, "KEYCLOAK_ISSUER")
-  const adminUser   = getVar(env, "KEYCLOAK_ADMIN")
-  const adminPass   = getVar(env, "KEYCLOAK_ADMIN_PASSWORD")
-  const clientId    = getVar(env, "GAME_KEYCLOAK_CLIENT_ID")
+  const issuer = getVar(env, "KEYCLOAK_ISSUER")
+  const adminUser = getVar(env, "KEYCLOAK_ADMIN")
+  const adminPass = getVar(env, "KEYCLOAK_ADMIN_PASSWORD")
+  const clientId = getVar(env, "GAME_KEYCLOAK_CLIENT_ID")
   const clientSecret = getVar(env, "GAME_KEYCLOAK_CLIENT_SECRET")
   const issuerBase = issuer.replace(/\/$/, "")
   const gameBaseUrl = getVar(env, "API_GAME_BASE_URL").replace(/\/$/, "")
 
   console.log("\n[1/4] Waiting for Keycloak and GAME...")
-  await waitForEndpoint("Keycloak", `${issuerBase}/.well-known/openid-configuration`)
-  await waitForEndpoint("GAME API", `${gameBaseUrl}/kpi`)
+  await waitForEndpoint(
+    "Keycloak",
+    `${issuerBase}/.well-known/openid-configuration`
+  )
+  await waitForEndpoint("GAME API", `${gameBaseUrl}/kpi/health_check`)
 
   // ── 1. Provision Keycloak ──────────────────────────────────────────────────
   console.log("\n[2/4] Provisioning Keycloak...")
-  await provisionKeycloak({ issuer, adminUser, adminPass, clientId, clientSecret })
+  await provisionKeycloak({
+    issuer,
+    adminUser,
+    adminPass,
+    clientId,
+    clientSecret
+  })
 
   // ── 2. Get client_credentials token ───────────────────────────────────────
   console.log("\n[3/4] Obtaining client_credentials token...")
