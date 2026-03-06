@@ -131,7 +131,7 @@ services:
     container_name: greencrowd_game_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${GAME_DB_NAME:-game_db}
+      POSTGRES_DB: ${GAME_DB_NAME:-game_dev_db}
       POSTGRES_USER: ${GAME_DB_USER:-game_user}
       POSTGRES_PASSWORD: ${GAME_DB_PASSWORD:-game_secret}
     volumes:
@@ -140,9 +140,29 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${GAME_DB_USER:-game_user}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 20
     networks:
       - greencrowd_net
+
+  # ─────────────────────────────────────────────────────────────
+  # GAME DB init (one-shot: creates DB if missing on stale volumes)
+  # ─────────────────────────────────────────────────────────────
+  game_db_init:
+    image: postgres:16-alpine
+    container_name: greencrowd_game_db_init
+    depends_on:
+      game_postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${GAME_DB_PASSWORD:-game_secret}
+    command: >
+      sh -c "psql -h game_postgres -U ${GAME_DB_USER:-game_user} -d postgres -tc
+      \"SELECT 1 FROM pg_database WHERE datname='${GAME_DB_NAME:-game_dev_db}'\" | grep -q 1 ||
+      psql -h game_postgres -U ${GAME_DB_USER:-game_user} -d postgres
+      -c 'CREATE DATABASE ${GAME_DB_NAME:-game_dev_db};'"
+    networks:
+      - greencrowd_net
+    restart: "no"
 
   # ─────────────────────────────────────────────────────────────
   # GAME Engine API
@@ -154,21 +174,30 @@ services:
     environment:
       ENV: prod
       DB_ENGINE: postgresql
-      DB_NAME: ${GAME_DB_NAME:-game_db}
+      DB_NAME: ${GAME_DB_NAME:-game_dev_db}
       DB_USER: ${GAME_DB_USER:-game_user}
       DB_PASSWORD: ${GAME_DB_PASSWORD:-game_secret}
       DB_HOST: game_postgres
       DB_PORT: 5432
-      DATABASE_URL: postgresql://${GAME_DB_USER:-game_user}:${GAME_DB_PASSWORD:-game_secret}@game_postgres:5432/${GAME_DB_NAME:-game_db}
-      ALEMBIC_DATABASE_URL: postgresql://${GAME_DB_USER:-game_user}:${GAME_DB_PASSWORD:-game_secret}@game_postgres:5432/${GAME_DB_NAME:-game_db}
+      DATABASE_URL: postgresql://${GAME_DB_USER:-game_user}:${GAME_DB_PASSWORD:-game_secret}@game_postgres:5432/${GAME_DB_NAME:-game_dev_db}
+      ALEMBIC_DATABASE_URL: postgresql://${GAME_DB_USER:-game_user}:${GAME_DB_PASSWORD:-game_secret}@game_postgres:5432/${GAME_DB_NAME:-game_dev_db}
       SECRET_KEY: ${GAME_SECRET_KEY:-change_this_secret}
       DEFAULT_CONVERTION_RATE_POINTS_TO_COIN: 100
       ABUSE_PREVENTION_ENABLED: "false"
       API_URL_KPI: http://game:8000/api/v1/kpi
+      # ── Keycloak (GreenCrowd realm) ─────────────────────────
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-greencrowd}
+      KEYCLOAK_CLIENT_ID: ${GAME_KEYCLOAK_CLIENT_ID:-game-backend}
+      KEYCLOAK_CLIENT_SECRET: ${GAME_KEYCLOAK_CLIENT_SECRET:-game-backend-secret}
+      KEYCLOAK_URL: http://${KEYCLOAK_HOSTNAME:-localhost}:${KEYCLOAK_PORT:-8080}
+      KEYCLOAK_URL_DOCKER: http://keycloak:8080
+      KEYCLOAK_AUDIENCE: ${GAME_KEYCLOAK_CLIENT_ID:-game-backend}
     ports:
       - "8001:8000"
     depends_on:
-      game_postgres:
+      game_db_init:
+        condition: service_completed_successfully
+      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/kpi"]
@@ -188,7 +217,7 @@ services:
     restart: unless-stopped
     environment:
       DB_HOST: game_postgres
-      DB_NAME: ${GAME_DB_NAME:-game_db}
+      DB_NAME: ${GAME_DB_NAME:-game_dev_db}
       DB_USER: ${GAME_DB_USER:-game_user}
       DB_PASSWORD: ${GAME_DB_PASSWORD:-game_secret}
       API_URL_KPI: http://game:8000/api/v1/kpi

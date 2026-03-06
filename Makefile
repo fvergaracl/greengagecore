@@ -2,7 +2,7 @@
 # Usage: make <target>
 
 .PHONY: dev infra-up infra-down db-migrate db-deploy db-seed \
-        db-studio generate-vapid generate-auth-secret \
+        db-studio generate-vapid generate-auth-secret provision-game-key \
         worker build start logs clean help
 
 # ─────────────────────────────────────────────────────────────
@@ -81,6 +81,11 @@ worker:
 # ─────────────────────────────────────────────────────────────
 # Secret generators
 # ─────────────────────────────────────────────────────────────
+
+## Provision GAME API key: gets a Keycloak token (game-backend client) and writes API_GAME_APIKEY to .env.local
+provision-game-key:
+	@echo "🔑 Provisioning GAME API key..."
+	npx tsx scripts/provision-game-apikey.ts
 
 ## Generate VAPID keys for WebPush
 generate-vapid:

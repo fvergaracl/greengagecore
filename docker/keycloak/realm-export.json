@@ -4,6 +4,7 @@
   "displayName": "GreenCrowd",
   "sslRequired": "external",
   "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
@@ -25,6 +26,10 @@
       {
         "name": "contributor",
         "description": "Can view campaigns and submit contributions"
+      },
+      {
+        "name": "AdministratorGAME",
+        "description": "Can create and manage API keys in the GAME engine"
       }
     ]
   },
@@ -52,8 +57,36 @@
       "attributes": {
         "pkce.code.challenge.method": "S256"
       },
-      "defaultClientScopes": ["openid", "profile", "email", "greencrowd-roles"],
-      "optionalClientScopes": ["offline_access"]
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "greencrowd-roles"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ]
+    },
+    {
+      "clientId": "game-backend",
+      "name": "GAME Engine Backend",
+      "description": "Service account used by GreenCrowd to provision GAME API keys",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "game-backend-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "protocol": "openid-connect",
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "greencrowd-roles"
+      ],
+      "optionalClientScopes": []
     },
     {
       "clientId": "greencrowd-mobile",
@@ -212,5 +245,16 @@
     "phone",
     "offline_access",
     "microprofile-jwt"
+  ],
+  "users": [
+    {
+      "username": "service-account-game-backend",
+      "enabled": true,
+      "serviceAccountClientId": "game-backend",
+      "realmRoles": [
+        "AdministratorGAME"
+      ],
+      "clientRoles": {}
+    }
   ]
 }
