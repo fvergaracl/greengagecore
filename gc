@@ -45,16 +45,6 @@ state_set() {
   fi
 }
 
-state_value() {
-  grep "^${1}=" "$STATE_FILE" 2>/dev/null | cut -d= -f2- | head -n 1
-}
-
-state_unset() {
-  local key="$1"
-  [[ -f "$STATE_FILE" ]] || return 0
-  perl -ni -e "print unless /^${key}=/" "$STATE_FILE"
-}
-
 # ── Env helpers ───────────────────────────────────────────────────────────────
 env_set() {
   local key="$1" val="$2"
@@ -421,22 +411,6 @@ ensure_game_apikey() {
 }
 
 # ── Run DB migrations ─────────────────────────────────────────────────────────
-schema_version_hash() {
-  {
-    md5sum prisma/schema.prisma
-    find prisma/custom-sql -type f -name '*.sql' -print0 2>/dev/null | sort -z | xargs -0 -r md5sum
-  } | md5sum | cut -d' ' -f1
-}
-
-db_has_core_table() {
-  local pg_user="$1" pg_db="$2" table_name="$3"
-  local exists
-  exists=$(docker exec greencrowd_postgres \
-    psql -U "$pg_user" -d "$pg_db" -tAc "SELECT to_regclass('public.${table_name}') IS NOT NULL;" \
-    2>/dev/null | tr -d '[:space:]')
-  [[ "$exists" == "t" ]]
-}
-
 run_migrations() {
   log_step "[8/9] Running database migrations"
 
@@ -445,29 +419,20 @@ run_migrations() {
   db_url=$(env_get "DATABASE_URL")
   [[ -z "$db_url" ]] && die "DATABASE_URL no encontrado en $ENV_FILE"
 
-  local pg_user pg_db
-  pg_user=$(env_get "POSTGRES_USER"); pg_user="${pg_user:-greencrowd}"
-  pg_db=$(env_get "POSTGRES_DB"); pg_db="${pg_db:-greencrowd}"
+  # Detect schema changes via checksum — re-migrate only when needed
+  local schema_hash stored_hash
+  schema_hash=$(md5sum prisma/schema.prisma 2>/dev/null | cut -d' ' -f1)
+  stored_hash=$(grep "^SCHEMA_HASH=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2)
 
-  # Detect schema changes via version hash and verify the DB really has the core tables.
-  local schema_hash stored_version
-  schema_hash=$(schema_version_hash)
-  stored_version=$(state_value "DB_SCHEMA_VERSION")
-
-  if [[ "$schema_hash" == "$stored_version" ]] && db_has_core_table "$pg_user" "$pg_db" "users"; then
-    log_info "DB version ${schema_hash} ya aplicada — saltando migraciones"
+  if state_get "DB_MIGRATED" && [[ "$schema_hash" == "$stored_hash" ]]; then
+    log_info "Schema sin cambios — saltando migraciones"
     DATABASE_URL="$db_url" npx prisma generate --silent 2>/dev/null || \
       DATABASE_URL="$db_url" npx prisma generate
     return
   fi
 
-  if [[ -z "$stored_version" ]]; then
-    log_info "DB version no registrada — aplicando schema..."
-  elif [[ "$schema_hash" != "$stored_version" ]]; then
-    log_info "DB version cambiada (${stored_version} -> ${schema_hash}) — reaplicando schema..."
-  else
-    log_info "La DB no contiene la tabla base 'users' — reaplicando schema..."
-  fi
+  state_get "DB_MIGRATED" && [[ "$schema_hash" != "$stored_hash" ]] && \
+    log_info "Schema cambiado — reaplicando migraciones..."
 
   # prisma db push: idempotent, no migration-history drift, handles extensions
   log_info "Sincronizando schema con la base de datos..."
@@ -475,6 +440,10 @@ run_migrations() {
 
   # Apply custom SQL (PostGIS GEOGRAPHY columns, RLS, triggers, schema extras)
   # These run AFTER db push has created the base tables.
+  local pg_user pg_db
+  pg_user=$(env_get "POSTGRES_USER"); pg_user="${pg_user:-greencrowd}"
+  pg_db=$(env_get "POSTGRES_DB"); pg_db="${pg_db:-greencrowd}"
+
   for sql_file in \
     "prisma/custom-sql/0001_initial_postgis/migration.sql" \
     "prisma/custom-sql/0002_poi_center_inside_area/migration.sql" \
@@ -491,9 +460,8 @@ run_migrations() {
   DATABASE_URL="$db_url" npx prisma generate --silent 2>/dev/null || \
     DATABASE_URL="$db_url" npx prisma generate
 
-  state_set "DB_SCHEMA_VERSION" "$schema_hash"
-  state_unset "DB_MIGRATED"
-  state_unset "SCHEMA_HASH"
+  state_set "DB_MIGRATED" "true"
+  state_set "SCHEMA_HASH" "$schema_hash"
   log "Migraciones aplicadas"
 }
 
@@ -779,9 +747,7 @@ cmd_db() {
       read -rp "¿Confirmar? (escribe RESET): " confirm
       [[ "$confirm" != "RESET" ]] && die "Cancelado."
       DATABASE_URL="$db_url" npx prisma migrate reset --force
-      state_unset "DB_SCHEMA_VERSION"
-      state_unset "DB_MIGRATED"
-      state_unset "SCHEMA_HASH"
+      state_set "DB_MIGRATED" "false"
       log "Base de datos reseteada"
       ;;
     help|*)
