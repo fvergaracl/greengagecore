@@ -40,7 +40,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.4.9",
     "i18next": "^24.2.1",
-    "js-cookie": "^3.0.5",
+    "js-cookie": "^3.0.7",
     "jsonwebtoken": "^9.0.2",
     "keycloak-admin": "^1.14.22",
     "leaflet": "^1.9.4",
