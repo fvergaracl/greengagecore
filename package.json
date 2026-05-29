@@ -77,7 +77,7 @@
     "tailwind-scrollbar-hide": "^2.0.0",
     "utf8": "^3.0.0",
     "web-push": "^3.6.7",
-    "ws": "^8.18.0",
+    "ws": "^8.20.1",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
